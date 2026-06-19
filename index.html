@@ -1,0 +1,1386 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0d12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>نظام إدارة المبيعات — v3.0</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="auth-backdrop" id="login-screen">
+  <div class="auth-card">
+    <div class="modal-hd"><h3><i class="ti ti-lock"></i> تسجيل الدخول</h3></div>
+    <div class="modal-body">
+      <div class="form-grid g2">
+        <div class="fg"><label>اسم المستخدم</label><input id="login-user" placeholder="admin"></div>
+        <div class="fg"><label>كلمة المرور</label><input id="login-pass" type="password" placeholder="1234"></div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:center">
+      <button class="btn btn-primary" onclick="handleLogin()"><i class="ti ti-login"></i> دخول</button>
+    </div>
+  </div>
+</div>
+<div class="shell">
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-icon"><i class="ti ti-building-store"></i></div>
+    <div><div class="sb-title">نظام المبيعات</div><div class="sb-sub">v3.0 — د.ل</div></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sect">لوحة التحكم</div>
+    <div class="nav-item active" data-page="dash"><i class="ti ti-layout-dashboard"></i><span>الرئيسية</span></div>
+    <div class="sb-sect">المخازن</div>
+    <div class="nav-item" data-page="inventory"><i class="ti ti-package"></i><span>الأصناف والمخزون</span></div>
+    <div class="sb-sect">المبيعات</div>
+    <div class="nav-item" data-page="sales"><i class="ti ti-receipt"></i><span>فواتير البيع</span></div>
+    <div class="nav-item" data-page="returns"><i class="ti ti-receipt-refund"></i><span>مرتجع المبيعات</span></div>
+    <div class="sb-sect">المشتريات</div>
+    <div class="nav-item" data-page="purchases"><i class="ti ti-truck"></i><span>فواتير الشراء</span></div>
+    <div class="nav-item" data-page="suppay"><i class="ti ti-wallet"></i><span>دفعات الموردين</span></div>
+    <div class="sb-sect">الزبائن والمالية</div>
+    <div class="nav-item" data-page="customers"><i class="ti ti-user-circle"></i><span>الزبائن</span></div>
+    <div class="nav-item" data-page="suppliers"><i class="ti ti-users"></i><span>الموردون</span></div>
+    <div class="nav-item" data-page="soa"><i class="ti ti-file-description"></i><span>كشف الحساب</span></div>
+    <div class="nav-item" data-page="finance"><i class="ti ti-cash"></i><span>الخزينة</span></div>
+    <div class="nav-item" data-page="pl"><i class="ti ti-chart-bar"></i><span>الأرباح والخسائر</span></div>
+    <div class="nav-item" data-page="users"><i class="ti ti-users-pin"></i><span>حسابات المستخدمين</span></div>
+    <div class="nav-item" data-page="companies"><i class="ti ti-building"></i><span>إدارة الشركات</span></div>
+    <div class="nav-item" data-page="audit"><i class="ti ti-shield-check"></i><span>سجل التدقيق</span></div>
+    <div class="nav-item" data-page="hrm"><i class="ti ti-users-group"></i><span>HRM — الموظفين</span></div>
+    <div class="nav-item" data-page="settings"><i class="ti ti-settings"></i><span>الإعدادات</span></div>
+  </nav>
+  <div class="sb-footer">
+    <div class="user-chip">
+      <div class="user-av" id="user-av">م</div>
+      <div><div class="user-name">مدير النظام</div><div class="user-role">admin</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="btn btn-icon" id="menu-toggle" onclick="toggleSidebar()" title="القائمة"><i class="ti ti-menu-2"></i></button>
+    <div class="topbar-title" id="pg-title"><i class="ti ti-layout-dashboard"></i> الرئيسية
+      <span id="company-name" style="display:block;font-size:11px;color:var(--text-muted);margin-top:2px"></span>
+    </div>
+    <div class="topbar-actions" id="pg-act">
+      <button class="btn btn-primary btn-sm" id="install-btn" style="display:none" onclick="installApp()" title="تثبيت التطبيق"><i class="ti ti-device-mobile"></i> تثبيت التطبيق</button>
+    </div>
+    <button class="btn btn-icon btn-sm" onclick="logout()" title="تسجيل خروج"><i class="ti ti-logout"></i></button>
+    <span class="topbar-time" id="clock"></span>
+  </header>
+  <div class="content">
+    <div class="search-panel" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <div class="search-bar" style="flex:1;margin-bottom:0">
+        <i class="ti ti-search"></i>
+        <input id="global-search" type="text" placeholder="بحث سريع...">
+      </div>
+      <button class="btn btn-sm" id="clear-search" title="مسح البحث"><i class="ti ti-x"></i></button>
+    </div>
+
+  <!-- DASHBOARD -->
+  <div class="page on" id="p-dash">
+    <div class="stats-grid">
+      <div class="stat-card blue"><div class="stat-lbl">المبيعات (إجمالي)</div><div class="stat-val" id="ds-s">0.000</div><div class="stat-sub">دينار ليبي</div><i class="ti ti-receipt stat-icon"></i></div>
+      <div class="stat-card green"><div class="stat-lbl">المحصَّل فعلياً</div><div class="stat-val" id="ds-collected">0.000</div><div class="stat-sub">نقدي + صكوك</div><i class="ti ti-cash stat-icon"></i></div>
+      <div class="stat-card amber"><div class="stat-lbl">ذمم مدينة</div><div class="stat-val" id="ds-recv">0.000</div><div class="stat-sub">غير محصَّل</div><i class="ti ti-clock stat-icon"></i></div>
+      <div class="stat-card red"><div class="stat-lbl">تنبيهات المخزون</div><div class="stat-val" id="ds-a">0</div><div class="stat-sub">دون حد الأمان</div><i class="ti ti-alert-triangle stat-icon"></i></div>
+    </div>
+    <div id="dash-alerts"></div>
+    <div class="dashboard-insight" id="dash-insight"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-hd"><h3><i class="ti ti-chart-bar icon-accent"></i> المبيعات الأخيرة (7 أيام)</h3></div>
+        <div style="padding:12px;height:220px"><canvas id="dash-sales-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3><i class="ti ti-chart-pie icon-green"></i> توزيع المدفوعات</h3></div>
+        <div style="padding:12px;height:220px"><canvas id="dash-pay-chart"></canvas></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-hd"><h3><i class="ti ti-receipt icon-accent"></i> آخر فواتير البيع</h3></div>
+        <div class="tbl-wrap"><table><thead><tr><th>رقم</th><th>الزبون</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody id="d-inv-tb"></tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3><i class="ti ti-alert-triangle icon-amber"></i> أصناف منخفضة</h3></div>
+        <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الرصيد</th><th>الحد</th></tr></thead><tbody id="d-low-tb"></tbody></table></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-activity icon-purple"></i> آخر العمليات</h3></div>
+      <div id="d-log-list"></div>
+    </div>
+  </div>
+
+  <!-- INVENTORY -->
+  <div class="page" id="p-inventory">
+    <div class="search-bar"><i class="ti ti-search"></i><input type="text" placeholder="بحث بالاسم أو الباركود أو الكود..." oninput="debounce(() => {_pg['inv-tb']=1;filterItems(this.value)})"></div>
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-package color-accent"></i> بطاقات الأصناف</h3>
+        <div class="flex-gap6">
+          <select id="inv-cat-filter" onchange="_pg['inv-tb']=1;renderItems()" class="compact-select">
+            <option value="">كل الفئات</option>
+          </select>
+          <select id="inv-stock-filter" onchange="_pg['inv-tb']=1;renderItems()" class="compact-select">
+            <option value="">كل الحالات</option>
+            <option value="ok">متوفر</option>
+            <option value="low">منخفض</option>
+            <option value="out">نفدت</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="exportItems()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm" onclick="printItemsPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+          <button class="btn btn-primary" onclick="openModal('m-item')"><i class="ti ti-plus"></i> صنف جديد</button>
+        </div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>الكود</th><th>الصنف</th><th>الفئة</th><th>سعر الشراء</th><th>سعر البيع</th><th>الرصيد</th><th>الوحدة</th><th>الحالة</th><th></th></tr></thead>
+        <tbody id="inv-tb"></tbody></table></div>
+      <div class="pagination" id="pag-inv-tb"></div>
+    </div>
+  </div>
+
+  <!-- SALES -->
+  <div class="page" id="p-sales">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-receipt color-accent"></i> فواتير البيع</h3>
+        <div class="flex-gap6">
+          <select id="sal-filter" onchange="_pg['sal-tb']=1;renderSales()" class="compact-select">
+            <option value="">كل الحالات</option>
+            <option value="pending">غير مسلَّمة</option>
+            <option value="delivered">مسلَّمة</option>
+            <option value="paid">مسددة كاملاً</option>
+            <option value="partial">مسددة جزئياً</option>
+          </select>
+          <input type="date" id="sal-date-from" onchange="_pg['sal-tb']=1;renderSales()" class="compact-input" title="من تاريخ">
+          <input type="date" id="sal-date-to" onchange="_pg['sal-tb']=1;renderSales()" class="compact-input" title="إلى تاريخ">
+          <button class="btn btn-sm btn-secondary" onclick="exportSales()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm" onclick="printSalesPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+          <button class="btn btn-sm btn-amber" onclick="openSettleForCustomer()" title="تسوية / خصم من فواتير زبون"><i class="ti ti-discount"></i> تسوية</button>
+          <button class="btn btn-sm" onclick="openModal('m-reverse-settle');loadReverseSettlements()" title="عكس / حذف تسوية"><i class="ti ti-undo"></i></button>
+          <button class="btn btn-sm" onclick="openModal('m-settle-log');renderSettleLog()" title="سجل التسويات"><i class="ti ti-history"></i></button>
+          <button class="btn btn-sm btn-success" onclick="openCollectStandalone()" title="استلام دفعة من زبون"><i class="ti ti-cash"></i> استلام دفعة</button>
+          <button class="btn btn-primary" onclick="openModal('m-invoice')"><i class="ti ti-plus"></i> فاتورة جديدة</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>رقم الفاتورة</th><th>الزبون</th><th>التاريخ</th><th>الإجمالي</th><th>المحصَّل</th><th>المتبقي</th><th>حالة التسليم</th><th>حالة الدفع</th><th></th></tr></thead><tbody id="sal-tb"></tbody></table></div>
+      <div class="pagination" id="pag-sal-tb"></div>
+    </div>
+  </div>
+
+  <!-- RETURNS -->
+  <div class="page" id="p-returns">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-receipt-refund color-red"></i> مرتجع المبيعات</h3>
+        <div class="flex-gap6">
+          <select id="ret-qc-filter" onchange="_pg['ret-tb']=1;renderRets()" class="compact-select">
+            <option value="">كل الحالات</option>
+            <option value="pending">قيد المراجعة</option>
+            <option value="passed">مقبول</option>
+            <option value="failed">مرفوض</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="exportReturns()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm" onclick="printReturnsPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+          <button class="btn btn-primary" onclick="openModal('m-return')"><i class="ti ti-plus"></i> تسجيل مرتجع</button>
+        </div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>رقم المرتجع</th><th>الفاتورة</th><th>الزبون</th><th>المبلغ</th><th>السبب</th><th>فحص الجودة</th><th>التاريخ</th></tr></thead><tbody id="ret-tb"></tbody></table></div>
+      <div class="pagination" id="pag-ret-tb"></div>
+    </div>
+  </div>
+
+  <!-- PURCHASES -->
+  <div class="page" id="p-purchases">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-truck color-amber"></i> فواتير الشراء</h3>
+        <div class="flex-gap6">
+          <select id="pur-recv-filter" onchange="_pg['pur-tb']=1;renderPurs()" class="compact-select">
+            <option value="">كل الحالات</option>
+            <option value="yes">تم الاستلام</option>
+            <option value="no">لم يُسلَّم</option>
+          </select>
+          <input type="date" id="pur-date-from" onchange="_pg['pur-tb']=1;renderPurs()" style="font-size:11px;padding:5px 8px" title="من تاريخ">
+          <input type="date" id="pur-date-to" onchange="_pg['pur-tb']=1;renderPurs()" style="font-size:11px;padding:5px 8px" title="إلى تاريخ">
+          <button class="btn btn-sm btn-secondary" onclick="exportPurchases()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm" onclick="printPurchasesPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+          <button class="btn btn-primary" onclick="openModal('m-pur')"><i class="ti ti-plus"></i> فاتورة شراء جديدة</button>
+        </div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>رقم الفاتورة</th><th>المورد</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>حالة الدفع</th><th></th></tr></thead><tbody id="pur-tb"></tbody></table></div>
+      <div class="pagination" id="pag-pur-tb"></div>
+    </div>
+  </div>
+
+  <!-- SUPPLIER PAYMENTS -->
+  <div class="page" id="p-suppay">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-wallet color-teal"></i> دفعات الموردين</h3>
+        <div class="flex-gap6">
+          <input type="text" id="spay-search" placeholder="بحث..." oninput="debounce(() => {_pg['suppay-tb']=1;renderSupPays(this.value)})" class="compact-input" style="width:140px">
+          <input type="date" id="spay-date-from" onchange="_pg['suppay-tb']=1;renderSupPays()" class="compact-input" title="من تاريخ">
+          <input type="date" id="spay-date-to" onchange="_pg['suppay-tb']=1;renderSupPays()" class="compact-input" title="إلى تاريخ">
+          <button class="btn btn-sm btn-secondary" onclick="exportSupplierPayments()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm" onclick="printSupplierPaymentsPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+          <button class="btn btn-sm btn-amber" onclick="openSupSettlement()" title="تسوية / خصم من فواتير شراء"><i class="ti ti-discount"></i> تسوية مورد</button>
+          <button class="btn btn-primary" onclick="openModal('m-suppay')"><i class="ti ti-plus"></i> تسجيل دفعة</button>
+        </div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>رقم الدفعة</th><th>المورد</th><th>فاتورة الشراء</th><th>المبلغ</th><th>طريقة الدفع</th><th>التاريخ</th></tr></thead><tbody id="suppay-tb"></tbody></table></div>
+      <div class="pagination" id="pag-suppay-tb"></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="page" id="p-customers">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-user-circle color-purple"></i> الزبائن</h3>
+        <button class="btn btn-sm btn-secondary" onclick="exportCustomers()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+        <button class="btn btn-sm" onclick="printCustomersPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+        <button class="btn btn-primary" onclick="openModal('m-cust')"><i class="ti ti-plus"></i> زبون جديد</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>الاسم</th><th>الهاتف</th><th>ذمة مدينة</th><th>إجمالي مبيعات</th><th>الحالة</th><th></th></tr></thead><tbody id="cust-tb"></tbody></table></div>
+      <div class="pagination" id="pag-cust-tb"></div>
+    </div>
+  </div>
+
+  <!-- SUPPLIERS -->
+  <div class="page" id="p-suppliers">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-users color-cyan"></i> الموردون</h3>
+        <button class="btn btn-sm btn-secondary" onclick="exportSuppliers()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+        <button class="btn btn-sm" onclick="printSuppliersPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+        <button class="btn btn-primary" onclick="openModal('m-sup')"><i class="ti ti-plus"></i> مورد جديد</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>الاسم</th><th>الهاتف</th><th>العنوان</th><th>ذمة دائنة</th><th>إجمالي مشتريات</th><th>الحالة</th></tr></thead><tbody id="sup-tb"></tbody></table></div>
+      <div class="pagination" id="pag-sup-tb"></div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div class="page" id="p-users">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-users-pin color-accent"></i> حسابات المستخدمين</h3>
+        <div class="flex-gap6">
+          <select id="user-role-filter" onchange="_pg['user-tb']=1;renderUsers()" class="compact-select">
+            <option value="">كل الصلاحيات</option>
+            <option value="admin">مشرف</option>
+            <option value="sales">مبيعات</option>
+            <option value="inventory">مخازن</option>
+          </select>
+          <select id="user-status-filter" onchange="_pg['user-tb']=1;renderUsers()" class="compact-select">
+            <option value="">كل الحالات</option>
+            <option value="active">نشط</option>
+            <option value="suspended">موقوف</option>
+            <option value="inactive">غير نشط</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="exportUsers()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm" onclick="printUsersPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+          <button class="btn btn-primary" onclick="openModal('m-user')"><i class="ti ti-plus"></i> مستخدم جديد</button>
+        </div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>الاسم</th><th>اسم الحساب</th><th>الصلاحية</th><th>الحالة</th><th></th></tr></thead><tbody id="user-tb"></tbody></table></div>
+      <div class="pagination" id="pag-user-tb"></div>
+    </div>
+  </div>
+
+  <!-- COMPANIES -->
+  <div class="page" id="p-companies">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-building color-accent"></i> إدارة الشركات</h3>
+        <div class="flex-gap6"></div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>اسم الشركة</th><th>الرمز</th><th>البلد</th><th>الحالة</th><th>الحالية</th><th></th></tr></thead><tbody id="company-tb"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="p-settings">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-settings color-accent"></i> الإعدادات</h3></div>
+      <div class="card-body flex-gap6" style="flex-direction:column;gap:16px">
+        <div class="fg" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <label>وضع التطبيق</label>
+            <div class="text-muted">تبديل بين الوضع النهاري والليلي</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="theme-btn" onclick="toggleTheme()" title="تغيير الوضع"><i class="ti ti-moon"></i> نهاري</button>
+        </div>
+        <div class="fg" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <label>بيانات المؤسسة</label>
+            <div class="text-muted">الاسم الحالي: <span id="settings-company-name"></span></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="openCompanyModal(null)" title="إضافة شركة جديدة"><i class="ti ti-building"></i> إضافة شركة</button>
+        </div>
+        <div class="fg" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <label>المزامنة</label>
+            <div class="text-muted">مزامنة البيانات مع السحابة</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" id="sync-btn" style="display:none" onclick="syncCloud()" title="مزامنة السحابة"><i class="ti ti-refresh"></i> مزامنة</button>
+            <span id="sync-status" class="color-accent" style="font-size:11px;display:none">متصل</span>
+          </div>
+        </div>
+        <div class="fg" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <label>حسابات المستخدمين</label>
+            <div class="text-muted">إدارة صلاحيات المستخدمين للمؤسسة</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openUsersPage()" title="إدارة المستخدمين"><i class="ti ti-users-pin"></i> إدارة المستخدمين</button>
+        </div>
+        <div class="fg" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <label>النسخ الاحتياطي</label>
+            <div class="text-muted">تصدير البيانات كملف JSON أو استيرادها</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="exportLocalBackup()" title="تصدير نسخة احتياطية"><i class="ti ti-download"></i> تصدير</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()" title="استيراد من ملف"><i class="ti ti-upload"></i> استيراد</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importLocalBackup(event)">
+            <button class="btn btn-primary btn-sm" onclick="saveCloudBackup()" title="حفظ في السحابة"><i class="ti ti-cloud-upload"></i> حفظ سحابي</button>
+          </div>
+        </div>
+        <div id="backup-list" style="display:none">
+          <label>النسخ الاحتياطية المحفوظة</label>
+          <div id="backup-items" class="mt-6" style="max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOA -->
+  <div class="page" id="p-soa">
+    <div class="card mb-12">
+      <div class="flex-gap10 items-end flex-wrap">
+        <div class="fg" style="flex:1;min-width:140px"><label>نوع الكشف</label><select id="soa-type" onchange="updateSOASelector()"><option value="customer">زبون</option><option value="supplier">مورد</option></select></div>
+        <div class="fg" style="flex:2;min-width:160px"><label id="soa-cust-label">اختر الزبون</label><select id="soa-cust" onchange="renderSOA()"><option value="">-- اختر جهة --</option></select></div>
+        <div class="fg"><label>من</label><input type="date" id="soa-from" onchange="renderSOA()"></div>
+        <div class="fg"><label>إلى</label><input type="date" id="soa-to" onchange="renderSOA()"></div>
+        <button class="btn btn-primary" onclick="printSOA()"><i class="ti ti-printer"></i> طباعة</button>
+        <button class="btn btn-sm btn-secondary" onclick="exportSOA()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i></button>
+      </div>
+    </div>
+    <div id="soa-out"></div>
+  </div>
+
+  <!-- FINANCE -->
+  <div class="page" id="p-finance">
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card green"><div class="stat-lbl">النقدية الواردة</div><div class="stat-val" id="f-ci">0.000</div><div class="stat-sub">من مبيعات نقدية</div></div>
+      <div class="stat-card blue"><div class="stat-lbl">صكوك بنكية واردة</div><div class="stat-val" id="f-chv">0.000</div><div class="stat-sub">قيد التحصيل</div></div>
+      <div class="stat-card red"><div class="stat-lbl">مدفوعات للموردين</div><div class="stat-val" id="f-sup-out">0.000</div><div class="stat-sub">خروج من الخزينة</div></div>
+    </div>
+    <div class="flex-gap6 mb-10">
+      <button class="btn btn-sm btn-secondary" onclick="exportFinance()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+      <button class="btn btn-sm" onclick="printFinancePDF()" title="طباعة / PDF"><i class="ti ti-printer"></i> PDF</button>
+    </div>
+    <div class="flex-gap8 flex-wrap mb-12">
+      <input type="text" id="fin-local-search" class="input" placeholder="بحث في الحركات المالية..." style="max-width:220px;font-size:12px;padding:5px 8px" oninput="renderFin()">
+      <input type="date" id="fin-date-from" class="input" style="font-size:12px;padding:5px 8px" onchange="renderFin()">
+      <span style="font-size:11px;color:var(--text-muted)">الى</span>
+      <input type="date" id="fin-date-to" class="input" style="font-size:12px;padding:5px 8px" onchange="renderFin()">
+      <select id="fin-type-filter" class="input" style="max-width:160px;font-size:12px;padding:5px 8px" onchange="renderFin()">
+        <option value="">الكل</option>
+        <option value="cash">نقدية</option>
+        <option value="check">صكوك</option>
+        <option value="supplier">مدفوعات موردين</option>
+        <option value="credit">ذمم مدينة</option>
+      </select>
+    </div>
+    <div class="tabs">
+      <div class="tab on" onclick="finTab('cash',this)">النقدية الواردة</div>
+      <div class="tab" onclick="finTab('check',this)">الصكوك الواردة</div>
+      <div class="tab" onclick="finTab('supout',this)">مدفوعات للموردين</div>
+      <div class="tab" onclick="finTab('credit',this)">ذمم مدينة</div>
+    </div>
+    <div id="fin-cash"><div class="card"><div class="card-hd"><h3>حركات النقدية الواردة</h3></div><div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>الزبون / المورد</th><th>المبلغ</th></tr></thead><tbody id="cash-tb"></tbody></table></div></div></div>
+    <div id="fin-check" style="display:none"><div class="card"><div class="card-hd"><h3>الصكوك المستلمة</h3></div><div class="tbl-wrap"><table><thead><tr><th>البيان</th><th>التاريخ</th><th>الزبون</th><th>القيمة</th><th>الحالة</th></tr></thead><tbody id="chk-tb"></tbody></table></div></div></div>
+    <div id="fin-supout" style="display:none"><div class="card"><div class="card-hd"><h3>المدفوعات للموردين</h3></div><div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المورد</th><th>المبلغ</th><th>طريقة الدفع</th></tr></thead><tbody id="supout-tb"></tbody></table></div></div></div>
+    <div id="fin-credit" style="display:none"><div class="card"><div class="card-hd"><h3>الذمم المدينة (آجَل مستحق)</h3></div><div class="tbl-wrap"><table><thead><tr><th>الفاتورة</th><th>الزبون</th><th>الإجمالي</th><th>المحصَّل</th><th>المتبقي</th><th>تاريخ الفاتورة</th></tr></thead><tbody id="crd-tb"></tbody></table></div></div></div>
+  </div>
+
+  <!-- P&L -->
+  <div class="page" id="p-pl">
+    <div class="stats-grid">
+      <div class="stat-card green"><div class="stat-lbl">إيرادات المبيعات</div><div class="stat-val" id="pl-rev">0.000</div><div class="stat-sub">د.ل</div></div>
+      <div class="stat-card red"><div class="stat-lbl">تكلفة البضاعة</div><div class="stat-val" id="pl-cogs">0.000</div><div class="stat-sub">بسعر الشراء</div></div>
+      <div class="stat-card blue"><div class="stat-lbl">إجمالي الربح</div><div class="stat-val" id="pl-gp">0.000</div><div class="stat-sub">د.ل</div></div>
+      <div class="stat-card purple"><div class="stat-lbl">هامش الربح</div><div class="stat-val" id="pl-margin">0%</div><div class="stat-sub">من الإيرادات</div></div>
+    </div>
+    <div class="flex-gap6 mb-10">
+      <button class="btn btn-sm btn-secondary" onclick="exportPL()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+      <button class="btn btn-sm" onclick="printPLPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i> PDF</button>
+    </div>
+    <div class="flex-gap8 flex-wrap mb-12">
+      <input type="text" id="pl-local-search" class="input" placeholder="بحث في الأصناف أو الأرباح..." style="max-width:220px;font-size:12px;padding:5px 8px" oninput="renderPL()">
+      <input type="date" id="pl-date-from" class="input" style="font-size:12px;padding:5px 8px" onchange="renderPL()">
+      <span style="font-size:11px;color:var(--text-muted)">الى</span>
+      <input type="date" id="pl-date-to" class="input" style="font-size:12px;padding:5px 8px" onchange="renderPL()">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-hd"><h3><i class="ti ti-chart-bar icon-green"></i> تفصيل الأرباح بالصنف</h3></div>
+        <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>الإيراد</th><th>التكلفة</th><th>الربح</th><th>هامش %</th></tr></thead><tbody id="pl-tb"></tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3><i class="ti ti-chart-donut icon-accent"></i> مقارنة الأرباح</h3></div>
+        <div style="padding:12px;height:280px"><canvas id="pl-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT -->
+  <div class="page" id="p-audit">
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-shield-check icon-accent"></i> سجل التدقيق</h3>
+        <div class="flex-gap6">
+          <button class="btn btn-sm btn-secondary" onclick="exportAudit()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm" onclick="printAuditPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i> PDF</button>
+          <span style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">للقراءة فقط</span>
+        </div></div>
+      <div class="flex-gap8 flex-wrap" style="padding:0 14px 12px">
+        <input type="text" id="audit-local-search" class="input" placeholder="بحث في السجلات..." style="max-width:200px;font-size:12px;padding:5px 8px" oninput="renderAudit()">
+        <select id="audit-user-filter" class="input" style="max-width:150px;font-size:12px;padding:5px 8px" onchange="renderAudit()">
+          <option value="">كل المستخدمين</option>
+        </select>
+        <select id="audit-action-filter" class="input" style="max-width:160px;font-size:12px;padding:5px 8px" onchange="renderAudit()">
+          <option value="">كل الإجراءات</option>
+          <option value="إنشاء">إنشاء</option>
+          <option value="تعديل">تعديل</option>
+          <option value="حذف">حذف</option>
+          <option value="تحصيل">تحصيل</option>
+          <option value="دفعة">دفعة</option>
+          <option value="دخول">دخول</option>
+        </select>
+      </div>
+      <div id="audit-list" style="max-height:600px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- HRM -->
+  <div class="page" id="p-hrm">
+    <!-- Notifications -->
+    <div id="hrm-notifications" class="mb-12"></div>
+    <!-- Tabs -->
+    <div class="flex-gap6 mb-16 flex-wrap">
+      <button class="btn btn-sm btn-primary" onclick="showHRMTab('hrm-employees')"><i class="ti ti-users"></i> الموظفون</button>
+      <button class="btn btn-sm" onclick="showHRMTab('hrm-attendance')"><i class="ti ti-clock"></i> الحضور</button>
+      <button class="btn btn-sm" onclick="showHRMTab('hrm-advances')"><i class="ti ti-wallet"></i> السلف والقروض</button>
+      <button class="btn btn-sm" onclick="showHRMTab('hrm-payroll')"><i class="ti ti-cash"></i> الرواتب</button>
+      <button class="btn btn-sm" onclick="showHRMTab('hrm-cash-ledger')"><i class="ti ti-notebook"></i> سجل الخزينة</button>
+      <button class="btn btn-sm" onclick="showHRMTab('hrm-reports')"><i class="ti ti-chart-bar"></i> التقارير</button>
+    </div>
+
+    <!-- TAB: EMPLOYEES -->
+    <div id="hrm-employees" class="hrm-tab">
+      <div class="card mb-14">
+      <div class="card-hd">
+        <h3><i class="ti ti-user-plus icon-accent"></i> إضافة موظف جديد</h3>
+        <div class="flex-gap6">
+          <button class="btn btn-sm" onclick="loadEmployeeDraft()" title="استرجاع مسودة"><i class="ti ti-clipboard"></i> مسودة</button>
+          <button class="btn btn-sm" onclick="clearEmployeeDraft()" title="مسح المسودة"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- SECTION 1: Basic Info -->
+        <div class="hrm-section" data-open="true">
+          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-user icon-accent"></i> البيانات الأساسية</h4>
+              <i class="ti ti-chevron-down"></i>
+            </div>
+            <div class="hrm-section-body">
+              <div class="form-grid g3">
+                <div class="fg"><label>رقم الموظف * <span class="hrm-auto-tag" id="hrm-no-tag">تلقائي</span></label><input id="hrm-emp-no" placeholder="EMP-001" oninput="validateEmployeeField(this,'required')"></div>
+                <div class="fg"><label>الاسم الكامل * <span class="hrm-must">*</span></label><input id="hrm-emp-name" placeholder="الاسم الكامل" oninput="validateEmployeeField(this,'required');saveEmployeeDraft()"></div>
+                <div class="fg"><label>الاسم بالعربية</label><input id="hrm-emp-namear" placeholder="الاسم بالعربية" oninput="saveEmployeeDraft()"></div>
+              </div>
+              <div class="form-grid g3">
+                <div class="fg"><label>رقم الهوية</label><input id="hrm-emp-natid" placeholder="رقم الهوية / الإقامة" oninput="saveEmployeeDraft()"></div>
+                <div class="fg"><label>الهاتف</label><input id="hrm-emp-phone" placeholder="09XXXXXXXX" oninput="saveEmployeeDraft()"></div>
+                <div class="fg"><label>البريد الإلكتروني</label><input id="hrm-emp-email" type="email" placeholder="name@company.com" oninput="saveEmployeeDraft()"></div>
+              </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Job Info -->
+        <div class="hrm-section" data-open="true">
+          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-briefcase icon-green"></i> بيانات الوظيفة</h4>
+              <i class="ti ti-chevron-down"></i>
+            </div>
+            <div class="hrm-section-body">
+              <div class="form-grid g3">
+                <div class="fg"><label>القسم</label><input id="hrm-emp-dept" placeholder="المبيعات / المحاسبة..." oninput="saveEmployeeDraft()" list="hrm-dept-list"><datalist id="hrm-dept-list"></datalist></div>
+                <div class="fg"><label>المنصب</label><input id="hrm-emp-pos" placeholder="محاسب / مندوب مبيعات..." oninput="saveEmployeeDraft()"></div>
+                <div class="fg"><label>العنوان</label><input id="hrm-emp-addr" placeholder="المدينة / الحي" oninput="saveEmployeeDraft()"></div>
+              </div>
+              <div class="form-grid g4">
+                <div class="fg"><label>نوع العقد *</label>
+                  <select id="hrm-emp-contract" onchange="onContractTypeChange();saveEmployeeDraft()">
+                    <option value="full_time">دوام كامل</option>
+                    <option value="part_time">دوام جزئي</option>
+                    <option value="hourly">بالساعة</option>
+                    <option value="contract">عقد</option>
+                  </select>
+                </div>
+                <div class="fg"><label>تاريخ الالتحاق *</label><input id="hrm-emp-start" type="date" onchange="saveEmployeeDraft()"></div>
+                <div class="fg"><label>البنك</label><input id="hrm-emp-bank" placeholder="اسم البنك" oninput="saveEmployeeDraft()"></div>
+                <div class="fg"><label>الحساب البنكي</label><input id="hrm-emp-bankacc" placeholder="رقم الحساب" oninput="saveEmployeeDraft()"></div>
+              </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Salary -->
+        <div class="hrm-section" data-open="true">
+          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-cash icon-amber"></i> الراتب والأجور</h4>
+            <i class="ti ti-chevron-down"></i>
+          </div>
+          <div class="hrm-section-body">
+              <div class="form-grid g4">
+                <div class="fg"><label>الراتب الشهري (د.ل)</label><input id="hrm-emp-salary" type="number" step="0.001" min="0" placeholder="0.000" oninput="calcHourlyFromSalary();saveEmployeeDraft()"></div>
+                <div class="fg"><label>أجر الساعة (د.ل)</label><input id="hrm-emp-rate" type="number" step="0.001" min="0" placeholder="0.000" oninput="calcSalaryFromHourly();saveEmployeeDraft()"></div>
+                <div class="fg"><label>أجر الأوفرتايم (د.ل)</label><input id="hrm-emp-ot" type="number" step="0.001" min="0" placeholder="تلقائي = 1.5× الساعة" oninput="saveEmployeeDraft()"></div>
+                <div class="fg"><label>ساعات العمل/يوم</label><input id="hrm-emp-hours" type="number" min="1" max="24" value="8" oninput="saveEmployeeDraft()"></div>
+              </div>
+              <div class="accounting-note acn-green mt-8" id="hrm-salary-hint" style="display:none">
+                <i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>
+                <span id="hrm-salary-hint-text"></span>
+              </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: Notes -->
+        <div class="hrm-section">
+          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-notes icon-purple"></i> ملاحظات</h4>
+            <i class="ti ti-chevron-down"></i>
+          </div>
+            <div class="hrm-section-body">
+              <div class="fg"><textarea id="hrm-emp-notes" rows="2" placeholder="ملاحظات إضافية..." oninput="saveEmployeeDraft()" style="width:100%;resize:vertical"></textarea></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+          <div class="flex-gap6">
+            <button class="btn btn-sm btn-outline" onclick="previewEmployee()"><i class="ti ti-eye"></i> معاينة</button>
+            <button class="btn btn-sm btn-outline" onclick="clearEmployeeForm()"><i class="ti ti-eraser"></i> مسح</button>
+          </div>
+          <button class="btn btn-primary" onclick="addEmployee()"><i class="ti ti-check"></i> إضافة موظف</button>
+        </div>
+      </div>
+      <div class="card">
+      <div class="card-hd">
+        <h3><i class="ti ti-users icon-accent"></i> قائمة الموظفين</h3>
+        <div class="flex-gap6" style="flex-wrap:wrap">
+            <input id="hrm-emp-search" placeholder="بحث..." oninput="renderHRMEmployees()" style="width:120px">
+            <select id="hrm-emp-status" onchange="renderHRMEmployees()">
+              <option value="">الكل</option>
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+              <option value="terminated">منتهي</option>
+            </select>
+            <select id="hrm-emp-dept-filter" onchange="renderHRMEmployees()">
+              <option value="">كل الأقسام</option>
+            </select>
+            <select id="hrm-emp-contract-filter" onchange="renderHRMEmployees()">
+              <option value="">كل العقود</option>
+              <option value="full_time">دوام كامل</option>
+              <option value="part_time">دوام جزئي</option>
+              <option value="hourly">بالساعة</option>
+              <option value="contract">عقد</option>
+            </select>
+            <button class="btn btn-sm" onclick="printEmployeeList()" title="طباعة"><i class="ti ti-printer"></i></button>
+            <button class="btn btn-sm" onclick="exportHRMEmployees()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i></button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table class="table"><thead><tr><th>رقم</th><th>الاسم</th><th>نوع العقد</th><th>القسم</th><th>المنصب</th><th>أجر الساعة</th><th>الحالة</th><th></th></tr></thead><tbody id="hrm-emp-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- TAB: ATTENDANCE -->
+    <div id="hrm-attendance" class="hrm-tab" style="display:none">
+      <div class="card mb-14">
+        <div class="card-hd"><h3><i class="ti ti-clock icon-accent"></i> تسجيل حضور</h3></div>
+        <div class="modal-body">
+          <div class="form-grid g3 mb-10">
+            <div class="fg"><label>الموظف *</label><select id="hrm-att-emp"><option value="">— اختر —</option></select></div>
+            <div class="fg"><label>التاريخ</label><input id="hrm-att-date-add" type="date"></div>
+            <div class="fg"><label>الحالة</label>
+              <select id="hrm-att-status">
+                <option value="present">حاضر</option>
+                <option value="absent">غائب</option>
+                <option value="late">متأخر</option>
+                <option value="half_day">نصف يوم</option>
+                <option value="leave">إجازة</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid g3">
+            <div class="fg"><label>وقت الدخول</label><input id="hrm-att-checkin" type="time"></div>
+            <div class="fg"><label>وقت الخروج</label><input id="hrm-att-checkout" type="time"></div>
+            <div class="fg"><label>ملاحظات</label><input id="hrm-att-notes" placeholder="ملاحظات"></div>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" onclick="saveAttendance()"><i class="ti ti-check"></i> تسجيل</button></div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <h3><i class="ti ti-calendar icon-accent"></i> سجل الحضور</h3>
+          <div class="flex-gap6" style="flex-wrap:wrap">
+            <input id="hrm-att-date" type="date" onchange="renderHRMAttendance()">
+            <input id="hrm-att-search" placeholder="بحث..." oninput="renderHRMAttendance()" style="width:120px">
+            <button class="btn btn-sm" onclick="exportHRMAttendance()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i></button>
+            <button class="btn btn-sm" onclick="exportAttendancePDF()" title="تصدير PDF"><i class="ti ti-file-code"></i></button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table class="table"><thead><tr><th>رقم</th><th>الاسم</th><th>دخول</th><th>خروج</th><th>الساعات</th><th>الحالة</th><th></th></tr></thead><tbody id="hrm-att-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- TAB: ADVANCES -->
+    <div id="hrm-advances" class="hrm-tab" style="display:none">
+      <div class="card mb-14">
+        <div class="card-hd"><h3><i class="ti ti-wallet" icon-accent"></i> صرف سلفة / قرض</h3></div>
+        <div class="modal-body">
+          <div class="form-grid g3 mb-10">
+            <div class="fg"><label>الموظف *</label><select id="hrm-adv-emp"><option value="">— اختر —</option></select></div>
+            <div class="fg"><label>النوع</label>
+              <select id="hrm-adv-type">
+                <option value="advance">سلفة</option>
+                <option value="loan">قرض</option>
+              </select>
+            </div>
+            <div class="fg"><label>المبلغ (د.ل) *</label><input id="hrm-adv-amount" type="number" step="0.001" min="0" placeholder="0.000"></div>
+          </div>
+          <div class="form-grid g3 mb-10">
+            <div class="fg"><label>القسط الشهري (د.ل)</label><input id="hrm-adv-monthly" type="number" step="0.001" min="0" placeholder="للقروض فقط"></div>
+            <div class="fg"><label>عدد الأقساط</label><input id="hrm-adv-total" type="number" min="1" value="1"></div>
+            <div class="fg"><label>التاريخ</label><input id="hrm-adv-date" type="date"></div>
+          </div>
+          <div class="fg"><label>السبب</label><input id="hrm-adv-purpose" placeholder="سبب السلفة"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" onclick="addAdvance()"><i class="ti ti-check"></i> صرف</button></div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <h3><i class="ti ti-list" icon-accent"></i> سجل السلف والقروض</h3>
+          <div class="flex-gap6">
+            <input id="hrm-adv-search" placeholder="بحث..." oninput="renderHRMAdvances()" style="width:120px">
+            <select id="hrm-adv-status" onchange="renderHRMAdvances()">
+              <option value="">الكل</option>
+              <option value="active">نشط</option>
+              <option value="completed">مسدد</option>
+              <option value="cancelled">ملغي</option>
+            </select>
+            <button class="btn btn-sm" onclick="exportHRMAdvances()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i></button>
+            <button class="btn btn-sm" onclick="exportAdvancesPDF()" title="تصدير PDF"><i class="ti ti-file-code"></i></button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table class="table"><thead><tr><th>التاريخ</th><th>الموظف</th><th>النوع</th><th>المبلغ</th><th>المتبقي</th><th>الأقساط</th><th>الحالة</th><th></th></tr></thead><tbody id="hrm-adv-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- TAB: PAYROLL -->
+    <div id="hrm-payroll" class="hrm-tab" style="display:none">
+      <div class="card mb-14">
+        <div class="card-hd"><h3><i class="ti ti-calculator" icon-accent"></i> توليد رواتب</h3></div>
+        <div class="modal-body">
+          <div class="form-grid g2">
+            <div class="fg"><label>الفترة (YYYY-MM) *</label><input id="hrm-pay-gen-period" type="month" placeholder="2026-06"></div>
+            <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="generatePayroll()"><i class="ti ti-player-play"></i> توليد الرواتب</button></div>
+          </div>
+          <div class="accounting-note acn-blue mt-10">
+            <i class="ti ti-info-circle info-icon"></i>
+            <span>سيتم توليد رواتب لجميع الموظفين النشطين بناءً على ساعات العمل المسجلة في سجل الحضور. الصيغة: <strong>(ساعات العمل × أجر الساعة) + (أوفرتايم × أجر الأوفرتايم) - أقساط السلف</strong></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <h3><i class="ti ti-cash" icon-accent"></i> الرواتب</h3>
+          <div class="flex-gap6">
+            <input id="hrm-pay-period" type="month" onchange="renderHRMPayroll()">
+            <select id="hrm-pay-status" onchange="renderHRMPayroll()">
+              <option value="">الكل</option>
+              <option value="draft">مسودة</option>
+              <option value="approved">معتمدة</option>
+              <option value="paid">مدفوعة</option>
+            </select>
+            <button class="btn btn-sm" onclick="printPayroll(G('hrm-pay-period')?.value||'')" title="طباعة كشف"><i class="ti ti-printer"></i></button>
+            <button class="btn btn-sm" onclick="exportHRMPayroll()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i></button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table class="table"><thead><tr><th>الفترة</th><th>رقم</th><th>الموظف</th><th>الساعات</th><th>الإجمالي</th><th>الخصومات</th><th>الصافي</th><th>الحالة</th><th></th></tr></thead><tbody id="hrm-pay-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- TAB: CASH LEDGER -->
+    <div id="hrm-cash-ledger" class="hrm-tab" style="display:none">
+      <div class="card mb-14">
+        <div class="card-hd"><h3><i class="ti ti-adjustments" icon-accent"></i> تسوية يدوية</h3></div>
+        <div class="modal-body">
+          <div class="form-grid g3">
+            <div class="fg"><label>المبلغ (د.ل) — سالب للخصم</label><input id="hrm-cl-adj-amount" type="number" step="0.001" placeholder="0.000"></div>
+            <div class="fg"><label>السبب *</label><input id="hrm-cl-adj-reason" placeholder="سبب التسوية"></div>
+            <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="adjustCashLedger()"><i class="ti ti-check"></i> تسوية</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <h3><i class="ti ti-notebook" icon-accent"></i> سجل الخزينة</h3>
+          <div class="flex-gap6">
+            <input id="hrm-cl-from" type="date" onchange="renderHRMCashLedger()">
+            <input id="hrm-cl-to" type="date" onchange="renderHRMCashLedger()">
+            <select id="hrm-cl-cat" onchange="renderHRMCashLedger()">
+              <option value="">الكل</option>
+              <option value="advance">سلف</option>
+              <option value="loan_disbursement">قروض</option>
+              <option value="loan_repayment">تسديد قروض</option>
+              <option value="payroll">رواتب</option>
+              <option value="adjustment">تسويات</option>
+            </select>
+            <span id="hrm-cl-balance" class="fw-bold" style="white-space:nowrap"></span>
+            <button class="btn btn-sm" onclick="exportHRMCashLedger()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i></button>
+            <button class="btn btn-sm" onclick="exportCashLedgerPDF()" title="تصدير PDF"><i class="ti ti-file-code"></i></button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table class="table"><thead><tr><th>التاريخ</th><th>الحركة</th><th>الرصيد</th><th>الفئة</th><th>الوصف</th><th>الموظف</th></tr></thead><tbody id="hrm-cl-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- TAB: REPORTS -->
+    <div id="hrm-reports" class="hrm-tab" style="display:none">
+      <div class="card mb-14">
+        <div class="card-hd">
+          <h3><i class="ti ti-chart-bar" icon-accent"></i> ملخص الرواتب</h3>
+          <div class="flex-gap6">
+            <input id="hrm-rpt-period" type="month" onchange="renderHRMReports()">
+          </div>
+        </div>
+        <div class="modal-body">
+          <div id="hrm-rpt-summary"></div>
+          <div id="hrm-rpt-advances" class="mt-10"></div>
+        </div>
+      </div>
+      <div class="hrm-chart-grid">
+        <div class="card"><div class="card-hd"><h3 class="fs-13">الرواتب حسب الموظف</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-payroll"></canvas></div></div>
+        <div class="card"><div class="card-hd"><h3 class="fs-13">الحضور اليوم</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-attendance"></canvas></div></div>
+        <div class="card"><div class="card-hd"><h3 class="fs-13">السلف حسب النوع</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-advances"></canvas></div></div>
+      </div>
+      <div class="card mt-14">
+        <div class="card-hd"><h3><i class="ti ti-star" icon-accent"></i> تقييم الأداء</h3></div>
+        <div class="modal-body">
+          <div class="form-grid g3 mb-10">
+            <div class="fg"><label>التاريخ</label><input id="hrm-perf-date" type="date"></div>
+            <div class="fg"><label>جودة العمل (1-5)</label><input id="hrm-perf-quality" type="number" min="1" max="5" value="3"></div>
+            <div class="fg"><label>الإنتاجية (1-5)</label><input id="hrm-perf-productivity" type="number" min="1" max="5" value="3"></div>
+          </div>
+          <div class="form-grid g3">
+            <div class="fg"><label>العمل الجماعي (1-5)</label><input id="hrm-perf-teamwork" type="number" min="1" max="5" value="3"></div>
+            <div class="fg"><label>الحضور (1-5)</label><input id="hrm-perf-attendance" type="number" min="1" max="5" value="3"></div>
+            <div class="fg"><label>ملاحظات</label><input id="hrm-perf-notes" placeholder="ملاحظات"></div>
+          </div>
+          <div class="fg mt-10"><label>عرض تقييمات موظف</label>
+            <div class="flex-gap6"><select id="hrm-perf-list-emp" onchange="renderPerformanceList()"><option value="">— اختر —</option></select>
+            <button class="btn btn-sm" onclick="exportPerformanceExcel()" title="تصدير Excel"><i class="ti ti-file-spreadsheet"></i></button>
+            <button class="btn btn-sm" onclick="exportPerformancePDF()" title="تصدير PDF"><i class="ti ti-file-code"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-14">
+        <div class="card-hd"><h3><i class="ti ti-list-check" icon-accent"></i> سجل التقييمات</h3></div>
+        <div class="tbl-wrap"><table class="table"><thead><tr><th>التاريخ</th><th>جودة</th><th>إنتاجية</th><th>فريق</th><th>المتوسط</th><th>التقدير</th></tr></thead><tbody id="hrm-perf-list-tbody"></tbody></table></div>
+      </div>
+
+      <!-- CUSTOM ALERTS -->
+      <div class="card mt-14">
+        <div class="card-hd"><h3><i class="ti ti-bell" icon-accent"></i> تنبيهات مخصصة</h3></div>
+        <div class="modal-body">
+          <div class="form-grid g4 mb-10">
+            <div class="fg"><label>نوع التنبيه</label>
+              <select id="hrm-alert-type">
+                <option value="absence">غياب متتالي</option>
+                <option value="late">تأخر متكرر</option>
+                <option value="high_advance">رصيد مرتفع</option>
+                <option value="no_checkout">بدون خروج</option>
+              </select>
+            </div>
+            <div class="fg"><label>الحد الأدنى</label><input id="hrm-alert-threshold" type="number" min="1" value="3"></div>
+            <div class="fg"><label>مفعّل</label><input id="hrm-alert-enabled" type="checkbox" checked style="margin-top:28px"></div>
+            <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="addCustomAlert()"><i class="ti ti-plus"></i> إضافة</button></div>
+          </div>
+          <div id="hrm-custom-alerts-list"></div>
+        </div>
+      </div>
+
+      <!-- COMPARATIVE REPORTS -->
+      <div class="card mt-14">
+        <div class="card-hd"><h3><i class="ti ti-building-community" icon-accent"></i> تقارير مقارنة — أقسام الموظفين</h3></div>
+        <div class="modal-body">
+          <div id="hrm-comparative"></div>
+          <div style="height:300px;margin-top:14px"><canvas id="hrm-chart-comparative"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /p-hrm -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- ITEM -->
+<div class="modal-backdrop" id="m-item">
+<div class="modal">
+  <div class="modal-hd"><h3><i class="ti ti-package" icon-accent"></i> صنف جديد</h3><button class="btn btn-icon" onclick="closeModal('m-item')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-grid g3 mb-10">
+      <div class="fg"><label>كود الصنف</label><input id="fi-code" placeholder="تلقائي" readonly></div>
+      <div class="fg"><label>باركود</label><input id="fi-barcode" placeholder="1234567890"></div>
+      <div class="fg"><label>الاسم *</label><input id="fi-name" placeholder="اسم الصنف"></div>
+    </div>
+    <div class="form-grid g4 mb-10">
+      <div class="fg"><label>سعر الشراء (د.ل)</label><input id="fi-buy" type="number" step="0.001" min="0" placeholder="0.000"></div>
+      <div class="fg"><label>سعر البيع (د.ل)</label><input id="fi-sell" type="number" step="0.001" min="0" placeholder="0.000"></div>
+      <div class="fg"><label>الرصيد الابتدائي</label><input id="fi-qty" type="number" min="0" placeholder="0"></div>
+      <div class="fg"><label>حد الأمان</label><input id="fi-reorder" type="number" min="0" placeholder="5"></div>
+    </div>
+    <div class="form-grid g2">
+      <div class="fg"><label>الوحدة</label><input id="fi-unit" placeholder="قطعة / كيلو / لتر"></div>
+      <div class="fg"><label>الفئة</label><input id="fi-cat" placeholder="إلكترونيات / غذاء..."></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-item')">إلغاء</button><button class="btn btn-primary" onclick="saveItem()"><i class="ti ti-check"></i> حفظ الصنف</button></div>
+</div></div>
+
+<!-- CUSTOMER -->
+<div class="modal-backdrop" id="m-cust">
+<div class="modal">
+  <div class="modal-hd"><h3><i class="ti ti-user-circle" icon-purple"></i> زبون جديد</h3><button class="btn btn-icon" onclick="closeModal('m-cust')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-grid g2">
+      <div class="fg"><label>الاسم *</label><input id="cu-name" placeholder="الاسم الكامل"></div>
+      <div class="fg"><label>الهاتف</label><input id="cu-phone" placeholder="09XXXXXXXX"></div>
+      <div class="fg"><label>العنوان</label><input id="cu-addr" placeholder="المدينة / الحي"></div>
+      <div class="fg"><label>رصيد افتتاحي (د.ل)</label><input id="cu-bal" type="number" step="0.001" value="0"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-cust')">إلغاء</button><button class="btn btn-primary" onclick="saveCust()"><i class="ti ti-check"></i> حفظ</button></div>
+</div></div>
+
+<!-- SUPPLIER -->
+<div class="modal-backdrop" id="m-sup">
+<div class="modal">
+  <div class="modal-hd"><h3><i class="ti ti-users" icon-cyan"></i> مورد جديد</h3><button class="btn btn-icon" onclick="closeModal('m-sup')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-grid g2">
+      <div class="fg"><label>الاسم *</label><input id="su-name" placeholder="الاسم الكامل"></div>
+      <div class="fg"><label>الهاتف</label><input id="su-phone" placeholder="09XXXXXXXX"></div>
+      <div class="fg"><label>العنوان</label><input id="su-addr" placeholder="المدينة"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-sup')">إلغاء</button><button class="btn btn-primary" onclick="saveSup()"><i class="ti ti-check"></i> حفظ</button></div>
+</div></div>
+
+<!-- SALES INVOICE -->
+<div class="modal-backdrop" id="m-invoice">
+<div class="modal modal-lg">
+  <div class="modal-hd"><h3><i class="ti ti-receipt" icon-accent"></i> فاتورة بيع جديدة</h3><button class="btn btn-icon" onclick="closeModal('m-invoice')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-blue mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>حفظ الفاتورة = تسجيل ذمة مدينة فقط. المخزون يُخصَم عند <strong>تأكيد التسليم</strong>. الخزينة تتحرك عند <strong>استلام الدفعة</strong>.</span>
+    </div>
+    <div class="form-grid g3 mb-10">
+      <div class="fg"><label>رقم الفاتورة</label><input id="si-num" readonly></div>
+      <div class="fg"><label>الزبون *</label><select id="si-cust"><option value="">-- اختر زبون --</option></select></div>
+      <div class="fg"><label>التاريخ</label><input id="si-date" type="date"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="flex-gap6 items-end mb-10 flex-wrap">
+      <div class="fg" style="flex:3;min-width:120px"><label>الصنف</label><select id="si-item-sel" onchange="autoSellPrice()"><option value="">-- اختر صنف --</option></select></div>
+      <div class="fg" style="flex:1;min-width:60px"><label>الكمية</label><input id="si-qty" type="number" min="1" value="1" oninput="calcSiLine()"></div>
+      <div class="fg" style="flex:1.2;min-width:70px"><label>السعر (د.ل)</label><input id="si-price" type="number" step="0.001" oninput="calcSiLine()"></div>
+      <div class="fg" style="flex:1;min-width:60px"><label>الخصم (د.ل)</label><input id="si-disc" type="number" step="0.001" value="0" oninput="calcSiLine()"></div>
+      <div class="fg" style="flex:1.2;min-width:70px"><label>إجمالي السطر</label><input id="si-ltot" readonly></div>
+      <button class="btn btn-primary btn-sm" onclick="addSiLine()" style="flex-shrink:0;align-self:flex-end"><i class="ti ti-plus"></i> إضافة</button>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الخصم</th><th>الإجمالي</th><th></th></tr></thead><tbody id="si-lines-tb"></tbody></table></div>
+    <div class="inv-total-bar">
+      <div><div class="inv-total-lbl">الصافي النهائي (ذمة مدينة)</div><div class="inv-tafseet" id="si-tafseet">—</div></div>
+      <div class="inv-total-val" id="si-tot">0.000 د.ل</div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModal('m-invoice')">إلغاء</button>
+    <button class="btn btn-primary" onclick="saveInv()"><i class="ti ti-device-floppy"></i> حفظ كمسودة وتسجيل الذمة</button>
+  </div>
+</div></div>
+
+<!-- COLLECT PAYMENT (from customer) -->
+<div class="modal-backdrop" id="m-collect">
+<div class="modal">
+  <div class="modal-hd"><h3><i class="ti ti-cash" icon-green"></i> استلام دفعة من الزبون</h3><button class="btn btn-icon" onclick="closeModal('m-collect')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-green mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>هذه العملية <strong>تُضيف للخزينة</strong> وتُخصَم من رصيد الزبون في كشف الحساب فقط. لا أثر على المخزون.</span>
+    </div>
+    <div id="collect-inv-info" style="background:var(--bg-elevated);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
+    <div class="form-grid g2 mb-10">
+      <div class="fg"><label>مبلغ الدفعة (د.ل) *</label><input id="col-amt" type="number" step="0.001" min="0.001" placeholder="0.000"></div>
+      <div class="fg"><label>التاريخ</label><input id="col-date" type="date"></div>
+    </div>
+    <div class="fg mb-10"><label>طريقة الدفع</label>
+      <div class="pay-chips" id="col-pay">
+        <div class="pay-chip sel" onclick="selPay('col-pay',this,'cash')"><i class="ti ti-cash"></i> نقدي</div>
+        <div class="pay-chip" onclick="selPay('col-pay',this,'check')"><i class="ti ti-credit-card"></i> صك بنكي</div>
+        <div class="pay-chip" onclick="selPay('col-pay',this,'transfer')"><i class="ti ti-building-bank"></i> تحويل</div>
+      </div>
+    </div>
+    <div id="col-check-row" class="fg" style="display:none"><label>رقم الصك</label><input id="col-check-num" placeholder="رقم الصك البنكي"></div>
+    <div class="fg"><label>ملاحظات</label><input id="col-notes" placeholder="اختياري"></div>
+    <input type="hidden" id="col-inv-id">
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-collect')">إلغاء</button><button class="btn btn-success" onclick="savePayment()"><i class="ti ti-check"></i> تسجيل الدفعة وتحديث الخزينة</button></div>
+</div></div>
+
+<!-- STANDALONE COLLECT PAYMENT (from customer — no invoice required) -->
+<div class="modal-backdrop" id="m-collect2">
+<div class="modal modal-xl">
+  <div class="modal-hd"><h3><i class="ti ti-cash" icon-green"></i> استلام دفعة من زبون</h3><button class="btn btn-icon" onclick="closeModal('m-collect2')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-green mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>استلام دفعة من الزبون <strong>تُضيف للخزينة</strong> وتُخصَم من رصيد الزبون. يمكنك ربط الدفعة بفاتورة محددة أو تسجيلها بشكل عام.</span>
+    </div>
+    <div class="form-grid g3 mb-12">
+      <div class="fg"><label>الزبون *</label><select id="col2-cust" onchange="renderCollect2Invs()"><option value="">-- اختر زبون --</option></select></div>
+      <div class="fg"><label>المبلغ (د.ل) *</label><input id="col2-amt" type="number" step="0.001" min="0.001" placeholder="0.000" oninput="recalcCollect2Preview()"></div>
+      <div class="fg"><label>التاريخ</label><input id="col2-date" type="date"></div>
+    </div>
+    <div id="col2-cust-summary" style="display:none;background:var(--bg-elevated);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
+    <div id="col2-invs" style="max-height:250px;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="fg mb-10"><label>طريقة الدفع</label>
+      <div class="pay-chips" id="col2-pay">
+        <div class="pay-chip sel" onclick="selPay('col2-pay',this,'cash')"><i class="ti ti-cash"></i> نقدي</div>
+        <div class="pay-chip" onclick="selPay('col2-pay',this,'check')"><i class="ti ti-credit-card"></i> صك بنكي</div>
+        <div class="pay-chip" onclick="selPay('col2-pay',this,'transfer')"><i class="ti ti-building-bank"></i> تحويل</div>
+      </div>
+    </div>
+    <div id="col2-check-row" class="fg" style="display:none"><label>رقم الصك</label><input id="col2-check-num" placeholder="رقم الصك البنكي"></div>
+    <div class="fg"><label>ملاحظات</label><input id="col2-notes" placeholder="اختياري"></div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-collect2')">إلغاء</button><button class="btn btn-success" onclick="saveCollect2()"><i class="ti ti-check"></i> تسجيل الاستلام</button></div>
+</div></div>
+
+<!-- DELIVER (sign off) -->
+<div class="modal-backdrop" id="m-deliver">
+<div class="modal">
+  <div class="modal-hd"><h3><i class="ti ti-truck-delivery" icon-teal"></i> تأكيد تسليم البضاعة</h3><button class="btn btn-icon" onclick="closeModal('m-deliver')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-amber mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>تأكيد التسليم <strong>يخصم الكميات من المخزون</strong> فقط. لا أثر على الخزينة ولا على كشف الحساب.</span>
+    </div>
+    <div id="deliver-inv-info" style="background:var(--bg-elevated);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
+    <div class="fg mb-10"><label>اسم المستلم *</label><input id="dlv-recv" placeholder="الاسم الكامل للمستلم"></div>
+    <div class="fg"><label>ملاحظات</label><input id="dlv-notes" placeholder="اختياري"></div>
+    <input type="hidden" id="dlv-inv-id">
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-deliver')">إلغاء</button><button class="btn btn-amber" onclick="confirmDeliver()"><i class="ti ti-check"></i> تأكيد التسليم وخصم المخزون</button></div>
+</div></div>
+
+<!-- SETTLEMENT (multi-invoice) -->
+<div class="modal-backdrop" id="m-settle">
+<div class="modal modal-xl">
+  <div class="modal-hd"><h3><i class="ti ti-discount" icon-amber"></i> تسوية / خصم من فواتير</h3><button class="btn btn-icon" onclick="closeModal('m-settle')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-amber mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>التسوية <strong>تخصم من إجمالي الفواتير المحددة</strong>. يمكنك تطبيقها على فاتورة واحدة أو عدة فواتير للزبون نفسه.</span>
+    </div>
+    <div class="form-grid g3 mb-12">
+      <div class="fg"><label>مبلغ الخصم (د.ل) *</label><input id="settle-amt" type="number" step="0.001" min="0.001" placeholder="0.000" oninput="recalcSettlePreview()"></div>
+      <div class="fg"><label>التاريخ</label><input id="settle-date" type="date"></div>
+      <div class="fg"><label>سبب التسوية *</label><input id="settle-reason" placeholder="خصم مبكر، بضاعة تالفة..."></div>
+    </div>
+    <div id="settle-cust-summary" style="display:none;background:var(--bg-elevated);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
+    <div class="flex-gap8 mb-12">
+      <label style="font-size:12px;color:var(--text-muted)">طريقة التوزيع:</label>
+      <div id="settle-mode-btns" class="flex-gap4">
+        <div class="settle-mode active" data-mode="auto" onclick="setSettleMode('auto')" style="padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;background:var(--accent);color:#fff;font-weight:600">تلقائي (قسمة على الجميع)</div>
+        <div class="settle-mode" data-mode="manual" onclick="setSettleMode('manual')" style="padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;background:var(--bg);border:1px solid var(--line);color:var(--text-secondary)">اختياري (تحديد يدوي)</div>
+      </div>
+    </div>
+    <div id="settle-invs" style="max-height:300px;overflow-y:auto"></div>
+    <input type="hidden" id="settle-cust-id">
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-settle')">إلغاء</button><button class="btn btn-amber" onclick="saveSettlement()"><i class="ti ti-check"></i> تطبيق التسوية</button></div>
+</div></div>
+
+<!-- PURCHASE -->
+<div class="modal-backdrop" id="m-pur">
+<div class="modal modal-lg">
+  <div class="modal-hd"><h3><i class="ti ti-truck" icon-amber"></i> فاتورة شراء جديدة</h3><button class="btn btn-icon" onclick="closeModal('m-pur')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-amber mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>فاتورة الشراء = <strong>ذمة دائنة للمورد</strong>. المخزون يُضاف عبر <strong>إذن الاستلام</strong>. الخزينة تتحرك عند <strong>تسجيل الدفعة للمورد</strong>.</span>
+    </div>
+    <div class="form-grid g3 mb-10">
+      <div class="fg"><label>رقم الفاتورة</label><input id="pi-num" readonly></div>
+      <div class="fg"><label>المورد *</label><select id="pi-sup"><option value="">-- اختر مورد --</option></select></div>
+      <div class="fg"><label>التاريخ</label><input id="pi-date" type="date"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="flex-gap6 items-end mb-10 flex-wrap">
+      <div class="fg" style="flex:3;min-width:120px">
+        <label>الصنف</label>
+        <div class="flex-gap6">
+          <select id="pi-item-sel" onchange="autoBuyPrice()" style="flex:1"><option value="">-- اختر صنف --</option></select>
+          <button class="btn btn-secondary btn-sm" onclick="openModal('m-item')" type="button" title="أضف صنف جديد" style="white-space:nowrap"><i class="ti ti-plus"></i> صنف جديد</button>
+        </div>
+      </div>
+      <div class="fg" style="flex:1;min-width:60px"><label>الكمية</label><input id="pi-qty" type="number" min="1" value="1" oninput="calcPiLine()"></div>
+      <div class="fg" style="flex:1.5;min-width:80px"><label>السعر (د.ل)</label><input id="pi-price" type="number" step="0.001" oninput="calcPiLine()"></div>
+      <div class="fg" style="flex:1.5;min-width:80px"><label>إجمالي السطر</label><input id="pi-ltot" readonly></div>
+      <button class="btn btn-primary btn-sm" onclick="addPiLine()" style="flex-shrink:0;align-self:flex-end"><i class="ti ti-plus"></i> إضافة</button>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th><th></th></tr></thead><tbody id="pi-lines-tb"></tbody></table></div>
+    <div class="inv-total-bar"><div class="inv-total-lbl">إجمالي الفاتورة (ذمة دائنة)</div><div class="inv-total-val" id="pi-tot">0.000 د.ل</div></div>
+    <div class="accounting-note acn-blue mt-8">
+      <input type="checkbox" id="pi-recv" style="width:auto;accent-color:var(--accent);flex-shrink:0">
+      <label for="pi-recv" style="cursor:pointer;font-size:11px">✅ تأكيد استلام البضاعة فور الحفظ (يُضيف الكميات للمخزون مباشرة)</label>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-pur')">إلغاء</button><button class="btn btn-primary" onclick="savePur()"><i class="ti ti-device-floppy"></i> حفظ فاتورة الشراء وتسجيل الذمة</button></div>
+</div></div>
+
+<!-- DELIVER PAYMENT TO SUPPLIER -->
+<div class="modal-backdrop" id="m-suppay">
+<div class="modal modal-xl">
+  <div class="modal-hd"><h3><i class="ti ti-wallet" icon-teal"></i> دفع للمورد</h3><button class="btn btn-icon" onclick="closeModal('m-suppay')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-red mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>الدفع للمورد <strong>يُخصَم من الخزينة</strong> ويُخصَم من ذمة المورد الدائنة. يمكنك ربط الدفعة بفاتورة شراء محددة أو تسجيلها بشكل عام.</span>
+    </div>
+    <div class="form-grid g3 mb-12">
+      <div class="fg"><label>المورد *</label><select id="sp-sup" onchange="updateSupPaySummary()"><option value="">-- اختر مورد --</option></select></div>
+      <div class="fg"><label>المبلغ (د.ل) *</label><input id="sp-amt" type="number" step="0.001" min="0.001" placeholder="0.000" oninput="recalcSupPayPreview()"></div>
+      <div class="fg"><label>التاريخ</label><input id="sp-date" type="date"></div>
+    </div>
+    <div id="spay-summary" style="display:none;background:var(--bg-elevated);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
+    <div id="spay-purs" style="max-height:250px;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="fg mb-10"><label>طريقة الدفع</label>
+      <div class="pay-chips" id="sp-pay">
+        <div class="pay-chip sel" onclick="selPay('sp-pay',this,'cash')"><i class="ti ti-cash"></i> نقدي</div>
+        <div class="pay-chip" onclick="selPay('sp-pay',this,'check')"><i class="ti ti-credit-card"></i> صك</div>
+        <div class="pay-chip" onclick="selPay('sp-pay',this,'transfer')"><i class="ti ti-building-bank"></i> تحويل</div>
+      </div>
+    </div>
+    <div id="sp-check-row" class="fg" style="display:none"><label>رقم الصك</label><input id="sp-check-num" placeholder="رقم الصك البنكي"></div>
+    <div class="fg"><label>ملاحظات</label><input id="sp-notes" placeholder="اختياري"></div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-suppay')">إلغاء</button><button class="btn btn-amber" onclick="saveSupPay()"><i class="ti ti-check"></i> تسجيل الدفعة</button></div>
+</div></div>
+
+<!-- SUPPLIER SETTLEMENT -->
+<div class="modal-backdrop" id="m-sup-settle">
+<div class="modal modal-xl">
+  <div class="modal-hd"><h3><i class="ti ti-discount" icon-teal"></i> تسوية / خصم من فواتير المورد</h3><button class="btn btn-icon" onclick="closeModal('m-sup-settle')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-teal mb-12">
+      <i class="ti ti-info-circle info-icon"></i>
+      <span>تسوية المورد <strong>تخصم من إجمالي فواتير الشراء المحددة</strong>. يمكنك تطبيقها على فاتورة واحدة أو عدة فواتير للمورد نفسه.</span>
+    </div>
+    <div id="sup-settle-summary" style="display:none;background:var(--bg-elevated);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
+    <div class="form-grid g3 mb-12">
+      <div class="fg"><label>المورد *</label><select id="sup-settle-sup" onchange="renderSupSettlePurs()"><option value="">-- اختر مورد --</option></select></div>
+      <div class="fg"><label>مبلغ الخصم (د.ل) *</label><input id="sup-settle-amt" type="number" step="0.001" min="0.001" placeholder="0.000" oninput="recalcSupSettlePreview()"></div>
+      <div class="fg"><label>التاريخ</label><input id="sup-settle-date" type="date"></div>
+      <div class="fg"><label>سبب التسوية *</label><input id="sup-settle-reason" placeholder="خصم مبكر، بضاعة تالفة..."></div>
+    </div>
+    <div class="flex-gap8 mb-12">
+      <label style="font-size:12px;color:var(--text-muted)">طريقة التوزيع:</label>
+      <div id="sup-settle-mode-btns" class="flex-gap4">
+        <div class="settle-mode active" data-mode="auto" onclick="setSupSettleMode('auto')" style="padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;background:var(--accent);color:#fff;font-weight:600">تلقائي (قسمة على الجميع)</div>
+        <div class="settle-mode" data-mode="manual" onclick="setSupSettleMode('manual')" style="padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;background:var(--bg);border:1px solid var(--line);color:var(--text-secondary)">اختياري (تحديد يدوي)</div>
+      </div>
+    </div>
+    <div id="sup-settle-purs" style="max-height:300px;overflow-y:auto"></div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-sup-settle')">إلغاء</button><button class="btn btn-amber" onclick="saveSupSettlement()"><i class="ti ti-check"></i> تطبيق التسوية</button></div>
+</div></div>
+
+<!-- REVERSE SETTLEMENT -->
+<div class="modal-backdrop" id="m-reverse-settle">
+<div class="modal modal-lg">
+  <div class="modal-hd"><h3><i class="ti ti-undo" icon-red"></i> عكس / حذف تسوية</h3><button class="btn btn-icon" onclick="closeModal('m-reverse-settle')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="accounting-note acn-red mb-12">
+      <i class="ti ti-alert-triangle info-icon"></i>
+      <span>عكس التسوية <strong>يُعيد المبلغ المُخصم إلى الفواتير</strong> ويحذف سجل التسوية نهائياً. هذه العملية لا يمكن التراجع عنها.</span>
+    </div>
+    <div class="fg mb-12"><label>نوع التسوية</label>
+      <div class="flex-gap8">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px"><input type="radio" name="rev-settle-type" value="customer" checked onchange="loadReverseSettlements()"> تسوية زبون</label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px"><input type="radio" name="rev-settle-type" value="supplier" onchange="loadReverseSettlements()"> تسوية مورد</label>
+      </div>
+    </div>
+    <div id="rev-settle-list" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-reverse-settle')">إلغاء</button></div>
+</div></div>
+
+<!-- SETTLEMENTS LOG -->
+<div class="modal-backdrop" id="m-settle-log">
+<div class="modal modal-xl">
+  <div class="modal-hd"><h3><i class="ti ti-history" icon-amber"></i> سجل التسويات</h3><button class="btn btn-icon" onclick="closeModal('m-settle-log')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="flex-gap8 mb-12 flex-wrap">
+      <div class="fg" style="margin:0"><label>بحث</label><input id="settle-log-search" placeholder="اسم الزبون/المورد، رقم التسوية..." oninput="renderSettleLog()" style="width:200px;font-size:12px;padding:5px 8px"></div>
+      <div class="fg" style="margin:0"><label>من تاريخ</label><input id="settle-log-from" type="date" onchange="renderSettleLog()" style="font-size:12px;padding:5px 8px"></div>
+      <div class="fg" style="margin:0"><label>إلى تاريخ</label><input id="settle-log-to" type="date" onchange="renderSettleLog()" style="font-size:12px;padding:5px 8px"></div>
+      <div class="fg" style="margin:0"><label>النوع</label><select id="settle-log-type" onchange="renderSettleLog()" style="font-size:12px;padding:5px 8px"><option value="">الكل</option><option value="customer">زبون</option><option value="supplier">مورد</option></select></div>
+    </div>
+    <div class="tbl-wrap"><table style="width:100%;font-size:12px;border-collapse:collapse">
+      <thead><tr style="border-bottom:2px solid var(--line)">
+        <th style="text-align:right;padding:6px">رقم التسوية</th><th style="text-align:right;padding:6px">النوع</th><th style="text-align:right;padding:6px">الاسم</th><th style="text-align:right;padding:6px">المبلغ</th><th style="text-align:right;padding:6px">الفواتير</th><th style="text-align:right;padding:6px">السبب</th><th style="text-align:right;padding:6px">التاريخ</th><th style="padding:6px">إجراء</th>
+      </tr></thead>
+      <tbody id="settle-log-tb"></tbody>
+    </table></div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-settle-log')">إغلاق</button></div>
+</div></div>
+
+<!-- RETURN -->
+<div class="modal-backdrop" id="m-user">
+<div class="modal">
+  <div class="modal-hd"><h3><i class="ti ti-user-plus" icon-accent"></i> مستخدم جديد</h3><button class="btn btn-icon" onclick="closeModal('m-user')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-grid g2">
+      <div class="fg"><label>اسم المستخدم *</label><input id="uu-username" placeholder="admin"></div>
+      <div class="fg"><label>كلمة المرور *</label><input id="uu-pass" type="password" placeholder="*****"></div>
+      <div class="fg"><label>الاسم الكامل *</label><input id="uu-name" placeholder="الاسم الكامل"></div>
+      <div class="fg"><label>الصلاحية</label><select id="uu-role"><option value="admin">مشرف</option><option value="sales">مبيعات</option><option value="inventory">مخازن</option></select></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-user')">إلغاء</button><button class="btn btn-primary" onclick="saveUser()"><i class="ti ti-check"></i> حفظ المستخدم</button></div>
+</div></div>
+
+<div class="modal-backdrop" id="m-company">
+<div class="modal">
+  <div class="modal-hd"><h3 id="m-company-title"><i class="ti ti-building" icon-accent"></i> بيانات المؤسسة</h3><button class="btn btn-icon" onclick="closeModal('m-company')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-grid g2">
+      <div class="fg"><label>اسم الشركة أو المؤسسة</label><input id="co-name" placeholder="المؤسسة التجارية"></div>
+      <div class="fg"><label>رمز الشركة</label><input id="co-code" placeholder="ACME"></div>
+      <div class="fg"><label>العنوان</label><input id="co-address" placeholder="طرابلس، ليبيا"></div>
+      <div class="fg"><label>البلد / المدينة</label><input id="co-country" placeholder="ليبيا / طرابلس"></div>
+      <div class="fg"><label>الهاتف</label><input id="co-phone" placeholder="+218 ..."></div>
+      <div class="fg"><label>النشاط</label><select id="co-industry">
+        <option value="retail">بيع بالتجزئة</option>
+        <option value="services">خدمات</option>
+        <option value="manufacturing">تصنيع</option>
+        <option value="technology">تقنية</option>
+        <option value="other">أخرى</option>
+      </select></div>
+      <div class="fg"><label>الحالة</label><select id="co-status"><option value="active">نشطة</option><option value="inactive">غير نشطة</option></select></div>
+      <div class="fg"><label>ملاحظات</label><input id="co-note" placeholder="سجل ضريبي أو معلومات إضافية"></div>
+      <div class="fg" style="grid-column:1/-1">
+        <label>لوجو الشركة</label>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div id="co-logo-preview" style="width:80px;height:80px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg)">
+            <i class="ti ti-photo" style="font-size:24px;color:var(--text-muted)"></i>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <input type="file" id="co-logo-input" accept="image/*" style="display:none" onchange="handleCompanyLogo(this)">
+            <button class="btn btn-sm btn-secondary" type="button" onclick="document.getElementById('co-logo-input').click()"><i class="ti ti-upload"></i> اختر لوجو</button>
+            <button class="btn btn-sm" type="button" onclick="removeCompanyLogo()" style="margin-right:4px"><i class="ti ti-trash"></i> حذف</button>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px">PNG, JPG — الأقصى 500KB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-company')">إلغاء</button><button class="btn btn-primary" onclick="saveCompany()"><i class="ti ti-check"></i> حفظ</button></div>
+</div></div>
+
+<div class="modal-backdrop" id="m-return">
+<div class="modal">
+  <div class="modal-hd"><h3><i class="ti ti-receipt-refund" icon-red"></i> تسجيل مرتجع</h3><button class="btn btn-icon" onclick="closeModal('m-return')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-grid g2 mb-10">
+      <div class="fg"><label>الفاتورة الأصلية *</label><select id="re-inv"><option value="">اختر فاتورة</option></select></div>
+      <div class="fg"><label>التاريخ</label><input id="re-date" type="date"></div>
+      <div class="fg"><label>المبلغ المرتجع (د.ل) *</label><input id="re-amt" type="number" step="0.001" min="0.001" placeholder="0.000"></div>
+      <div class="fg"><label>سبب الإرجاع</label><input id="re-reason" placeholder="عيب مصنعي / خطأ في الطلب..."></div>
+    </div>
+    <div class="fg"><label>نتيجة فحص الجودة</label>
+      <div class="pay-chips" id="re-qc">
+        <div class="pay-chip sel" onclick="selPay('re-qc',this,'pending')"><i class="ti ti-clock"></i> قيد الفحص</div>
+        <div class="pay-chip" onclick="selPay('re-qc',this,'passed')"><i class="ti ti-check"></i> اجتاز — يُعاد للمخزون</div>
+        <div class="pay-chip" onclick="selPay('re-qc',this,'failed')"><i class="ti ti-x"></i> رُفض (تالف)</div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn" onclick="closeModal('m-return')">إلغاء</button><button class="btn btn-danger" onclick="saveRet()"><i class="ti ti-check"></i> تسجيل المرتجع</button></div>
+</div></div>
+
+<!-- VIEW INVOICE -->
+<div class="modal-backdrop" id="m-view-inv">
+<div class="modal modal-xl">
+  <div class="modal-hd"><h3 id="view-inv-title">تفاصيل الفاتورة</h3><button class="btn btn-icon" onclick="closeModal('m-view-inv')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body" id="view-inv-body"></div>
+  <div class="modal-footer" id="view-inv-footer"></div>
+</div></div>
+
+<div class="modal-backdrop" id="m-view-pur">
+<div class="modal modal-xl">
+  <div class="modal-hd"><h3 id="view-pur-title">تفاصيل فاتورة الشراء</h3><button class="btn btn-icon" onclick="closeModal('m-view-pur')"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body" id="view-pur-body"></div>
+  <div class="modal-footer" id="view-pur-footer"></div>
+</div></div>
+
+<!-- KEYBOARD SHORTCUTS HELP -->
+<div class="modal-backdrop" id="m-help">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hd"><h3><i class="ti ti-keyboard" icon-accent"></i> اختصارات لوحة المفاتيح</h3><button class="btn btn-icon" onclick="closeModal('m-help')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body" style="padding:16px">
+      <table class="help-table">
+        <thead><tr><th>المفتاح</th><th>الوظيفة</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>Escape</kbd></td><td>إغلاق النافذة الحالية</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>التركيز على شريط البحث</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>عنصر جديد حسب الصفحة الحالية</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>1</kbd>–<kbd>9</kbd></td><td>الانتقال إلى صفحة رقم 1–9</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>0</kbd></td><td>الانتقال إلى آخر صفحة</td></tr>
+          <tr><td><kbd>?</kbd></td><td>إظهار/إخفاء هذه المساعدة</td></tr>
+        </tbody>
+      </table>
+      <div class="mt-12 fs-12 color-muted">
+        <strong>اختصارات Ctrl+N حسب الصفحة:</strong>
+        <div class="mt-4" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px">
+          <span>الأصناف → صنف جديد</span>
+          <span>فواتير البيع → فاتورة جديدة</span>
+          <span>فواتير الشراء → فاتورة شراء</span>
+          <span>الزبائن → زبون جديد</span>
+          <span>الموردون → مورد جديد</span>
+          <span>المستخدمين → مستخدم جديد</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal('m-help')">إغلاق</button></div>
+  </div>
+</div>
+
+<!-- HRM EMPLOYEE EDIT MODAL -->
+<div class="modal-backdrop" id="hrm-edit-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hd"><h3><i class="ti ti-user-edit icon-accent"></i> تعديل بيانات الموظف</h3><button class="btn btn-icon" onclick="closeModal('hrm-edit-modal')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="hrm-edit-id">
+      <div class="form-grid g2">
+        <div class="fg"><label>رقم الموظف</label><input id="hrm-edit-no" readonly></div>
+        <div class="fg"><label>الاسم *</label><input id="hrm-edit-name"></div>
+        <div class="fg"><label>الهاتف</label><input id="hrm-edit-phone"></div>
+        <div class="fg"><label>القسم</label><input id="hrm-edit-dept"></div>
+        <div class="fg"><label>المنصب</label><input id="hrm-edit-pos"></div>
+        <div class="fg"><label>نوع العقد</label>
+          <select id="hrm-edit-contract">
+            <option value="full_time">دوام كامل</option>
+            <option value="part_time">دوام جزئي</option>
+            <option value="hourly">بالساعة</option>
+            <option value="contract">عقد</option>
+          </select>
+        </div>
+        <div class="fg"><label>أجر الساعة</label><input id="hrm-edit-rate" type="number" step="0.001" min="0"></div>
+        <div class="fg"><label>أجر الأوفرتايم</label><input id="hrm-edit-ot" type="number" step="0.001" min="0"></div>
+        <div class="fg"><label>الراتب الشهري</label><input id="hrm-edit-salary" type="number" step="0.001" min="0"></div>
+      </div>
+      <div class="fg"><label>ملاحظات</label><input id="hrm-edit-notes"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('hrm-edit-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveEmployeeEdit()"><i class="ti ti-check"></i> حفظ التعديلات</button>
+    </div>
+  </div>
+</div>
+
+<!-- HRM PERFORMANCE EVALUATION MODAL -->
+<div class="modal-backdrop" id="hrm-perf-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd"><h3><i class="ti ti-star icon-accent"></i> تقييم أداء الموظف</h3><button class="btn btn-icon" onclick="closeModal('hrm-perf-modal')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="hrm-perf-emp-id">
+      <div class="fg mb-10"><label>الموظف</label><span id="hrm-perf-emp-name" class="fw-bold"></span></div>
+      <div class="form-grid g2">
+        <div class="fg"><label>التاريخ</label><input id="hrm-perf-date" type="date"></div>
+        <div class="fg"><label>جودة العمل (1-5)</label><input id="hrm-perf-quality" type="number" min="1" max="5" value="3"></div>
+        <div class="fg"><label>الإنتاجية (1-5)</label><input id="hrm-perf-productivity" type="number" min="1" max="5" value="3"></div>
+        <div class="fg"><label>العمل الجماعي (1-5)</label><input id="hrm-perf-teamwork" type="number" min="1" max="5" value="3"></div>
+        <div class="fg"><label>الحضور (1-5)</label><input id="hrm-perf-attendance" type="number" min="1" max="5" value="3"></div>
+        <div class="fg"><label>ملاحظات</label><input id="hrm-perf-notes" placeholder="ملاحظات"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('hrm-perf-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="savePerformanceEval()"><i class="ti ti-check"></i> حفظ التقييم</button>
+    </div>
+  </div>
+</div>
+
+<!-- HRM EMPLOYEE ARCHIVE MODAL -->
+<div class="modal-backdrop" id="hrm-archive-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hd"><h3><i class="ti ti-archive" icon-accent"></i> أرشيف الموظف: <span id="hrm-archive-name"></span></h3><button class="btn btn-icon" onclick="closeModal('hrm-archive-modal')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body" id="hrm-archive-sections" style="max-height:70vh;overflow-y:auto"></div>
+    <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal('hrm-archive-modal')">إغلاق</button></div>
+  </div>
+</div>
+
+<!-- HRM EMPLOYEE PREVIEW MODAL -->
+<div class="modal-backdrop" id="hrm-preview-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hd"><h3><i class="ti ti-eye" icon-accent"></i> معاينة بيانات الموظف</h3><button class="btn btn-icon" onclick="closeModal('hrm-preview-modal')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body" id="hrm-preview-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('hrm-preview-modal')">تعديل</button>
+      <button class="btn btn-primary" onclick="closeModal('hrm-preview-modal');addEmployee()"><i class="ti ti-check"></i> تأكيد الإضافة</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/excel-export.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/sales.js"></script>
+<script src="js/purchases.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/hrm.js"></script>
+<script src="js/main.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js').catch(() => {});
+}
+</script>
+</body>
+</html>
+
