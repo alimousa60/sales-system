@@ -5,7 +5,7 @@ const STORAGE_KEY='salesSystemDB';
 const SESSION_KEY='salesSystemSession';
 const AUTH_TOKEN_KEY='salesSystemAuthToken';
 const AUTH_USER_KEY='salesSystemAuthUser';
-const API_BASE_URL=(window.location.port === '3000' || window.location.port === '')
+const API_BASE_URL=(window.location.port === '3000' || window.location.port === '' || window.location.port === '443' || window.location.port === '80')
   ? `${window.location.origin}/api/v1`
   : `${window.location.protocol}//${window.location.hostname}:3000/api/v1`;
 const CLOUD_STORAGE_KEY='salesSystemCloud';
