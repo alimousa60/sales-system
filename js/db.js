@@ -433,7 +433,7 @@ function requireAuth(){
   return false;
 }
 function requireAdmin(){
-  if(currentUser?.role==='admin')return true;
+  if(['admin','system_admin'].includes(currentUser?.role))return true;
   toast('هذه الوظيفة متاحة للمشرف فقط','error');
   return false;
 }
