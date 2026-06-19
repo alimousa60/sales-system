@@ -51,9 +51,13 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sales-
 const app = express();
 
 // Security middlewares
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(cors({ origin: function(o, cb) { cb(null, true); }, credentials: true }));
+
+// Serve static frontend files
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
 
 // Rate limiting
 const loginLimiter = rateLimit({
