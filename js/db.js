@@ -354,7 +354,7 @@ function hideLogin(){
   G('login-screen').classList.remove('on');
 }
 async function fetchUsersFromApi(){
-  if(!currentUser || currentUser.role !== 'admin') return;
+  if(!currentUser || !['admin','system_admin'].includes(currentUser.role)) return;
   try{
     const resp=await fetch(`${API_BASE_URL}/users`,{
       headers:{...getAuthHeaders(),'Content-Type':'application/json'}

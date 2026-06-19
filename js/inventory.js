@@ -86,8 +86,8 @@ function renderUsers(search=''){
   const {data}=getPageData('user-tb', full);
   tb.innerHTML=data.map(u=>{
     const status = u.status || (u.isActive === false ? 'inactive' : 'active');
-    const roleLabel = u.role==='admin'?'مشرف':u.role==='sales'?'مبيعات':u.role==='inventory'?'مخازن':'مستخدم';
-    const roleClass = u.role==='admin'?'b-purple':u.role==='sales'?'b-blue':u.role==='inventory'?'b-teal':'b-gray';
+    const roleLabel = u.role==='admin'||u.role==='system_admin'?'مشرف':u.role==='sales'?'مبيعات':u.role==='inventory'?'مخازن':'مستخدم';
+    const roleClass = u.role==='admin'||u.role==='system_admin'?'b-purple':u.role==='sales'?'b-blue':u.role==='inventory'?'b-teal':'b-gray';
     const statusClass = status==='active'?'b-green':status==='suspended'?'b-red':'b-amber';
     const statusLabel = status==='active'?'نشط':status==='suspended'?'موقوف':'غير نشط';
     return `<tr>
@@ -205,8 +205,8 @@ async function delUser(id){
   const user=DB.users.find(u=>String(u.id||u._id)===String(id));
   if(!user)return;
   if(String(user.id||user._id)===String(currentUser?.id || currentUser?._id)){toast('لا يمكن حذف المستخدم الحالي','error');return}
-  const admins=DB.users.filter(u=>String(u.role).toLowerCase()==='admin');
-  if(String(user.role).toLowerCase()==='admin' && admins.length===1){toast('يجب أن يبقى مشرف واحد على الأقل','error');return}
+  const admins=DB.users.filter(u=>['admin','system_admin'].includes(String(u.role).toLowerCase()));
+  if(['admin','system_admin'].includes(String(user.role).toLowerCase()) && admins.length===1){toast('يجب أن يبقى مشرف واحد على الأقل','error');return}
   if(!confirm(`حذف المستخدم "${user.name}"?`))return;
   try{
     const resp=await fetch(`${API_BASE_URL}/admin/users/${id}`,{
