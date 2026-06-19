@@ -1,0 +1,775 @@
+/**
+ * SERVER.JS - PHASE 2: RBAC Integration
+ * ========================================
+ * ملف محدث من server.js يتضمن كل تحديثات RBAC
+ * استخدم هذا الملف لفهم التغييرات بالضبط
+ */
+
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
+const crypto = require('crypto');
+const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
+
+dotenv.config();
+
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_in_prod';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5500';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sales-system';
+
+const app = express();
+
+// Security middlewares
+app.use(helmet());
+app.use(express.json({ limit: '10mb' }));
+app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
+
+// Rate limiting
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'عدد محاولات الدخول كثير جداً. حاول لاحقاً.'
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+
+app.use('/api/v1/auth/login', loginLimiter);
+app.use('/api/v1/', apiLimiter);
+
+// ========== RBAC IMPORTS ==========
+/**
+ * NOTE: تأكد من أن الملفات التالية موجودة:
+ * - ./seeds/rbac.seed.js
+ * - ./middleware/rbac.middleware.js
+ */
+let seedRBACRoles, authenticateTokenRBAC, checkAccountStatus, checkPermissionRBAC, 
+    checkBruteForce, logAuditTrailRBAC, validateOwnership, enforceCompanyIsolation, 
+    enforceDepartmentIsolation, PermissionChecker;
+
+try {
+  const rbacSeed = require('./seeds/rbac.seed');
+  seedRBACRoles = rbacSeed.seedRBACRoles;
+  
+  const rbacMiddleware = require('./middleware/rbac.middleware');
+  authenticateTokenRBAC = rbacMiddleware.authenticateToken;
+  checkAccountStatus = rbacMiddleware.checkAccountStatus;
+  checkPermissionRBAC = rbacMiddleware.checkPermission;
+  checkBruteForce = rbacMiddleware.checkBruteForce;
+  logAuditTrailRBAC = rbacMiddleware.logAuditTrail;
+  validateOwnership = rbacMiddleware.validateOwnership;
+  enforceCompanyIsolation = rbacMiddleware.enforceCompanyIsolation;
+  enforceDepartmentIsolation = rbacMiddleware.enforceDepartmentIsolation;
+  PermissionChecker = rbacMiddleware.PermissionChecker;
+} catch (err) {
+  console.warn('⚠ RBAC files not found. RBAC features will be disabled.');
+}
+
+// MongoDB Connection
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(async () => {
+  console.log('✓ MongoDB متصل');
+  
+  // ========== RBAC INITIALIZATION ==========
+  if (seedRBACRoles) {
+    try {
+      await seedRBACRoles();
+      console.log('✓ RBAC Roles تمت تهيئتها');
+    } catch (err) {
+      console.error('✗ خطأ في تهيئة RBAC:', err);
+    }
+  }
+})
+.catch(err => console.error('✗ خطأ الاتصال بـ MongoDB:', err));
+
+// ========== MongoDB Schemas ==========
+
+// User Schema (مع RBAC Extensions)
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true, trim: true },
+  passwordHash: { type: String, required: true },
+  name: { type: String, required: true },
+  email: { type: String, unique: true, sparse: true },
+  
+  // LEGACY SUPPORT
+  role: { type: String, enum: ['admin', 'manager', 'user'], default: 'user' },
+  
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
+  
+  // ========== RBAC FIELDS ==========
+  roleId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Role',
+    sparse: true
+  },
+  status: { 
+    type: String, 
+    enum: ['active', 'inactive', 'suspended'], 
+    default: 'active' 
+  },
+  metadata: {
+    department: String,
+    location: String,
+    managerId: mongoose.Schema.Types.ObjectId
+  },
+  loginAttempts: {
+    count: { type: Number, default: 0 },
+    lastAttempt: Date,
+    lockedUntil: Date
+  },
+  
+  // الحقول الموجودة
+  isActive: { type: Boolean, default: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  lastLogin: Date
+});
+
+// Company Schema
+const companySchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  address: String,
+  phone: String,
+  email: String,
+  taxNumber: String,
+  note: String,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// Account Record Schema
+const accountSchema = new mongoose.Schema({
+  id: { type: String, default: () => crypto.randomUUID() },
+  name: { type: String, required: true },
+  balance: { type: Number, default: 0 },
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', index: true },
+  is_synced: { type: Boolean, default: true },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now }
+});
+
+// Audit Log Schema (Legacy)
+const auditLogSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  action: String,
+  resource: String,
+  resourceId: String,
+  changes: mongoose.Schema.Types.Mixed,
+  ipAddress: String,
+  userAgent: String,
+  status: { type: String, enum: ['success', 'failed'], default: 'success' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+// ========== RBAC SCHEMAS ==========
+
+// Role Schema
+const roleSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true },
+  description: String,
+  hierarchy: { type: Number, required: true, min: 1, max: 5 },
+  isSystemRole: { type: Boolean, default: false },
+  permissions: [{
+    resource: String,
+    actions: [String],
+    constraints: {
+      companyOnly: Boolean,
+      departmentOnly: Boolean,
+      ownDataOnly: Boolean
+    }
+  }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// Enhanced Audit Log Schema (RBAC)
+const rbacAuditLogSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  action: String,
+  resource: String,
+  resourceId: mongoose.Schema.Types.ObjectId,
+  oldValues: mongoose.Schema.Types.Mixed,
+  newValues: mongoose.Schema.Types.Mixed,
+  status: { type: String, enum: ['success', 'failure'], default: 'success' },
+  ipAddress: String,
+  createdAt: { type: Date, default: Date.now }
+}, { 
+  expires: 7776000 // 90 days TTL
+});
+
+// Create Models
+const User = mongoose.model('User', userSchema);
+const Company = mongoose.model('Company', companySchema);
+const Account = mongoose.model('Account', accountSchema);
+const AuditLog = mongoose.model('AuditLog', auditLogSchema);
+const Role = mongoose.model('Role', roleSchema);
+const RBACauditLog = mongoose.model('RBACauditLog', rbacAuditLogSchema);
+
+// ========== MONGODB INDEXES ==========
+User.collection.createIndex({ roleId: 1 });
+User.collection.createIndex({ companyId: 1, status: 1 });
+User.collection.createIndex({ 'loginAttempts.lockedUntil': 1 });
+User.collection.createIndex({ username: 1 });
+
+Role.collection.createIndex({ name: 1 });
+Role.collection.createIndex({ hierarchy: 1 });
+
+RBACauditLog.collection.createIndex({ userId: 1, createdAt: -1 });
+RBACauditLog.collection.createIndex({ createdAt: 1 }, { 
+  expireAfterSeconds: 7776000 
+});
+
+// ========== Helper Functions ==========
+
+function sanitizeAccountRecord(record, userId) {
+  const incoming = record || {};
+  const id = typeof incoming.id === 'string' && incoming.id.trim() ? incoming.id.trim() : crypto.randomUUID();
+  const name = typeof incoming.name === 'string' && incoming.name.trim() ? incoming.name.trim() : 'Unnamed Account';
+  const balance = typeof incoming.balance === 'number' ? incoming.balance : Number(incoming.balance) || 0;
+
+  return {
+    id,
+    name,
+    balance,
+    user_id: userId,
+    is_synced: true,
+    updated_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
+  };
+}
+
+async function logAudit(userId, action, resource, resourceId, changes, req) {
+  try {
+    await AuditLog.create({
+      userId,
+      action,
+      resource,
+      resourceId,
+      changes,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
+  } catch (error) {
+    console.error('خطأ في تسجيل التدقيق:', error);
+  }
+}
+
+// ========== UPDATED JWT FUNCTION ==========
+async function createJwtForUser(user, permissions = []) {
+  let userPermissions = permissions;
+  if (userPermissions.length === 0 && user.roleId) {
+    try {
+      const roleDoc = await Role.findById(user.roleId);
+      userPermissions = roleDoc?.permissions || [];
+    } catch (err) {
+      console.error('خطأ في جلب الصلاحيات:', err);
+      userPermissions = [];
+    }
+  }
+
+  return jwt.sign({ 
+    userId: user._id, 
+    username: user.username, 
+    role: user.role,
+    roleId: user.roleId,
+    status: user.status,
+    companyId: user.companyId,
+    permissions: userPermissions
+  }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+// ========== LEGACY MIDDLEWARE ==========
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ status: 'error', message: 'غير مصرح: البطاقة المرور مفقودة' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, JWT_SECRET, (err, payload) => {
+    if (err) {
+      const message = err.name === 'TokenExpiredError'
+        ? 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.'
+        : 'بطاقة مرور غير صحيحة.';
+      return res.status(401).json({ status: 'error', message });
+    }
+
+    req.user = {
+      userId: payload.userId,
+      role: payload.role,
+      username: payload.username,
+      companyId: payload.companyId
+    };
+
+    next();
+  });
+}
+
+function requireAdmin(req, res, next) {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ status: 'error', message: 'ممنوع: مطلوب صلاحيات الإدارة' });
+  }
+  next();
+}
+
+function requireManagerOrAdmin(req, res, next) {
+  if (!['admin', 'manager'].includes(req.user?.role)) {
+    return res.status(403).json({ status: 'error', message: 'ممنوع: مطلوب صلاحيات' });
+  }
+  next();
+}
+
+// ========== API ENDPOINTS ==========
+
+// ========== AUTHENTICATION (Updated with BRUTE FORCE) ==========
+
+app.post('/api/v1/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ 
+        status: 'error', 
+        message: 'اسم المستخدم وكلمة المرور مطلوبان.' 
+      });
+    }
+
+    let user = await User.findOne({ username });
+    if (!user) {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'بيانات دخول غير صحيحة.' 
+      });
+    }
+
+    // ========== BRUTE FORCE PROTECTION ==========
+    if (user.loginAttempts?.lockedUntil && user.loginAttempts.lockedUntil > new Date()) {
+      const minutesRemaining = Math.ceil(
+        (user.loginAttempts.lockedUntil - new Date()) / 60000
+      );
+      return res.status(429).json({ 
+        status: 'error', 
+        message: `الحساب مقفول. حاول بعد ${minutesRemaining} دقيقة` 
+      });
+    }
+
+    if (!user.isActive || user.status !== 'active') {
+      return res.status(403).json({ 
+        status: 'error', 
+        message: 'حسابك غير نشط' 
+      });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.passwordHash);
+    
+    if (!validPassword) {
+      user.loginAttempts = user.loginAttempts || { count: 0 };
+      user.loginAttempts.count += 1;
+      user.loginAttempts.lastAttempt = new Date();
+
+      if (user.loginAttempts.count >= 5) {
+        user.loginAttempts.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+        await user.save();
+        
+        if (RBACauditLog) {
+          await RBACauditLog.create({
+            userId: user._id,
+            action: 'FAILED_LOGIN_LOCKED',
+            resource: 'User',
+            status: 'failure',
+            ipAddress: req.ip
+          });
+        }
+
+        return res.status(429).json({ 
+          status: 'error', 
+          message: 'الحساب مقفول بسبب محاولات دخول متعددة' 
+        });
+      }
+
+      await user.save();
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'بيانات دخول غير صحيحة.' 
+      });
+    }
+
+    // ========== SUCCESSFUL LOGIN ==========
+    user.loginAttempts = { count: 0, lastAttempt: null, lockedUntil: null };
+    user.lastLogin = new Date();
+    await user.save();
+
+    let permissions = [];
+    if (user.roleId) {
+      const roleDoc = await Role.findById(user.roleId);
+      permissions = roleDoc?.permissions || [];
+    }
+
+    const token = await createJwtForUser(user, permissions);
+
+    if (RBACauditLog) {
+      await RBACauditLog.create({
+        userId: user._id,
+        action: 'LOGIN',
+        resource: 'User',
+        status: 'success',
+        ipAddress: req.ip
+      });
+    }
+
+    await logAudit(user._id, 'LOGIN', 'User', user._id.toString(), null, req);
+
+    res.json({
+      status: 'success',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        roleId: user.roleId,
+        status: user.status,
+        companyId: user.companyId,
+        permissions: permissions
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في تسجيل الدخول:', error);
+    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+  }
+});
+
+// Logout
+app.post('/api/v1/auth/logout', authenticateTokenRBAC || authenticateToken, async (req, res) => {
+  try {
+    if (RBACauditLog) {
+      await RBACauditLog.create({
+        userId: req.user?.userId,
+        action: 'LOGOUT',
+        resource: 'User',
+        status: 'success',
+        ipAddress: req.ip
+      });
+    }
+
+    res.json({ 
+      status: 'success', 
+      message: 'تم تسجيل الخروج بنجاح' 
+    });
+  } catch (error) {
+    console.error('خطأ في تسجيل الخروج:', error);
+    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+  }
+});
+
+// ========== USER MANAGEMENT (RBAC) ==========
+
+// GET /api/v1/users
+app.get('/api/v1/users', 
+  authenticateTokenRBAC || authenticateToken,
+  async (req, res) => {
+    try {
+      const { role, status, page = 1, limit = 20 } = req.query;
+      
+      let filter = { companyId: req.user.companyId };
+      if (role) filter.role = role;
+      if (status) filter.status = status;
+      
+      const skip = (page - 1) * limit;
+      const users = await User
+        .find(filter)
+        .select('-passwordHash')
+        .populate('roleId', 'name description hierarchy')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(parseInt(limit));
+      
+      const total = await User.countDocuments(filter);
+      
+      res.json({
+        status: 'success',
+        data: users,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      console.error('خطأ في جلب المستخدمين:', error);
+      res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+    }
+  }
+);
+
+// GET /api/v1/users/:userId
+app.get('/api/v1/users/:userId',
+  authenticateTokenRBAC || authenticateToken,
+  async (req, res) => {
+    try {
+      const user = await User
+        .findById(req.params.userId)
+        .select('-passwordHash')
+        .populate('roleId', 'name description hierarchy permissions');
+      
+      if (!user || user.companyId.toString() !== req.user.companyId.toString()) {
+        return res.status(404).json({ 
+          status: 'error', 
+          message: 'المستخدم غير موجود' 
+        });
+      }
+      
+      res.json({ status: 'success', data: user });
+    } catch (error) {
+      console.error('خطأ في جلب المستخدم:', error);
+      res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+    }
+  }
+);
+
+// PATCH /api/v1/users/:userId/role
+app.patch('/api/v1/users/:userId/role',
+  authenticateTokenRBAC || authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { roleId } = req.body;
+      
+      if (!roleId) {
+        return res.status(400).json({ 
+          status: 'error', 
+          message: 'roleId مطلوب' 
+        });
+      }
+      
+      const role = await Role.findById(roleId);
+      if (!role) {
+        return res.status(404).json({ 
+          status: 'error', 
+          message: 'الدور غير موجود' 
+        });
+      }
+      
+      const user = await User.findById(req.params.userId);
+      if (!user || user.companyId.toString() !== req.user.companyId.toString()) {
+        return res.status(404).json({ 
+          status: 'error', 
+          message: 'المستخدم غير موجود' 
+        });
+      }
+      
+      const oldRole = user.roleId;
+      user.roleId = roleId;
+      user.role = role.name.toLowerCase();
+      await user.save();
+      
+      if (RBACauditLog) {
+        await RBACauditLog.create({
+          userId: req.user.userId,
+          action: 'CHANGE_USER_ROLE',
+          resource: 'User',
+          resourceId: user._id,
+          oldValues: { roleId: oldRole },
+          newValues: { roleId },
+          status: 'success',
+          ipAddress: req.ip
+        });
+      }
+      
+      res.json({ 
+        status: 'success', 
+        message: 'تم تحديث الدور بنجاح',
+        data: user 
+      });
+    } catch (error) {
+      console.error('خطأ في تحديث الدور:', error);
+      res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+    }
+  }
+);
+
+// PATCH /api/v1/users/:userId/status
+app.patch('/api/v1/users/:userId/status',
+  authenticateTokenRBAC || authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      
+      if (!['active', 'inactive', 'suspended'].includes(status)) {
+        return res.status(400).json({ 
+          status: 'error', 
+          message: 'حالة غير صحيحة' 
+        });
+      }
+      
+      const user = await User.findById(req.params.userId);
+      if (!user || user.companyId.toString() !== req.user.companyId.toString()) {
+        return res.status(404).json({ 
+          status: 'error', 
+          message: 'المستخدم غير موجود' 
+        });
+      }
+      
+      const oldStatus = user.status;
+      user.status = status;
+      user.isActive = status === 'active';
+      await user.save();
+      
+      if (RBACauditLog) {
+        await RBACauditLog.create({
+          userId: req.user.userId,
+          action: 'CHANGE_USER_STATUS',
+          resource: 'User',
+          resourceId: user._id,
+          oldValues: { status: oldStatus },
+          newValues: { status },
+          status: 'success',
+          ipAddress: req.ip
+        });
+      }
+      
+      res.json({ 
+        status: 'success', 
+        message: 'تم تحديث الحالة بنجاح',
+        data: user 
+      });
+    } catch (error) {
+      console.error('خطأ في تحديث الحالة:', error);
+      res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+    }
+  }
+);
+
+// GET /api/v1/audit-log
+app.get('/api/v1/audit-log',
+  authenticateTokenRBAC || authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { userId, action, page = 1, limit = 20 } = req.query;
+      
+      let filter = {};
+      if (userId) filter.userId = userId;
+      if (action) filter.action = action;
+      
+      const skip = (page - 1) * limit;
+      const logs = await RBACauditLog
+        .find(filter)
+        .populate('userId', 'username name')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(parseInt(limit));
+      
+      const total = await RBACauditLog.countDocuments(filter);
+      
+      res.json({
+        status: 'success',
+        data: logs,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      console.error('خطأ في جلب السجلات:', error);
+      res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+    }
+  }
+);
+
+// ========== LEGACY ENDPOINTS (unchanged) ==========
+
+app.post('/api/v1/auth/create-user', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { username, password, name, email, role, companyId } = req.body;
+    
+    if (!username || !password || !name) {
+      return res.status(400).json({ status: 'error', message: 'الحقول المطلوبة مفقودة.' });
+    }
+
+    if (!['admin', 'manager', 'user'].includes(role)) {
+      return res.status(400).json({ status: 'error', message: 'دور غير صحيح.' });
+    }
+
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(409).json({ status: 'error', message: 'اسم المستخدم موجود بالفعل.' });
+    }
+
+    const targetCompanyId = companyId || req.user.companyId;
+    
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      username,
+      passwordHash,
+      name,
+      email,
+      role,
+      status: 'active',
+      companyId: targetCompanyId,
+      createdBy: req.user.userId
+    });
+
+    await newUser.save();
+
+    await logAudit(req.user.userId, 'CREATE_USER', 'User', newUser._id.toString(), 
+      { role, companyId: targetCompanyId }, req);
+
+    res.status(201).json({
+      status: 'success',
+      message: 'تم إنشاء المستخدم بنجاح',
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        name: newUser.name,
+        role: newUser.role,
+        email: newUser.email,
+        companyId: newUser.companyId
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في إنشاء مستخدم:', error);
+    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+  }
+});
+
+app.get('/api/v1/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({ companyId: req.user.companyId })
+      .select('-passwordHash')
+      .populate('createdBy', 'name')
+      .sort('-createdAt');
+
+    res.json({ status: 'success', users });
+  } catch (error) {
+    console.error('خطأ في الحصول على المستخدمين:', error);
+    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+  }
+});
+
+// Server Start
+const PORT_TO_USE = PORT;
+app.listen(PORT_TO_USE, () => {
+  console.log(`\n🚀 Server running on port ${PORT_TO_USE}`);
+  console.log(`📍 Base URL: http://localhost:${PORT_TO_USE}`);
+  console.log(`✅ RBAC System: ${seedRBACRoles ? 'ENABLED' : 'DISABLED'}\n`);
+});
+
+module.exports = { app, User, Company, Account, AuditLog, Role, RBACauditLog };

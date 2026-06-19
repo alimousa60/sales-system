@@ -1,0 +1,55 @@
+/* ═══ CHARTS ═══ */
+let _dashSalesChart=null,_dashPayChart=null,_plChart=null;
+
+function getChartColors(){
+  return{
+    accent:'#4f8ef7',green:'#2dd17e',amber:'#f5a623',red:'#f05454',purple:'#a855f7',cyan:'#22d3ee',teal:'#14b8a6',
+    accentA:'rgba(79,142,247,.15)',greenA:'rgba(45,209,126,.15)',amberA:'rgba(245,166,35,.15)',redA:'rgba(240,84,84,.15)'
+  };
+}
+
+function renderDashCharts(){
+  if(typeof Chart==='undefined')return;
+  const c=getChartColors();
+  const invs=[...DB.invs].reverse().slice(0,30);
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const key=d.toISOString().slice(0,10);
+    const dayLabel=d.toLocaleDateString('ar',{weekday:'short'});
+    const sales=invs.filter(inv=>inv.date===key).reduce((s,inv)=>s+inv.total,0);
+    days.push({key,label:dayLabel,sales});
+  }
+  const sCtx=G('dash-sales-chart');
+  if(sCtx){
+    if(_dashSalesChart)_dashSalesChart.destroy();
+    _dashSalesChart=new Chart(sCtx,{type:'bar',data:{labels:days.map(d=>d.label),datasets:[{label:'المبيعات',data:days.map(d=>d.sales),backgroundColor:c.accentA,borderColor:c.accent,borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.1)'},ticks:{callback:v=>fmt(v)}},x:{grid:{display:false}}}}});
+  }
+  const cashTotal=DB.payments.filter(p=>p.mode==='cash').reduce((s,p)=>s+p.amount,0);
+  const checkTotal=DB.payments.filter(p=>p.mode==='check').reduce((s,p)=>s+p.amount,0);
+  const transferTotal=DB.payments.filter(p=>p.mode==='transfer').reduce((s,p)=>s+p.amount,0);
+  const supTotal=DB.supPayments.reduce((s,p)=>s+p.amount,0);
+  const pCtx=G('dash-pay-chart');
+  if(pCtx){
+    if(_dashPayChart)_dashPayChart.destroy();
+    const hasData=cashTotal+checkTotal+transferTotal+supTotal>0;
+    _dashPayChart=new Chart(pCtx,{type:'doughnut',data:{labels:['نقدي وارد','صكوك واردة','تحويلات واردة','مدفوعات للموردين'],datasets:[{data:[cashTotal,checkTotal,transferTotal,supTotal],backgroundColor:[c.green,c.accent,c.cyan,c.red],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:8,font:{size:11}}}}}});
+  }
+}
+
+function renderPLChart(){
+  if(typeof Chart==='undefined')return;
+  const c=getChartColors();
+  const soldItems={};
+  DB.invs.forEach(inv=>(inv.lines||[]).forEach(l=>{
+    if(!soldItems[l.name])soldItems[l.name]={qty:0,revenue:0,cost:0};
+    soldItems[l.name].qty+=l.qty;
+    soldItems[l.name].revenue+=l.total||l.qty*l.price;
+    soldItems[l.name].cost+=l.qty*(l.buyPrice||0);
+  }));
+  const items=Object.entries(soldItems).map(([name,d])=>({name,...d,profit:d.revenue-d.cost})).filter(x=>x.revenue>0).sort((a,b)=>b.profit-a.profit).slice(0,6);
+  const ctx=G('pl-chart');
+  if(!ctx)return;
+  if(_plChart)_plChart.destroy();
+  _plChart=new Chart(ctx,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[{label:'الإيراد',data:items.map(i=>i.revenue),backgroundColor:c.greenA,borderColor:c.green,borderWidth:2,borderRadius:6},{label:'التكلفة',data:items.map(i=>i.cost),backgroundColor:c.redA,borderColor:c.red,borderWidth:2,borderRadius:6},{label:'الربح',data:items.map(i=>i.profit),backgroundColor:c.accentA,borderColor:c.accent,borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:8,font:{size:11}}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.1)'},ticks:{callback:v=>fmt(v)}},x:{grid:{display:false}}}}});
+}

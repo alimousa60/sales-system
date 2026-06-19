@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  # MongoDB
+  mongodb:
+    image: mongo:7.0-alpine
+    container_name: sales-system-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: sales-system
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - sales-system-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  api:
+    build: .
+    container_name: sales-system-api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/sales-system?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-change_this_in_production_12345}
+      JWT_EXPIRES_IN: 2h
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5500}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - sales-system-network
+    restart: unless-stopped
+    healthcheck:
+      test: curl -f http://localhost:3000/api/v1/status || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+
+networks:
+  sales-system-network:
+    driver: bridge

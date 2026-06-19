@@ -1,0 +1,66 @@
+﻿node.exe : FAIL tests/hrm.test.js
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL tests/hrm.test.js:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  HRM API ظ¤ /api/hrm
+    ╪د┘┘à┘ê╪╕┘┘è┘
+      ظêأ GET /employees ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ┘é╪د╪خ┘à╪ر ┘╪د╪▒╪║╪ر (215 ms)
+      ظêأ POST /employees ظ¤ ┘è╪ش╪ذ ╪ح┘╪┤╪د╪ة ┘à┘ê╪╕┘ ╪ش╪»┘è╪» (107 ms)
+      ظêأ POST /employees ظ¤ ╪ذ╪»┘ê┘ ╪د╪│┘à ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 400 (77 ms)
+      ظêأ POST /employees ظ¤ ╪▒┘é┘à ┘à┘ê╪╕┘ ┘à┘â╪▒╪▒ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 409 (95 ms)
+      ظêأ PATCH /employees/:id ظ¤ ┘è╪ش╪ذ ╪ز╪ص╪»┘è╪س ╪د┘┘à┘ê╪╕┘ (99 ms)
+      ظêأ GET /employees/:id ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ┘à┘ê╪╕┘ ┘à╪ص╪»╪» (94 ms)
+    ╪د┘╪ص╪╢┘ê╪▒
+      ظêأ POST /attendance ظ¤ ┘è╪ش╪ذ ╪ز╪│╪ش┘è┘ ╪ص╪╢┘ê╪▒ (89 ms)
+      ظêأ POST /attendance ظ¤ ╪ص╪╢┘ê╪▒ ╪ذ╪»┘ê┘ ╪«╪▒┘ê╪ش ┘è╪ص╪│╪ذ ╪ز┘┘é╪د╪خ┘è╪د┘ï (97 ms)
+      ظêأ GET /attendance ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪│╪ش┘╪د╪ز ╪د┘╪ص╪╢┘ê╪▒ (100 ms)
+      ظêأ POST /attendance ظ¤ ╪ز╪╣╪»┘è┘ ╪│╪ش┘ ┘à┘ê╪ش┘ê╪» (98 ms)
+      ظêأ POST /attendance/bulk ظ¤ ╪ص╪╢┘ê╪▒ ╪ش┘à╪د╪╣┘è (93 ms)
+    ╪د┘╪│┘┘ ┘ê╪د┘┘é╪▒┘ê╪╢
+      ظêأ POST /advances ظ¤ ╪╡╪▒┘ ╪│┘┘╪ر (111 ms)
+      ظêأ POST /advances ظ¤ ╪╡╪▒┘ ┘é╪▒╪╢ ┘à╪╣ ╪ث┘é╪│╪د╪╖ (98 ms)
+      ظêأ POST /advances/:id/repay ظ¤ ╪ز╪│╪»┘è╪» ╪│┘┘╪ر (103 ms)
+      ظêأ POST /advances/:id/repay ظ¤ ╪ز╪│╪»┘è╪» ┘â╪د┘à┘ (105 ms)
+      ظêأ GET /advances ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪│┘┘ (96 ms)
+    ╪د┘╪▒┘ê╪د╪ز╪ذ
+      ├ù POST /payroll/generate ظ¤ ╪ز┘ê┘┘è╪» ╪▒┘ê╪د╪ز╪ذ (111 ms)
+      ظêأ POST /payroll/generate ظ¤ ╪ز┘ê┘┘è╪» ┘à╪▒╪ز┘è┘ ┘è╪ص╪░┘ ╪د┘┘à╪│┘ê╪»╪د╪ز (119 ms)
+      ظêأ POST /payroll/:id/approve ظ¤ ╪د╪╣╪ز┘à╪د╪» ╪▒╪د╪ز╪ذ (110 ms)
+      ظêأ POST /payroll/:id/pay ظ¤ ╪»┘╪╣ ╪▒╪د╪ز╪ذ (116 ms)
+      ظêأ POST /payroll/:id/pay ظ¤ ╪»┘╪╣ ╪ذ╪»┘ê┘ ╪د╪╣╪ز┘à╪د╪» ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 400 (101 ms)
+      ظêأ GET /payroll ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪▒┘ê╪د╪ز╪ذ (102 ms)
+      ظêأ GET /payroll/summary/:period ظ¤ ┘à┘╪«╪╡ ╪د┘╪▒┘ê╪د╪ز╪ذ (111 ms)
+    ╪│╪ش┘ ╪د┘╪«╪▓┘è┘╪ر
+      ظêأ GET /cash-ledger ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪▒╪╡┘è╪» ┘ê╪د┘ Movements (85 ms)
+      ظêأ POST /cash-ledger/adjust ظ¤ ╪ز╪│┘ê┘è╪ر ╪ح┘è╪»╪د╪╣ (75 ms)
+      ظêأ POST /cash-ledger/adjust ظ¤ ╪ز╪│┘ê┘è╪ر ╪«╪╡┘à (79 ms)
+    ╪د┘┘à╪╡╪د╪»┘é╪ر
+      ظêأ GET /employees ظ¤ ╪ذ╪»┘ê┘ ╪ز┘ê┘â┘ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 401 (71 ms)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ POST /payroll/generate ظ¤ ╪ز┘ê┘┘è╪» ╪▒┘ê╪د╪ز╪ذ
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 18
+    Received: 16
+
+    [0m [90m 350 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+     [90m 351 |[39m       expect(res[33m.[39mbody[33m.[39mcount)[33m.[39mtoBe([35m1[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 352 |[39m       expect(res[33m.[39mbody[33m.[39mpayrolls[[35m0[39m][33m.[39mtota
+lWorkedHours)[33m.[39mtoBe([35m18[39m)[33m;[39m
+     [90m     |[39m                                                     [31m[1m^[22m[39m
+     [90m 353 |[39m       expect(res[33m.[39mbody[33m.[39mpayrolls[[35m0[39m][33m.[39mtotalOvertimeHours)[33
+m.[39mtoBe([35m2[39m)[33m;[39m
+     [90m 354 |[39m     })[33m;[39m
+     [90m 355 |[39m[0m
+
+      at Object.toBe (tests/hrm.test.js:352:53)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 26 passed, 27 total
+Snapshots:   0 total
+Time:        3.994 s, estimated 5 s
+Ran all test suites matching tests/hrm.test.js.

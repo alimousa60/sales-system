@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+.env.production
+*.log
+logs/
+npm-debug.log*
+.DS_Store
+Thumbs.db
+dist/
+build/
+coverage/
+.vscode/
+test-db.json

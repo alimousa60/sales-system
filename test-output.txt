@@ -1,0 +1,262 @@
+﻿node.exe : FAIL tests/hrm.test.js
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL tests/hrm.test.js:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  HRM API ظ¤ /api/hrm
+    ╪د┘┘à┘ê╪╕┘┘è┘
+      ظêأ GET /employees ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ┘é╪د╪خ┘à╪ر ┘╪د╪▒╪║╪ر (198 ms)
+      ظêأ POST /employees ظ¤ ┘è╪ش╪ذ ╪ح┘╪┤╪د╪ة ┘à┘ê╪╕┘ ╪ش╪»┘è╪» (110 ms)
+      ظêأ POST /employees ظ¤ ╪ذ╪»┘ê┘ ╪د╪│┘à ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 400 (72 ms)
+      ظêأ POST /employees ظ¤ ╪▒┘é┘à ┘à┘ê╪╕┘ ┘à┘â╪▒╪▒ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 409 (85 ms)
+      ظêأ PATCH /employees/:id ظ¤ ┘è╪ش╪ذ ╪ز╪ص╪»┘è╪س ╪د┘┘à┘ê╪╕┘ (95 ms)
+      ظêأ GET /employees/:id ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ┘à┘ê╪╕┘ ┘à╪ص╪»╪» (84 ms)
+    ╪د┘╪ص╪╢┘ê╪▒
+      ظêأ POST /attendance ظ¤ ┘è╪ش╪ذ ╪ز╪│╪ش┘è┘ ╪ص╪╢┘ê╪▒ (85 ms)
+      ظêأ POST /attendance ظ¤ ╪ص╪╢┘ê╪▒ ╪ذ╪»┘ê┘ ╪«╪▒┘ê╪ش ┘è╪ص╪│╪ذ ╪ز┘┘é╪د╪خ┘è╪د┘ï (81 ms)
+      ظêأ GET /attendance ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪│╪ش┘╪د╪ز ╪د┘╪ص╪╢┘ê╪▒ (84 ms)
+      ظêأ POST /attendance ظ¤ ╪ز╪╣╪»┘è┘ ╪│╪ش┘ ┘à┘ê╪ش┘ê╪» (86 ms)
+      ظêأ POST /attendance/bulk ظ¤ ╪ص╪╢┘ê╪▒ ╪ش┘à╪د╪╣┘è (82 ms)
+    ╪د┘╪│┘┘ ┘ê╪د┘┘é╪▒┘ê╪╢
+      ├ù POST /advances ظ¤ ╪╡╪▒┘ ╪│┘┘╪ر (80 ms)
+      ├ù POST /advances ظ¤ ╪╡╪▒┘ ┘é╪▒╪╢ ┘à╪╣ ╪ث┘é╪│╪د╪╖ (76 ms)
+      ├ù POST /advances/:id/repay ظ¤ ╪ز╪│╪»┘è╪» ╪│┘┘╪ر (76 ms)
+      ├ù POST /advances/:id/repay ظ¤ ╪ز╪│╪»┘è╪» ┘â╪د┘à┘ (77 ms)
+      ├ù GET /advances ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪│┘┘ (81 ms)
+    ╪د┘╪▒┘ê╪د╪ز╪ذ
+      ├ù POST /payroll/generate ظ¤ ╪ز┘ê┘┘è╪» ╪▒┘ê╪د╪ز╪ذ (98 ms)
+      ├ù POST /payroll/generate ظ¤ ╪ز┘ê┘┘è╪» ┘à╪▒╪ز┘è┘ ┘è╪ص╪░┘ ╪د┘┘à╪│┘ê╪»╪د╪ز (93 ms)
+      ├ù POST /payroll/:id/approve ظ¤ ╪د╪╣╪ز┘à╪د╪» ╪▒╪د╪ز╪ذ (88 ms)
+      ├ù POST /payroll/:id/pay ظ¤ ╪»┘╪╣ ╪▒╪د╪ز╪ذ (88 ms)
+      ├ù POST /payroll/:id/pay ظ¤ ╪»┘╪╣ ╪ذ╪»┘ê┘ ╪د╪╣╪ز┘à╪د╪» ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 400 (88 ms)
+      ├ù GET /payroll ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪▒┘ê╪د╪ز╪ذ (94 ms)
+      ├ù GET /payroll/summary/:period ظ¤ ┘à┘╪«╪╡ ╪د┘╪▒┘ê╪د╪ز╪ذ (92 ms)
+    ╪│╪ش┘ ╪د┘╪«╪▓┘è┘╪ر
+      ظêأ GET /cash-ledger ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪▒╪╡┘è╪» ┘ê╪د┘ Movements (71 ms)
+      ظêأ POST /cash-ledger/adjust ظ¤ ╪ز╪│┘ê┘è╪ر ╪ح┘è╪»╪د╪╣ (70 ms)
+      ظêأ POST /cash-ledger/adjust ظ¤ ╪ز╪│┘ê┘è╪ر ╪«╪╡┘à (79 ms)
+    ╪د┘┘à╪╡╪د╪»┘é╪ر
+      ظêأ GET /employees ظ¤ ╪ذ╪»┘ê┘ ╪ز┘ê┘â┘ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ 401 (68 ms)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪│┘┘ ┘ê╪د┘┘é╪▒┘ê╪╢ ظ║ POST /advances ظ¤ ╪╡╪▒┘ ╪│┘┘╪ر
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 500
+
+    [0m [90m 241 |[39m         [33m.[39msend({ employeeId[33m,[39m type[33m:[39m 
+[32m'advance'[39m[33m,[39m amount[33m:[39m [35m500[39m[33m,[39m purpose[33m:[39m [32m'╪د╪ص╪ز┘è╪د╪ش 
+╪┤╪«╪╡┘è'[39m })[33m;[39m
+     [90m 242 |[39m
+    [31m[1m>[22m[39m[90m 243 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 244 |[39m       
+expect(res[33m.[39mbody[33m.[39madvance[33m.[39mamount)[33m.[39mtoBe([35m500[39m)[33m;[39m
+     [90m 245 |[39m       
+expect(res[33m.[39mbody[33m.[39madvance[33m.[39mremainingBalance)[33m.[39mtoBe([35m500[39m)[33m;[39m
+     [90m 246 |[39m       
+expect(res[33m.[39mbody[33m.[39madvance[33m.[39mstatus)[33m.[39mtoBe([32m'active'[39m)[33m;[39m[0m
+
+      at Object.toBe (tests/hrm.test.js:243:26)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪│┘┘ ┘ê╪د┘┘é╪▒┘ê╪╢ ظ║ POST /advances ظ¤ ╪╡╪▒┘ ┘é╪▒╪╢ ┘à╪╣ ╪ث┘é╪│╪د╪╖
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 500
+
+    [0m [90m 253 |[39m         [33m.[39msend({ employeeId[33m,[39m type[33m:[39m [32m'loan'[39m[33m,[39m 
+amount[33m:[39m [35m1200[39m[33m,[39m monthlyInstallment[33m:[39m [35m200[39m[33m,[39m 
+installmentsTotal[33m:[39m [35m6[39m })[33m;[39m
+     [90m 254 |[39m
+    [31m[1m>[22m[39m[90m 255 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 256 |[39m       
+expect(res[33m.[39mbody[33m.[39madvance[33m.[39mtype)[33m.[39mtoBe([32m'loan'[39m)[33m;[39m
+     [90m 257 |[39m       
+expect(res[33m.[39mbody[33m.[39madvance[33m.[39mmonthlyInstallment)[33m.[39mtoBe([35m200[39m)[33m;[39m
+     [90m 258 |[39m       
+expect(res[33m.[39mbody[33m.[39madvance[33m.[39minstallmentsTotal)[33m.[39mtoBe([35m6[39m)[33m;[39m[0m
+
+      at Object.toBe (tests/hrm.test.js:255:26)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪│┘┘ ┘ê╪د┘┘é╪▒┘ê╪╢ ظ║ POST /advances/:id/repay ظ¤ ╪ز╪│╪»┘è╪» ╪│┘┘╪ر
+
+    TypeError: Cannot read properties of undefined (reading '_id')
+
+    [0m [90m 265 |[39m         [33m.[39msend({ employeeId[33m,[39m type[33m:[39m 
+[32m'advance'[39m[33m,[39m amount[33m:[39m [35m500[39m })[33m;[39m
+     [90m 266 |[39m
+    [31m[1m>[22m[39m[90m 267 |[39m       [36mconst[39m id [33m=[39m 
+createRes[33m.[39mbody[33m.[39madvance[33m.[39m_id[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 268 |[39m
+     [90m 269 |[39m       [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+     [90m 270 |[39m         [33m.[39mpost([32m`/api/hrm/advances/${id}/repay`[39m)[0m
+
+      at Object._id (tests/hrm.test.js:267:41)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪│┘┘ ┘ê╪د┘┘é╪▒┘ê╪╢ ظ║ POST /advances/:id/repay ظ¤ ╪ز╪│╪»┘è╪» ┘â╪د┘à┘
+
+    TypeError: Cannot read properties of undefined (reading '_id')
+
+    [0m [90m 283 |[39m         [33m.[39msend({ employeeId[33m,[39m type[33m:[39m 
+[32m'advance'[39m[33m,[39m amount[33m:[39m [35m500[39m })[33m;[39m
+     [90m 284 |[39m
+    [31m[1m>[22m[39m[90m 285 |[39m       [36mconst[39m id [33m=[39m 
+createRes[33m.[39mbody[33m.[39madvance[33m.[39m_id[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 286 |[39m
+     [90m 287 |[39m       [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+     [90m 288 |[39m         [33m.[39mpost([32m`/api/hrm/advances/${id}/repay`[39m)[0m
+
+      at Object._id (tests/hrm.test.js:285:41)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪│┘┘ ┘ê╪د┘┘é╪▒┘ê╪╢ ظ║ GET /advances ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪│┘┘
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 0
+
+    [0m [90m 306 |[39m
+     [90m 307 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 308 |[39m       
+expect(res[33m.[39mbody[33m.[39madvances[33m.[39mlength)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m     |[39m                                        [31m[1m^[22m[39m
+     [90m 309 |[39m     })[33m;[39m
+     [90m 310 |[39m   })[33m;[39m
+     [90m 311 |[39m[0m
+
+      at Object.toBe (tests/hrm.test.js:308:40)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ POST /payroll/generate ظ¤ ╪ز┘ê┘┘è╪» ╪▒┘ê╪د╪ز╪ذ
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 500
+
+    [0m [90m 338 |[39m         [33m.[39msend({ period[33m:[39m [32m'2026-06'[39m })[33m;[39m
+     [90m 339 |[39m
+    [31m[1m>[22m[39m[90m 340 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 341 |[39m       expect(res[33m.[39mbody[33m.[39mcount)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m 342 |[39m       expect(res[33m.[39mbody[33m.[39mpayrolls[[35m0[39m][33m.[39mtotalWorkedHours)[33m.
+[39mtoBe([35m18[39m)[33m;[39m
+     [90m 343 |[39m       expect(res[33m.[39mbody[33m.[39mpayrolls[[35m0[39m][33m.[39mtotalOvertimeHours)[33
+m.[39mtoBe([35m2[39m)[33m;[39m[0m
+
+      at Object.toBe (tests/hrm.test.js:340:26)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ POST /payroll/generate ظ¤ ╪ز┘ê┘┘è╪» ┘à╪▒╪ز┘è┘ ┘è╪ص╪░┘ 
+╪د┘┘à╪│┘ê╪»╪د╪ز
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 500
+
+    [0m [90m 355 |[39m         [33m.[39msend({ period[33m:[39m [32m'2026-06'[39m })[33m;[39m
+     [90m 356 |[39m
+    [31m[1m>[22m[39m[90m 357 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 358 |[39m       expect(res[33m.[39mbody[33m.[39mcount)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m 359 |[39m     })[33m;[39m
+     [90m 360 |[39m[0m
+
+      at Object.toBe (tests/hrm.test.js:357:26)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ POST /payroll/:id/approve ظ¤ ╪د╪╣╪ز┘à╪د╪» ╪▒╪د╪ز╪ذ
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+    [0m [90m 365 |[39m         [33m.[39msend({ period[33m:[39m [32m'2026-06'[39m })[33m;[39m
+     [90m 366 |[39m
+    [31m[1m>[22m[39m[90m 367 |[39m       [36mconst[39m payrollId [33m=[39m 
+genRes[33m.[39mbody[33m.[39mpayrolls[[35m0[39m][33m.[39m_id[33m;[39m
+     [90m     |[39m                                             [31m[1m^[22m[39m
+     [90m 368 |[39m
+     [90m 369 |[39m       [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+     [90m 370 |[39m         [33m.[39mpost([32m`/api/hrm/payroll/${payrollId}/approve`[39m)[0m
+
+      at Object.<anonymous> (tests/hrm.test.js:367:45)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ POST /payroll/:id/pay ظ¤ ╪»┘╪╣ ╪▒╪د╪ز╪ذ
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+    [0m [90m 381 |[39m         [33m.[39msend({ period[33m:[39m [32m'2026-06'[39m })[33m;[39m
+     [90m 382 |[39m
+    [31m[1m>[22m[39m[90m 383 |[39m       [36mconst[39m payrollId [33m=[39m 
+genRes[33m.[39mbody[33m.[39mpayrolls[[35m0[39m][33m.[39m_id[33m;[39m
+     [90m     |[39m                                             [31m[1m^[22m[39m
+     [90m 384 |[39m
+     [90m 385 |[39m       [36mawait[39m request(app)
+     [90m 386 |[39m         [33m.[39mpost([32m`/api/hrm/payroll/${payrollId}/approve`[39m)[0m
+
+      at Object.<anonymous> (tests/hrm.test.js:383:45)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ POST /payroll/:id/pay ظ¤ ╪»┘╪╣ ╪ذ╪»┘ê┘ ╪د╪╣╪ز┘à╪د╪» ┘è╪ش╪ذ 
+╪ح╪▒╪ش╪د╪╣ 400
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+    [0m [90m 403 |[39m         [33m.[39msend({ period[33m:[39m [32m'2026-06'[39m })[33m;[39m
+     [90m 404 |[39m
+    [31m[1m>[22m[39m[90m 405 |[39m       [36mconst[39m payrollId [33m=[39m 
+genRes[33m.[39mbody[33m.[39mpayrolls[[35m0[39m][33m.[39m_id[33m;[39m
+     [90m     |[39m                                             [31m[1m^[22m[39m
+     [90m 406 |[39m
+     [90m 407 |[39m       [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+     [90m 408 |[39m         [33m.[39mpost([32m`/api/hrm/payroll/${payrollId}/pay`[39m)[0m
+
+      at Object.<anonymous> (tests/hrm.test.js:405:45)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ GET /payroll ظ¤ ┘è╪ش╪ذ ╪ح╪▒╪ش╪د╪╣ ╪د┘╪▒┘ê╪د╪ز╪ذ
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 0
+
+    [0m [90m 423 |[39m
+     [90m 424 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 425 |[39m       
+expect(res[33m.[39mbody[33m.[39mpayrolls[33m.[39mlength)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m     |[39m                                        [31m[1m^[22m[39m
+     [90m 426 |[39m     })[33m;[39m
+     [90m 427 |[39m
+     [90m 428 |[39m     test([32m'GET /payroll/summary/:period ظ¤ ┘à┘╪«╪╡ ╪د┘╪▒┘ê╪د╪ز╪ذ'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {[0m
+
+      at Object.toBe (tests/hrm.test.js:425:40)
+
+  ظù HRM API ظ¤ /api/hrm ظ║ ╪د┘╪▒┘ê╪د╪ز╪ذ ظ║ GET /payroll/summary/:period ظ¤ ┘à┘╪«╪╡ ╪د┘╪▒┘ê╪د╪ز╪ذ
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 0
+
+    [0m [90m 437 |[39m
+     [90m 438 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 439 |[39m       
+expect(res[33m.[39mbody[33m.[39msummary[33m.[39mtotalEmployees)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m     |[39m                                               [31m[1m^[22m[39m
+     [90m 440 |[39m       
+expect(res[33m.[39mbody[33m.[39msummary[33m.[39mdraft)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m 441 |[39m     })[33m;[39m
+     [90m 442 |[39m   })[33m;[39m[0m
+
+      at Object.toBe (tests/hrm.test.js:439:47)
+
+Test Suites: 1 failed, 1 total
+Tests:       12 failed, 15 passed, 27 total
+Snapshots:   0 total
+Time:        3.408 s, estimated 4 s
+Ran all test suites matching tests/hrm.test.js.

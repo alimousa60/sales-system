@@ -1,0 +1,424 @@
+/**
+ * أنماط المواضيع المتقدمة (Advanced Themes)
+ * 
+ * يتضمن:
+ * - موضوع داكن محسّن
+ * - موضوع فاتح محسّن
+ * - موضوع تباين عالي
+ * - انتقالات سلسة بين المواضيع
+ */
+
+/* ============================================================================
+   المتغيرات الأساسية والموضوع الداكن (Default/Dark)
+   ============================================================================ */
+
+:root {
+  /* الألوان */
+  --bg-base: #0b0d12;
+  --bg-surface: #10131a;
+  --bg-elevated: #161b24;
+  --bg-hover: #1c2130;
+  
+  /* الحدود */
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.11);
+  
+  /* النصوص */
+  --text-primary: #e8edf5;
+  --text-secondary: #7a8699;
+  --text-muted: #3d4d60;
+  
+  /* الألوان الأساسية */
+  --accent: #4f8ef7;
+  --accent-dim: rgba(79, 142, 247, 0.13);
+  --accent-glow: rgba(79, 142, 247, 0.25);
+  
+  /* ألوان الحالات */
+  --green: #2dd17e;
+  --green-dim: rgba(45, 209, 126, 0.11);
+  --amber: #f5a623;
+  --amber-dim: rgba(245, 166, 35, 0.11);
+  --red: #f05454;
+  --red-dim: rgba(240, 84, 84, 0.11);
+  --purple: #9b72f7;
+  --purple-dim: rgba(155, 114, 247, 0.11);
+  --cyan: #22d3ee;
+  --cyan-dim: rgba(34, 211, 238, 0.11);
+  --teal: #14b8a6;
+  --teal-dim: rgba(20, 184, 166, 0.11);
+  
+  /* الظلال */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.8);
+  
+  /* الخطوط */
+  --font: 'IBM Plex Sans Arabic', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  
+  /* التنسيقات */
+  --r: 8px;
+  --rl: 12px;
+  --sidebar-w: 230px;
+  --tr: 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* انتقالات سلسة */
+  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease;
+}
+
+/* ============================================================================
+   موضوع فاتح (Light Theme)
+   ============================================================================ */
+
+body.light-mode {
+  --bg-base: #f5f7fb;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-hover: #e6edf8;
+  
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.16);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  
+  --accent: #2563eb;
+  --accent-dim: rgba(37, 99, 235, 0.12);
+  --accent-glow: rgba(37, 99, 235, 0.18);
+  
+  --green: #16a34a;
+  --green-dim: rgba(16, 163, 74, 0.1);
+  --amber: #d97706;
+  --amber-dim: rgba(217, 119, 6, 0.1);
+  --red: #b91c1c;
+  --red-dim: rgba(185, 28, 28, 0.1);
+  --purple: #7c3aed;
+  --purple-dim: rgba(124, 58, 237, 0.1);
+  --cyan: #0891b2;
+  --cyan-dim: rgba(8, 145, 178, 0.1);
+  --teal: #0f766e;
+  --teal-dim: rgba(15, 118, 110, 0.1);
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .sidebar {
+  border-left: 1px solid var(--border);
+}
+
+body.light-mode .topbar {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+body.light-mode .card,
+body.light-mode .modal,
+body.light-mode .auth-card {
+  background: var(--bg-surface);
+  border-color: var(--border);
+}
+
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea {
+  background: #fff;
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+body.light-mode table thead th {
+  background: #f8fafc;
+  color: var(--text-muted);
+}
+
+body.light-mode tbody tr:hover td {
+  background: var(--bg-hover);
+}
+
+body.light-mode .toast.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+body.light-mode .toast.error {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+body.light-mode .toast.info {
+  background: #bfdbfe;
+  color: #1d4ed8;
+}
+
+/* ============================================================================
+   موضوع التباين العالي (High Contrast Theme)
+   ============================================================================ */
+
+body.high-contrast {
+  --bg-base: #000000;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f0f0f0;
+  --bg-hover: #e0e0e0;
+  
+  --border: #000000;
+  --border-strong: #000000;
+  
+  --text-primary: #000000;
+  --text-secondary: #000000;
+  --text-muted: #333333;
+  
+  --accent: #ffff00;
+  --accent-dim: rgba(255, 255, 0, 0.2);
+  --accent-glow: rgba(255, 255, 0, 0.4);
+  
+  --green: #00cc00;
+  --green-dim: rgba(0, 204, 0, 0.2);
+  --amber: #ff9900;
+  --amber-dim: rgba(255, 153, 0, 0.2);
+  --red: #ff0000;
+  --red-dim: rgba(255, 0, 0, 0.2);
+  --purple: #cc00ff;
+  --purple-dim: rgba(204, 0, 255, 0.2);
+  
+  --shadow-sm: 0 1px 3px #000000;
+  --shadow-md: 0 4px 12px #000000;
+  --shadow-lg: 0 16px 32px #000000;
+}
+
+body.high-contrast * {
+  border-width: 2px !important;
+}
+
+body.high-contrast button,
+body.high-contrast input,
+body.high-contrast select,
+body.high-contrast textarea {
+  border: 2px solid #000000;
+  font-weight: bold;
+}
+
+/* ============================================================================
+   مكونات موضوعية - نماذج الويدجيت
+   ============================================================================ */
+
+/* زر الموضوع */
+.theme-selector {
+  display: flex;
+  gap: 4px;
+  margin-right: 12px;
+  align-items: center;
+}
+
+.theme-btn {
+  position: relative;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--tr);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.theme-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.theme-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* تخصيص لوحة التحكم */
+.customize-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all var(--tr);
+}
+
+.customize-item:hover {
+  background: var(--bg-hover);
+}
+
+.customize-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.customize-item label {
+  cursor: pointer;
+  flex: 1;
+}
+
+/* ============================================================================
+   انتقالات الموضوع السلسة
+   ============================================================================ */
+
+/* تقليل الحركة */
+body.reduced-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* نص أكبر */
+body.large-text {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+body.large-text h3 {
+  font-size: 18px;
+}
+
+body.large-text input,
+body.large-text select,
+body.large-text button {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+/* ============================================================================
+   تحسينات التباين والقابلية للقراءة
+   ============================================================================ */
+
+/* تحسين وضوح النصوص */
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6 {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* التركيز على العناصر */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* الروابط */
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--tr);
+}
+
+a:hover {
+  text-decoration: underline;
+  color: var(--accent);
+}
+
+a:focus {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+}
+
+/* ============================================================================
+   رسوم متحركة محسّنة للموضوع
+   ============================================================================ */
+
+@keyframes themeSwitch {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+body {
+  animation: themeSwitch 200ms ease-out;
+}
+
+/* ============================================================================
+   تخطيط بيانات الموضوع (Data Attributes)
+   ============================================================================ */
+
+[data-theme="dark"] {
+  color: var(--text-primary);
+  background: var(--bg-base);
+}
+
+[data-theme="light"] {
+  color: var(--text-primary);
+  background: var(--bg-base);
+}
+
+[data-theme="high-contrast"] {
+  color: var(--text-primary);
+  background: var(--bg-base);
+  border: 2px solid var(--text-primary);
+}
+
+/* ============================================================================
+   استجابة النظام (System Preference)
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  body:not(.light-mode):not(.high-contrast) {
+    --bg-base: #0b0d12;
+    --bg-surface: #10131a;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  body:not(.dark-mode):not(.high-contrast) {
+    --bg-base: #f5f7fb;
+    --bg-surface: #ffffff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  body {
+    --text-primary: #000000;
+    --text-secondary: #333333;
+    --border-strong: rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ============================================================================
+   تحسينات الطباعة
+   ============================================================================ */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .topbar,
+  .sidebar,
+  .theme-selector,
+  button {
+    display: none;
+  }
+}

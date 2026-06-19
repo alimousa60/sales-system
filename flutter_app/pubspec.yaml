@@ -1,0 +1,23 @@
+name: sales_system_app
+description: Sales and accounting client for Android & Web.
+publish_to: 'none'
+version: 0.1.0+1
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.5
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.0.14
+  http: 1.6.0
+  connectivity_plus: ^4.0.1
+  uuid: ^3.0.7
+  shared_preferences: ^2.1.0
+  flutter_secure_storage: ^8.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true
