@@ -5,7 +5,9 @@ const STORAGE_KEY='salesSystemDB';
 const SESSION_KEY='salesSystemSession';
 const AUTH_TOKEN_KEY='salesSystemAuthToken';
 const AUTH_USER_KEY='salesSystemAuthUser';
-const API_BASE_URL='http://localhost:3000/api/v1';
+const API_BASE_URL=(window.location.hostname && window.location.hostname !== '' && window.location.protocol !== 'file:')
+  ? `${window.location.protocol}//${window.location.hostname}:3000/api/v1`
+  : 'http://localhost:3000/api/v1';
 const CLOUD_STORAGE_KEY='salesSystemCloud';
 const CLOUD_ENDPOINT=''; // ضع رابط API السحابة هنا إذا كان متاحاً
 const DB={
