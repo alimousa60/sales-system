@@ -257,9 +257,9 @@ setInterval(()=>G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:
 /* ═══ MODALS ═══ */
 /* ═══ MODAL STACK — professional layered modals ═══ */
 let _modalStack=[];
-function openModal(id){
-  if(!requireAuth())return;
-  // Initialize fields
+let _modalReturnTo=null; // {id, restoreFn} — reopen this modal after child closes
+
+function _initModalFields(id){
   if(id==='m-invoice'){
     G('si-num').value='INV-'+String(DB.cI).padStart(5,'0');
     G('si-date').value=today();
@@ -299,22 +299,50 @@ function openModal(id){
     if(!requireAdmin())return;
     G('uu-username').value='';G('uu-pass').value='';G('uu-name').value='';G('uu-role').value='sales';
   }
+}
+
+/* Which modals are "children" — when opened, their parent closes first, then reopens on child close */
+const _childParentMap={
+  'm-item':'m-pur',
+  'm-cust':'m-pur',
+  'm-sup':'m-pur'
+};
+
+function openModal(id){
+  if(!requireAuth())return;
+  const parentId = _childParentMap[id];
+  const isChild = !!parentId;
+
+  // If opening a child modal, close parent first and save return info
+  if(isChild && _modalStack.includes(parentId)){
+    _modalReturnTo={id:parentId};
+    const parentEl=G(parentId);
+    parentEl.classList.remove('on');
+    _modalStack=_modalStack.filter(x=>x!==parentId);
+  }
+
+  _initModalFields(id);
   const el=G(id);
-  // Remove on-top from all others, move this one to end of body, add on-top
-  document.querySelectorAll('.modal-backdrop.on-top').forEach(m=>m.classList.remove('on-top'));
   document.body.appendChild(el);
-  el.classList.add('on','on-top');
+  el.classList.add('on');
   _modalStack.push(id);
 }
+
 function closeModal(id){
   const el=G(id);
-  el.classList.remove('on','on-top');
+  el.classList.remove('on');
   _modalStack=_modalStack.filter(x=>x!==id);
-  // Restore on-top to the last remaining modal in stack
-  if(_modalStack.length>0){
-    const topId=_modalStack[_modalStack.length-1];
-    document.body.appendChild(G(topId));
-    G(topId).classList.add('on-top');
+
+  // If this was a child modal and parent expects return, reopen parent
+  if(_modalReturnTo && _modalReturnTo.id){
+    const returnId=_modalReturnTo.id;
+    _modalReturnTo=null;
+    // Reopen parent without triggering child logic again
+    const parentEl=G(returnId);
+    _initModalFields(returnId);
+    document.body.appendChild(parentEl);
+    parentEl.classList.add('on');
+    _modalStack.push(returnId);
   }
 }
 
