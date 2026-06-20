@@ -8,6 +8,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const WebSocket = require('ws');
 let MongoMemoryServer = null;
 try { MongoMemoryServer = require('mongodb-memory-server').MongoMemoryServer; } catch(e) {}
 const logger = require('./utils/logger');
@@ -142,16 +144,40 @@ connectDatabase()
   }
 
   const startServer = (port) => {
-    const server = app.listen(port, () => {
-      logger.info(`نظام المبيعات يعمل على http://localhost:${port}`);
-      logger.info(`CORS origin: ${CORS_ORIGIN}`);
+    const httpServer = http.createServer(app);
+    const wss = new WebSocket.Server({ server: httpServer });
+
+    wss.on('connection', (ws) => {
+      ws.isAlive = true;
+      ws.on('pong', () => { ws.isAlive = true; });
     });
 
-    server.on('error', (error) => {
+    setInterval(() => {
+      wss.clients.forEach(ws => {
+        if (!ws.isAlive) return ws.terminate();
+        ws.isAlive = false;
+        ws.ping();
+      });
+    }, 30000);
+
+    global.broadcastWS = (data) => {
+      const msg = JSON.stringify(data);
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) client.send(msg);
+      });
+    };
+
+    httpServer.listen(port, () => {
+      logger.info(`نظام المبيعات يعمل على http://localhost:${port}`);
+      logger.info(`CORS origin: ${CORS_ORIGIN}`);
+      logger.info(`WebSocket متصل على ws://localhost:${port}`);
+    });
+
+    httpServer.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
         const nextPort = Number(port) + 1;
         logger.warn(`المنفذ ${port} مشغول، جاري المحاولة على المنفذ ${nextPort}...`);
-        server.close(() => startServer(nextPort));
+        httpServer.close(() => startServer(nextPort));
       } else {
         logger.error('خطأ في بدء الخادم: ' + error.message);
         process.exit(1);
@@ -355,6 +381,19 @@ app.patch('/api/v1/company', authGuard, activeAccountGuard, async (req, res) => 
   } catch (error) {
     logger.error('خطأ في تحديث بيانات الشركة: ' + error.message);
     res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
+  }
+});
+
+// Broadcast data change to all connected WebSocket clients
+app.post('/api/v1/sync/broadcast', authGuard, (req, res) => {
+  try {
+    const { type, section, data } = req.body;
+    if (global.broadcastWS) {
+      global.broadcastWS({ type: type || 'data-change', section: section || 'unknown', data, userId: req.user.userId, ts: Date.now() });
+    }
+    res.json({ status: 'success' });
+  } catch (e) {
+    res.status(500).json({ status: 'error' });
   }
 });
 

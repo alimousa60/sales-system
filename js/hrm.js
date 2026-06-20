@@ -262,6 +262,7 @@ async function addEmployee() {
     clearEmployeeForm();
     renderHRMEmployees();
     populateHRMDeptFilter();
+    broadcastChange('hrm', { section: 'employees', action: 'add' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -360,6 +361,7 @@ async function saveEmployeeEdit() {
     toast('تم تحديث الموظف بنجاح');
     closeModal('hrm-edit-modal');
     renderHRMEmployees();
+    broadcastChange('hrm', { section: 'employees', action: 'edit' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -376,6 +378,7 @@ async function deactivateEmployee(id, name) {
     if (data.status !== 'success') throw new Error(data.message);
     toast('تم إنهاء العقد');
     renderHRMEmployees();
+    broadcastChange('hrm', { section: 'employees', action: 'deactivate' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -437,6 +440,7 @@ async function saveAttendance() {
     G('hrm-att-checkout').value = '';
     G('hrm-att-notes').value = '';
     renderHRMAttendance();
+    broadcastChange('hrm', { section: 'attendance', action: 'add' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -450,6 +454,7 @@ async function lockAttendance(id) {
     if (data.status !== 'success') throw new Error(data.message);
     toast('تم قفل السجل');
     renderHRMAttendance();
+    broadcastChange('hrm', { section: 'attendance', action: 'lock' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -514,6 +519,7 @@ async function addAdvance() {
     G('hrm-adv-amount').value = '';
     G('hrm-adv-purpose').value = '';
     renderHRMAdvances();
+    broadcastChange('hrm', { section: 'advances', action: 'add' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -533,6 +539,7 @@ async function repayAdvance(id, remaining) {
     if (data.status !== 'success') throw new Error(data.message);
     toast(`تم التسديد بنجاح. المتبقي: ${fmt(data.advance.remainingBalance)} — رصيد الخزينة: ${fmt(data.cashBalance)}`);
     renderHRMAdvances();
+    broadcastChange('hrm', { section: 'advances', action: 'repay' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -592,6 +599,7 @@ async function generatePayroll() {
     if (data.status !== 'success') throw new Error(data.message);
     toast(`تم توليد ${data.count} راتب لشهر ${period}`);
     renderHRMPayroll();
+    broadcastChange('hrm', { section: 'payroll', action: 'generate' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -605,6 +613,7 @@ async function approvePayroll(id) {
     if (data.status !== 'success') throw new Error(data.message);
     toast('تم اعتماد الراتب');
     renderHRMPayroll();
+    broadcastChange('hrm', { section: 'payroll', action: 'approve' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -621,6 +630,7 @@ async function payPayroll(id) {
     if (data.status !== 'success') throw new Error(data.message);
     toast(`تم الدفع بنجاح. رصيد الخزينة: ${fmt(data.cashBalance)}`);
     renderHRMPayroll();
+    broadcastChange('hrm', { section: 'payroll', action: 'pay' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -681,6 +691,7 @@ async function adjustCashLedger() {
     G('hrm-cl-adj-amount').value = '';
     G('hrm-cl-adj-reason').value = '';
     renderHRMCashLedger();
+    broadcastChange('hrm', { section: 'cash-ledger', action: 'adjust' });
   } catch (err) {
     toast(err.message, false);
   }
@@ -1117,6 +1128,7 @@ async function savePerformanceEval() {
     if (data.status !== 'success') throw new Error(data.message);
     toast(`تم حفظ التقييم — المتوسط: ${avg} (${grade})`);
     closeModal('hrm-perf-modal');
+    broadcastChange('hrm', { section: 'performance', action: 'add' });
   } catch (err) {
     toast(err.message, false);
   }

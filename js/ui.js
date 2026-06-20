@@ -108,6 +108,7 @@ function saveCompany(){
   closeModal('m-company');
   renderCompany();
   renderSettings();
+  broadcastChange('company', { name });
   toast('تم حفظ بيانات الشركة');
 }
 

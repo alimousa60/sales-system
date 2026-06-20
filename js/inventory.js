@@ -20,6 +20,7 @@ function saveItem(){
   if(G('si-item-sel')) popSel('si-item-sel',DB.items,'id','name','-- اختر صنف --');
   if(G('pi-item-sel')) popSel('pi-item-sel',DB.items,'id','name','-- اختر صنف --');
   updateStats();
+  broadcastChange('items', { id: item.id, name });
   toast(`تم إضافة الصنف "${name}" بنجاح`)
 }
 function filterItems(q){renderItems(q)}
@@ -68,7 +69,8 @@ function delItem(id){
   addLog('حذف صنف',`"${it?.name}"`,'#f05454');
   DB.items=DB.items.filter(x=>x.id!==id);
   saveState();
-  renderItems();updateStats()
+  renderItems();updateStats();
+  broadcastChange('items', { id, deleted: true });
 }
 
 function renderUsers(search=''){
@@ -193,6 +195,7 @@ async function saveUser(){
     addLog('إضافة مستخدم',`"${name}" — ${role}`,'#9b72f7');
     closeModal('m-user');
     renderUsers();
+    broadcastChange('users', { name, role });
     toast(`تم إضافة المستخدم ${name}`)
   }catch(e){
     console.warn('saveUser failed',e);
@@ -221,6 +224,7 @@ async function delUser(id){
     DB.users=DB.users.filter(u=>String(u.id||u._id)!==String(id));
     addLog('حذف مستخدم',`"${user.name}"`,'#f05454');
     renderUsers();
+    broadcastChange('users', { id, deleted: true });
     toast(`تم حذف المستخدم ${user.name}`)
   }catch(e){
     console.warn('delUser failed',e);
@@ -235,7 +239,9 @@ function saveCust(){
   const id=Date.now();
   DB.custs.push({id,name,phone:G('cu-phone').value,addr:G('cu-addr').value,openBal});
   addLog('إضافة زبون',`"${name}" رصيد افتتاحي: ${fmt(openBal)} د.ل`,'#9b72f7');
-  closeModal('m-cust');renderCusts();toast(`تم إضافة الزبون "${name}"`)
+  closeModal('m-cust');renderCusts();
+  broadcastChange('customers', { id, name });
+  toast(`تم إضافة الزبون "${name}"`)
 }
 function renderCusts(search=''){
   const tb=G('cust-tb');
@@ -264,7 +270,9 @@ function saveSup(){
   const name=G('su-name').value.trim();if(!name){toast('أدخل اسم المورد','error');return}
   DB.sups.push({id:Date.now(),name,phone:G('su-phone').value,addr:G('su-addr').value});
   addLog('إضافة مورد',`"${name}"`,'#22d3ee');
-  closeModal('m-sup');renderSups();toast(`تم إضافة المورد "${name}"`)
+  closeModal('m-sup');renderSups();
+  broadcastChange('suppliers', { name });
+  toast(`تم إضافة المورد "${name}"`)
 }
 function renderSups(search=''){
   const tb=G('sup-tb');

@@ -56,6 +56,7 @@ function saveInv(){
   addLog('فاتورة بيع (ذمة مدينة)',`${num} — الزبون "${cust?.name}" — ${fmt(total)} د.ل — لا أثر على الخزينة أو المخزون حتى الآن`,'#4f8ef7');
   saveState();
   closeModal('m-invoice');renderSales();updateStats();
+  broadcastChange('sales', { num, custName: cust?.name, total });
   toast(`تم حفظ الفاتورة ${num} — الذمة المدينة مسجَّلة`)
 }
 function renderSales(search=''){
@@ -151,6 +152,7 @@ function savePayment(){
   addLog('استلام دفعة (خزينة+)',`${pId} — ${inv.num} — ${inv.custName} — ${fmt(amount)} د.ل — ${modeLabel}`,'#2dd17e');
   saveState();
   closeModal('m-collect');renderSales();updateStats();renderFin();
+  broadcastChange('payments', { pId, invId, amount });
   toast(`تم استلام ${fmt(amount)} د.ل من الزبون ${inv.custName} ✓`)
 }
 
@@ -161,6 +163,7 @@ function deletePayment(payId){
   addLog('حذف دفعة',`${payId} — ${pay.invNum} — ${fmt(pay.amount)} د.ل`,'#f05454');
   saveState();
   renderSales();updateStats();renderFin();
+  broadcastChange('payments', { payId, deleted: true });
   const invId=pay.invId;
   if(invId){const inv=DB.invs.find(x=>x.id===invId);if(inv)viewInv(invId)}
   toast(`تم حذف الدفعة ${payId}`)
@@ -304,6 +307,7 @@ function saveCollect2(){
   addLog('استلام دفعة (زبون)',`"${cust.name}" — ${fmt(applied)} د.ل — ${_col2Pay}${remaining>0.001?` — ${fmt(remaining)} د.ل لم تُربط`:''}`,'#2d9f6d');
   saveState();
   closeModal('m-collect2');renderSales();updateStats();renderFin();
+  broadcastChange('payments', { custId, amount: applied });
   toast(`تم استلام ${fmt(applied)} د.ل من ${cust.name} ✓`);
 }
 
@@ -506,6 +510,7 @@ function saveSettlement(){
   addLog('تسوية (خصم)',`${settlement.id} — "${cust.name}" — ${fmt(amt)} د.ل — ${applied.length} فاتورة — ${reason}`,'#f5a623');
   saveState();
   closeModal('m-settle');renderSales();updateStats();
+  broadcastChange('settlements', { settlementId: settlement.id, custName: cust.name });
   toast(`تم تطبيق تسوية ${fmt(amt)} د.ل على ${applied.length} فاتورة ✓`)
 }
 
@@ -550,6 +555,7 @@ function confirmDeliver(){
   addLog('تسليم البضاعة (مخزون-)',`${inv.num} — المستلم: "${recv}" — المخزون مُحدَّث فقط، لا أثر على الخزينة`,'#14b8a6');
   saveState();
   closeModal('m-deliver');renderSales();renderItems();updateStats();
+  broadcastChange('sales', { invNum: inv.num, delivered: true });
   toast(`تم تسليم الفاتورة ${inv.num} — المخزون خُصِم ✓`)
 }
 
@@ -891,6 +897,7 @@ function saveRet(){
   addLog('مرتجع مبيعات',`${num} — فاتورة ${invNum} — ${fmt(amt)} د.ل — QC: ${_reQC}`,'#f05454');
   saveState();
   closeModal('m-return');renderRets();renderItems();updateStats();
+  broadcastChange('returns', { num, invNum });
   const qcMsg=_reQC==='passed'?' وأُعيد للمخزون':_reQC==='failed'?' ولن يُعاد للمخزون':' والجودة قيد المراجعة';
   toast(`تم تسجيل المرتجع ${num}${qcMsg}`)
 }
@@ -981,6 +988,7 @@ function reverseSettlement(type,settleId){
   loadReverseSettlements();
   if(isCust){renderSales();}else{renderPurs();renderSups();}
   updateStats();
+  broadcastChange('settlements', { settleId, reversed: true });
   toast(`تم عكس التسوية ${s.id} ✓ — أُعيد ${fmt(s.amount)} د.ل`);
 }
 

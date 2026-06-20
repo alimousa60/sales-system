@@ -49,6 +49,7 @@ function savePur(){
   addLog('فاتورة شراء (ذمة دائنة)',`${num} — "${sup?.name}" — ${fmt(total)} د.ل — ${note}`,'#f5a623');
   saveState();
   closeModal('m-pur');renderPurs();renderItems();updateStats();
+  broadcastChange('purchases', { num, supName: sup?.name, total });
   toast(`تم حفظ فاتورة الشراء ${num} — ${note}`)
 }
 function renderPurs(search=''){
@@ -128,6 +129,7 @@ function saveSupPay(){
   addLog('دفعة للمورد (خزينة-)',`"${sup?.name}" — ${fmt(applied)} د.ل — ${_spPay}${remaining>0.001?` — ${fmt(remaining)} د.ل لم تُربط`:''}`,'#f05454');
   saveState();
   closeModal('m-suppay');renderSupPays();renderPurs();renderSups();updateStats();renderFin();
+  broadcastChange('payments', { supId, amount: applied });
   toast(`تم تسجيل دفعة ${fmt(applied)} د.ل للمورد ${sup?.name}`)
 }
 
@@ -408,5 +410,6 @@ function saveSupSettlement(){
   addLog('تسوية مورد (خصم)',`${settlement.id} — "${sup.name}" — ${fmt(amt)} د.ل — ${applied.length} فاتورة — ${reason}`,'#f5a623');
   saveState();
   closeModal('m-sup-settle');renderPurs();renderSups();updateStats();
+  broadcastChange('settlements', { settlementId: settlement.id, supName: sup.name });
   toast(`تم تطبيق تسوية ${fmt(amt)} د.ل على ${applied.length} فاتورة شراء ✓`)
 }
