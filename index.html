@@ -777,7 +777,39 @@
 
     <!-- TAB: REPORTS -->
     <div id="hrm-reports" class="hrm-tab" style="display:none">
+      <!-- ERP REPORT TEMPLATES SELECTOR -->
       <div class="card mb-14">
+        <div class="card-hd">
+          <h3><span class="card-icon-badge blue"><i class="ti ti-dashboard"></i></span> نظام التقارير المتقدم</h3>
+          <div class="flex-gap6" id="erp-saved-reports"></div>
+        </div>
+        <div class="modal-body">
+          <div id="erp-templates" class="rpt-templates"></div>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div id="erp-toolbar" class="rpt-toolbar" style="display:none"></div>
+
+      <!-- COLUMN SELECTOR -->
+      <div id="erp-col-selector" class="rpt-col-selector" style="display:none"></div>
+
+      <!-- KPI CARDS -->
+      <div id="erp-kpi-container"></div>
+
+      <!-- CHARTS -->
+      <div id="erp-charts-container"></div>
+
+      <!-- DATA TABLE -->
+      <div id="erp-table-container" class="mb-14">
+        <div class="rpt-empty"><i class="ti ti-dashboard"></i><h4>اختر تقريراً من القائمة</h4><p>اختر نوع التقرير أعلاه لبدء عرض البيانات</p></div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div id="erp-summary"></div>
+
+      <!-- LEGACY: OLD REPORTS -->
+      <div class="card mt-14">
         <div class="card-hd">
           <h3><i class="ti ti-chart-bar" icon-accent"></i> ملخص الرواتب</h3>
           <div class="flex-gap6">
@@ -1400,6 +1432,7 @@
 <script src="js/reports.js?t=20260620b"></script>
 <script src="js/charts.js?t=20260620b"></script>
 <script src="js/hrm.js?t=20260620b"></script>
+<script src="js/reports-erp.js?t=20260620e"></script>
 <script src="js/main.js?t=20260620b"></script>
 <script>
 navigator.serviceWorker?.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));

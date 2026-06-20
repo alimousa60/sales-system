@@ -48,6 +48,8 @@ function showHRMTab(tabId) {
     renderHRMCharts();
     loadHRMEmployeeDropdown('hrm-perf-list-emp');
     renderPerformanceList();
+    if (typeof renderERPTemplates === 'function') renderERPTemplates();
+    if (typeof erpLoadSavedReports === 'function') erpLoadSavedReports();
   }
 }
 
