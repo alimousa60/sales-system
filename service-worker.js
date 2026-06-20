@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sales-system-v1';
+const CACHE_NAME = 'sales-system-v2';
 const STATIC_ASSETS = [
   '/',
   '/sales-system.html',
@@ -12,7 +12,9 @@ const STATIC_ASSETS = [
   '/js/charts.js',
   '/js/hrm.js',
   '/js/excel-export.js',
-  '/js/main.js'
+  '/js/main.js',
+  '/js/realtime.js',
+  '/js/notify.js'
 ];
 
 self.addEventListener('install', event => {
@@ -37,7 +39,11 @@ self.addEventListener('fetch', event => {
     );
   } else {
     event.respondWith(
-      caches.match(event.request).then(cached => cached || fetch(event.request))
+      fetch(event.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      }).catch(() => caches.match(event.request))
     );
   }
 });
