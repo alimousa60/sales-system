@@ -92,7 +92,7 @@
   <!-- DASHBOARD -->
   <div class="page on" id="p-dash">
     <!-- QUICK NAV -->
-    <div class="dash-quick-nav">
+    <div class="dash-quick-nav" id="cust-quick-nav">
       <div class="dash-qn-item" onclick="navigateTo('sales')"><div class="dash-qn-icon blue"><i class="ti ti-receipt"></i></div><div class="dash-qn-label">فواتير البيع</div></div>
       <div class="dash-qn-item" onclick="navigateTo('inventory')"><div class="dash-qn-icon cyan"><i class="ti ti-package"></i></div><div class="dash-qn-label">الأصناف</div></div>
       <div class="dash-qn-item" onclick="navigateTo('customers')"><div class="dash-qn-icon green"><i class="ti ti-user-circle"></i></div><div class="dash-qn-label">الزبائن</div></div>
@@ -101,7 +101,7 @@
       <div class="dash-qn-item" onclick="navigateTo('hrm')"><div class="dash-qn-icon red"><i class="ti ti-users-group"></i></div><div class="dash-qn-label">HRM</div></div>
     </div>
 
-    <div class="stats-grid">
+    <div class="stats-grid" id="cust-stat-cards">
       <div class="stat-card blue dash-card-anim">
         <div class="stat-icon-wrap blue"><i class="ti ti-trending-up"></i></div>
         <div class="stat-lbl">المبيعات (إجمالي)</div>
@@ -129,7 +129,7 @@
     </div>
     <div id="dash-alerts"></div>
     <div class="dashboard-insight" id="dash-insight"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div id="cust-charts" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card dash-card-anim" style="animation-delay:.24s">
         <div class="card-hd"><h3><span class="card-icon-badge blue"><i class="ti ti-chart-bar"></i></span> المبيعات الأخيرة (7 أيام)</h3></div>
         <div style="padding:12px;height:220px"><canvas id="dash-sales-chart"></canvas></div>
@@ -139,19 +139,19 @@
         <div style="padding:12px;height:220px"><canvas id="dash-pay-chart"></canvas></div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div id="cust-inv-table" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card dash-card-anim" style="animation-delay:.36s">
         <div class="card-hd"><h3><span class="card-icon-badge purple"><i class="ti ti-receipt"></i></span> آخر فواتير البيع</h3></div>
         <div class="dash-card-view" id="d-inv-cv"></div>
         <div class="tbl-wrap"><table><thead><tr><th>رقم</th><th>الزبون</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody id="d-inv-tb"></tbody></table></div>
       </div>
-      <div class="card dash-card-anim" style="animation-delay:.42s">
+      <div id="cust-low-stock" class="card dash-card-anim" style="animation-delay:.42s">
         <div class="card-hd"><h3><span class="card-icon-badge red"><i class="ti ti-alert-triangle"></i></span> أصناف منخفضة</h3></div>
         <div class="dash-card-view" id="d-low-cv"></div>
         <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الرصيد</th><th>الحد</th></tr></thead><tbody id="d-low-tb"></tbody></table></div>
       </div>
     </div>
-    <div class="card dash-card-anim" style="animation-delay:.48s">
+    <div id="cust-activity-log" class="card dash-card-anim" style="animation-delay:.48s">
       <div class="card-hd"><h3><span class="card-icon-badge cyan"><i class="ti ti-activity"></i></span> آخر العمليات</h3></div>
       <div id="d-log-list"></div>
     </div>
@@ -178,7 +178,7 @@
           <button class="btn btn-primary" onclick="openModal('m-item')"><i class="ti ti-plus"></i> صنف جديد</button>
         </div></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>الكود</th><th>الصنف</th><th>الفئة</th><th>سعر الشراء</th><th>سعر البيع</th><th>الرصيد</th><th>الوحدة</th><th>الحالة</th><th></th></tr></thead>
+        <thead><tr><th data-cust-col="col-code">الكود</th><th data-cust-col="col-name">الصنف</th><th data-cust-col="col-cat">الفئة</th><th data-cust-col="col-buy">سعر الشراء</th><th data-cust-col="col-sell">سعر البيع</th><th data-cust-col="col-qty">الرصيد</th><th data-cust-col="col-unit">الوحدة</th><th data-cust-col="col-status">الحالة</th><th></th></tr></thead>
         <tbody id="inv-tb"></tbody></table></div>
       <div class="pagination" id="pag-inv-tb"></div>
     </div>
@@ -1520,6 +1520,7 @@
 <script src="js/hrm.js?t=20260620b"></script>
 <script src="js/reports-erp.js?t=20260620e"></script>
 <script src="js/barcode-settings.js?t=20260620f"></script>
+<script src="js/customize-page.js?t=20260620g"></script>
 <script src="js/main.js?t=20260620b"></script>
 <script>
 navigator.serviceWorker?.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
