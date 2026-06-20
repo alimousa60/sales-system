@@ -120,8 +120,6 @@ function saveItem(){
   DB.items.push(item);
   addLog('إضافة صنف',`"${name}" — سعر البيع: ${fmt(item.sell)} د.ل`,'#2dd17e');
   closeModal('m-item');renderItems();
-  if(G('si-item-sel')) popSel('si-item-sel',DB.items,'id','name','-- اختر صنف --');
-  if(G('pi-item-sel')) popSel('pi-item-sel',DB.items,'id','name','-- اختر صنف --');
   updateStats();
   broadcastChange('items', { id: item.id, name });
   toast(`"${name}" — سعر البيع: ${fmt(item.sell)} د.ل`,{icon:'ti-package',title:'صنف جديد'})
