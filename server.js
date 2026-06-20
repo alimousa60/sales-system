@@ -58,8 +58,16 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(cors({ origin: function(o, cb) { cb(null, true); }, credentials: true }));
 
-// Serve static frontend files
+// Serve static frontend files with no-cache in production
 const path = require('path');
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.url.startsWith('/api/')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname)));
 
 // Rate limiting

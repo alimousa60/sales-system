@@ -12,7 +12,7 @@
 <title>نظام إدارة المبيعات — v3.0</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?t=20260620b">
 </head>
 <body>
 <div class="auth-backdrop" id="login-screen">
@@ -1366,22 +1366,20 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="js/db.js?v=3"></script>
-<script src="js/realtime.js"></script>
-<script src="js/notify.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/excel-export.js"></script>
-<script src="js/inventory.js"></script>
-<script src="js/sales.js"></script>
-<script src="js/purchases.js"></script>
-<script src="js/reports.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/hrm.js"></script>
-<script src="js/main.js"></script>
+<script src="js/db.js?t=20260620b"></script>
+<script src="js/realtime.js?t=20260620b"></script>
+<script src="js/notify.js?t=20260620b"></script>
+<script src="js/ui.js?t=20260620b"></script>
+<script src="js/excel-export.js?t=20260620b"></script>
+<script src="js/inventory.js?t=20260620b"></script>
+<script src="js/sales.js?t=20260620b"></script>
+<script src="js/purchases.js?t=20260620b"></script>
+<script src="js/reports.js?t=20260620b"></script>
+<script src="js/charts.js?t=20260620b"></script>
+<script src="js/hrm.js?t=20260620b"></script>
+<script src="js/main.js?t=20260620b"></script>
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js').catch(() => {});
-}
+navigator.serviceWorker?.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
 </script>
 </body>
 </html>
