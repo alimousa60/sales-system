@@ -1,4 +1,20 @@
 /* ═══ DASHBOARD ═══ */
+
+function animateCounter(el, target, isFloat){
+  const start=parseFloat(el.textContent.replace(/[^0-9.-]/g,''))||0;
+  if(start===target){return}
+  const dur=600;const st=performance.now();
+  function tick(now){
+    const p=Math.min((now-st)/dur,1);
+    const ease=1-Math.pow(1-p,3);
+    const v=start+(target-start)*ease;
+    el.textContent=isFloat?v.toFixed(3):Math.round(v);
+    if(p<1)requestAnimationFrame(tick);
+  }
+  el.classList.add('count-anim');
+  requestAnimationFrame(tick);
+}
+
 function updateStats(){
   const totalSales=DB.invs.reduce((s,x)=>s+x.total,0);
   const openBal=DB.custs.reduce((s,c)=>s+(parseFloat(c.openBal)||0),0);
@@ -7,10 +23,13 @@ function updateStats(){
   const alerts=DB.items.filter(x=>x.qty<=x.reorder);
   const pendingDeliveries=DB.invs.filter(i=>i.dlvStatus!=='delivered').length;
   const overdueInvoices=DB.invs.filter(i=>invRemaining(i)>0.001 && i.dlvStatus==='delivered').length;
-  G('ds-s').textContent=fmt(totalSales);
-  G('ds-collected').textContent=fmt(collected);
-  G('ds-recv').textContent=fmt(uncollected);
-  G('ds-a').textContent=alerts.length;
+
+  const elSales=G('ds-s'), elCol=G('ds-collected'), elRecv=G('ds-recv'), elA=G('ds-a');
+  if(elSales)animateCounter(elSales,totalSales,true);
+  if(elCol)animateCounter(elCol,collected,true);
+  if(elRecv)animateCounter(elRecv,uncollected,true);
+  if(elA)animateCounter(elA,alerts.length,false);
+
   const ad=G('dash-alerts');
   ad.innerHTML=`<div class="insight-grid">
     <div class="insight-card blue"><span>فواتير معلقة</span><strong>${pendingDeliveries}</strong><small>في انتظار التسليم</small></div>

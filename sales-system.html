@@ -91,35 +91,55 @@
   <!-- DASHBOARD -->
   <div class="page on" id="p-dash">
     <div class="stats-grid">
-      <div class="stat-card blue"><div class="stat-lbl">المبيعات (إجمالي)</div><div class="stat-val" id="ds-s">0.000</div><div class="stat-sub">دينار ليبي</div><i class="ti ti-receipt stat-icon"></i></div>
-      <div class="stat-card green"><div class="stat-lbl">المحصَّل فعلياً</div><div class="stat-val" id="ds-collected">0.000</div><div class="stat-sub">نقدي + صكوك</div><i class="ti ti-cash stat-icon"></i></div>
-      <div class="stat-card amber"><div class="stat-lbl">ذمم مدينة</div><div class="stat-val" id="ds-recv">0.000</div><div class="stat-sub">غير محصَّل</div><i class="ti ti-clock stat-icon"></i></div>
-      <div class="stat-card red"><div class="stat-lbl">تنبيهات المخزون</div><div class="stat-val" id="ds-a">0</div><div class="stat-sub">دون حد الأمان</div><i class="ti ti-alert-triangle stat-icon"></i></div>
+      <div class="stat-card blue dash-card-anim">
+        <div class="stat-icon-wrap blue"><i class="ti ti-trending-up"></i></div>
+        <div class="stat-lbl">المبيعات (إجمالي)</div>
+        <div class="stat-val" id="ds-s">0.000</div>
+        <div class="stat-sub">دينار ليبي</div>
+      </div>
+      <div class="stat-card green dash-card-anim" style="animation-delay:.06s">
+        <div class="stat-icon-wrap green"><i class="ti ti-cash"></i></div>
+        <div class="stat-lbl">المحصَّل فعلياً</div>
+        <div class="stat-val" id="ds-collected">0.000</div>
+        <div class="stat-sub">نقدي + صكوك</div>
+      </div>
+      <div class="stat-card amber dash-card-anim" style="animation-delay:.12s">
+        <div class="stat-icon-wrap amber"><i class="ti ti-clock"></i></div>
+        <div class="stat-lbl">ذمم مدينة</div>
+        <div class="stat-val" id="ds-recv">0.000</div>
+        <div class="stat-sub">غير محصَّل</div>
+      </div>
+      <div class="stat-card red dash-card-anim" style="animation-delay:.18s">
+        <div class="stat-icon-wrap red"><i class="ti ti-alert-triangle"></i></div>
+        <div class="stat-lbl">تنبيهات المخزون</div>
+        <div class="stat-val" id="ds-a">0</div>
+        <div class="stat-sub">دون حد الأمان</div>
+      </div>
     </div>
     <div id="dash-alerts"></div>
     <div class="dashboard-insight" id="dash-insight"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div class="card">
-        <div class="card-hd"><h3><i class="ti ti-chart-bar icon-accent"></i> المبيعات الأخيرة (7 أيام)</h3></div>
+      <div class="card dash-card-anim" style="animation-delay:.24s">
+        <div class="card-hd"><h3><span class="card-icon-badge blue"><i class="ti ti-chart-bar"></i></span> المبيعات الأخيرة (7 أيام)</h3></div>
         <div style="padding:12px;height:220px"><canvas id="dash-sales-chart"></canvas></div>
       </div>
-      <div class="card">
-        <div class="card-hd"><h3><i class="ti ti-chart-pie icon-green"></i> توزيع المدفوعات</h3></div>
+      <div class="card dash-card-anim" style="animation-delay:.3s">
+        <div class="card-hd"><h3><span class="card-icon-badge green"><i class="ti ti-chart-pie"></i></span> توزيع المدفوعات</h3></div>
         <div style="padding:12px;height:220px"><canvas id="dash-pay-chart"></canvas></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div class="card">
-        <div class="card-hd"><h3><i class="ti ti-receipt icon-accent"></i> آخر فواتير البيع</h3></div>
+      <div class="card dash-card-anim" style="animation-delay:.36s">
+        <div class="card-hd"><h3><span class="card-icon-badge purple"><i class="ti ti-receipt"></i></span> آخر فواتير البيع</h3></div>
         <div class="tbl-wrap"><table><thead><tr><th>رقم</th><th>الزبون</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody id="d-inv-tb"></tbody></table></div>
       </div>
-      <div class="card">
-        <div class="card-hd"><h3><i class="ti ti-alert-triangle icon-amber"></i> أصناف منخفضة</h3></div>
+      <div class="card dash-card-anim" style="animation-delay:.42s">
+        <div class="card-hd"><h3><span class="card-icon-badge red"><i class="ti ti-alert-triangle"></i></span> أصناف منخفضة</h3></div>
         <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الرصيد</th><th>الحد</th></tr></thead><tbody id="d-low-tb"></tbody></table></div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-hd"><h3><i class="ti ti-activity icon-purple"></i> آخر العمليات</h3></div>
+    <div class="card dash-card-anim" style="animation-delay:.48s">
+      <div class="card-hd"><h3><span class="card-icon-badge cyan"><i class="ti ti-activity"></i></span> آخر العمليات</h3></div>
       <div id="d-log-list"></div>
     </div>
   </div>

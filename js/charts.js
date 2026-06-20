@@ -4,9 +4,26 @@ let _dashSalesChart=null,_dashPayChart=null,_plChart=null;
 function getChartColors(){
   return{
     accent:'#4f8ef7',green:'#2dd17e',amber:'#f5a623',red:'#f05454',purple:'#a855f7',cyan:'#22d3ee',teal:'#14b8a6',
-    accentA:'rgba(79,142,247,.15)',greenA:'rgba(45,209,126,.15)',amberA:'rgba(245,166,35,.15)',redA:'rgba(240,84,84,.15)'
+    accentA:'rgba(79,142,247,.2)',greenA:'rgba(45,209,126,.2)',amberA:'rgba(245,166,35,.2)',redA:'rgba(240,84,84,.2)'
   };
 }
+
+const _chartTooltip={
+  backgroundColor:'rgba(16,19,26,.92)',
+  titleColor:'#e8edf5',
+  bodyColor:'#7a8699',
+  borderColor:'rgba(255,255,255,.08)',
+  borderWidth:1,
+  cornerRadius:10,
+  padding:12,
+  titleFont:{weight:'700'},
+  bodyFont:{size:12},
+  displayColors:true,
+  boxWidth:10,
+  boxHeight:10,
+  boxPadding:4,
+  usePointStyle:true
+};
 
 function renderDashCharts(){
   if(typeof Chart==='undefined')return;
@@ -23,7 +40,7 @@ function renderDashCharts(){
   const sCtx=G('dash-sales-chart');
   if(sCtx){
     if(_dashSalesChart)_dashSalesChart.destroy();
-    _dashSalesChart=new Chart(sCtx,{type:'bar',data:{labels:days.map(d=>d.label),datasets:[{label:'المبيعات',data:days.map(d=>d.sales),backgroundColor:c.accentA,borderColor:c.accent,borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.1)'},ticks:{callback:v=>fmt(v)}},x:{grid:{display:false}}}}});
+    _dashSalesChart=new Chart(sCtx,{type:'bar',data:{labels:days.map(d=>d.label),datasets:[{label:'المبيعات',data:days.map(d=>d.sales),backgroundColor:c.accentA,borderColor:c.accent,borderWidth:2,borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{..._chartTooltip,callbacks:{label:ctx=>fmt(ctx.parsed.y)+' د.ل'}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.08)',drawBorder:false},ticks:{callback:v=>fmt(v),font:{size:11}},border:{display:false}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
   }
   const cashTotal=DB.payments.filter(p=>p.mode==='cash').reduce((s,p)=>s+p.amount,0);
   const checkTotal=DB.payments.filter(p=>p.mode==='check').reduce((s,p)=>s+p.amount,0);
@@ -32,8 +49,7 @@ function renderDashCharts(){
   const pCtx=G('dash-pay-chart');
   if(pCtx){
     if(_dashPayChart)_dashPayChart.destroy();
-    const hasData=cashTotal+checkTotal+transferTotal+supTotal>0;
-    _dashPayChart=new Chart(pCtx,{type:'doughnut',data:{labels:['نقدي وارد','صكوك واردة','تحويلات واردة','مدفوعات للموردين'],datasets:[{data:[cashTotal,checkTotal,transferTotal,supTotal],backgroundColor:[c.green,c.accent,c.cyan,c.red],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:8,font:{size:11}}}}}});
+    _dashPayChart=new Chart(pCtx,{type:'doughnut',data:{labels:['نقدي وارد','صكوك واردة','تحويلات واردة','مدفوعات للموردين'],datasets:[{data:[cashTotal,checkTotal,transferTotal,supTotal],backgroundColor:[c.green,c.accent,c.cyan,c.red],borderWidth:3,borderColor:c.accent,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:10,font:{size:11},usePointStyle:true,pointStyle:'circle'}},tooltip:{..._chartTooltip,callbacks:{label:ctx=>ctx.label+': '+fmt(ctx.parsed)+' د.ل'}}}}});
   }
 }
 
@@ -51,5 +67,5 @@ function renderPLChart(){
   const ctx=G('pl-chart');
   if(!ctx)return;
   if(_plChart)_plChart.destroy();
-  _plChart=new Chart(ctx,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[{label:'الإيراد',data:items.map(i=>i.revenue),backgroundColor:c.greenA,borderColor:c.green,borderWidth:2,borderRadius:6},{label:'التكلفة',data:items.map(i=>i.cost),backgroundColor:c.redA,borderColor:c.red,borderWidth:2,borderRadius:6},{label:'الربح',data:items.map(i=>i.profit),backgroundColor:c.accentA,borderColor:c.accent,borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:8,font:{size:11}}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.1)'},ticks:{callback:v=>fmt(v)}},x:{grid:{display:false}}}}});
+  _plChart=new Chart(ctx,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[{label:'الإيراد',data:items.map(i=>i.revenue),backgroundColor:c.greenA,borderColor:c.green,borderWidth:2,borderRadius:8,borderSkipped:false},{label:'التكلفة',data:items.map(i=>i.cost),backgroundColor:c.redA,borderColor:c.red,borderWidth:2,borderRadius:8,borderSkipped:false},{label:'الربح',data:items.map(i=>i.profit),backgroundColor:c.accentA,borderColor:c.accent,borderWidth:2,borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:10,font:{size:11},usePointStyle:true,pointStyle:'circle'}},tooltip:{..._chartTooltip,callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)+' د.ل'}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.08)',drawBorder:false},ticks:{callback:v=>fmt(v),font:{size:11}},border:{display:false}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 }
