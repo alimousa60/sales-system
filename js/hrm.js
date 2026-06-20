@@ -156,7 +156,7 @@ function loadEmployeeDraft() {
     });
     toast('تم استرجاع المسودة');
   } catch (e) {
-    toast('خطأ في استرجاع المسودة', false);
+    toast('خطأ في استرجاع المسودة', 'error');
   }
 }
 
@@ -181,7 +181,7 @@ function clearEmployeeForm() {
 
 function previewEmployee() {
   const data = getEmployeeFormData();
-  if (!data.name) { toast('أدخل اسم الموظف أولاً', false); return; }
+  if (!data.name) { toast('أدخل اسم الموظف أولاً', 'error'); return; }
   const contractLabel = { full_time: 'دوام كامل', part_time: 'دوام جزئي', hourly: 'بالساعة', contract: 'عقد' }[data.contractType] || data.contractType;
   G('hrm-preview-body').innerHTML = `
     <div style="background:var(--bg-elevated);border-radius:var(--r);padding:14px;margin-bottom:10px">
@@ -243,7 +243,7 @@ function getEmployeeFormData() {
 
 async function addEmployee() {
   const d = getEmployeeFormData();
-  if (!d.name) { toast('الاسم مطلوب', false); return; }
+  if (!d.name) { toast('الاسم مطلوب', 'error'); return; }
   if (!d.employeeNo) {
     d.employeeNo = autoGenerateEmpNo();
     G('hrm-emp-no').value = d.employeeNo;
@@ -259,13 +259,15 @@ async function addEmployee() {
     });
     const data = await res.json();
     if (data.status !== 'success') throw new Error(data.message);
-    toast('تم إضافة الموظف بنجاح — ' + d.employeeNo);
+    if(typeof notify==='function') notify('تم إضافة الموظف: ' + d.name + ' (' + d.employeeNo + ')', 'success', {icon:'ti-user-plus'});
+    else toast('تم إضافة الموظف بنجاح — ' + d.employeeNo, 'success');
     clearEmployeeForm();
     renderHRMEmployees();
     populateHRMDeptFilter();
     broadcastChange('hrm', { section: 'employees', action: 'add' });
   } catch (err) {
-    toast(err.message, false);
+    if(typeof notify==='function') notify(err.message, 'error', {icon:'ti-alert-triangle'});
+    else toast(err.message, 'error');
   }
 }
 
@@ -335,7 +337,7 @@ async function editEmployee(id) {
     G('hrm-edit-salary').value = e.monthlySalary || 0;
     G('hrm-edit-notes').value = e.notes || '';
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -352,7 +354,7 @@ async function saveEmployeeEdit() {
     monthlySalary: +(G('hrm-edit-salary')?.value || 0),
     notes: G('hrm-edit-notes')?.value?.trim()
   };
-  if (!payload.name) { toast('الاسم مطلوب', false); return; }
+  if (!payload.name) { toast('الاسم مطلوب', 'error'); return; }
   try {
     const res = await authenticatedFetch(`/api/hrm/employees/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -364,7 +366,7 @@ async function saveEmployeeEdit() {
     renderHRMEmployees();
     broadcastChange('hrm', { section: 'employees', action: 'edit' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -381,7 +383,7 @@ async function deactivateEmployee(id, name) {
     renderHRMEmployees();
     broadcastChange('hrm', { section: 'employees', action: 'deactivate' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -444,7 +446,7 @@ async function saveAttendance() {
   const checkOut = G('hrm-att-checkout')?.value || '';
   const status = G('hrm-att-status')?.value || 'present';
   const notes = G('hrm-att-notes')?.value?.trim() || '';
-  if (!empId) { toast('اختر موظف', false); return; }
+  if (!empId) { toast('اختر موظف', 'error'); return; }
   try {
     const res = await authenticatedFetch('/api/hrm/attendance', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -459,7 +461,7 @@ async function saveAttendance() {
     renderHRMAttendance();
     broadcastChange('hrm', { section: 'attendance', action: 'add' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -473,7 +475,7 @@ async function lockAttendance(id) {
     renderHRMAttendance();
     broadcastChange('hrm', { section: 'attendance', action: 'lock' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -539,8 +541,8 @@ async function addAdvance() {
   const total = +(G('hrm-adv-total')?.value || 1);
   const purpose = G('hrm-adv-purpose')?.value?.trim() || '';
   const date = G('hrm-adv-date')?.value || new Date().toISOString().slice(0, 10);
-  if (!empId || !amount || amount <= 0) { toast('اختر الموظف والمبلغ', false); return; }
-  if (type === 'loan' && (!monthly || monthly <= 0)) { toast('أدخل القسط الشهري للقرض', false); return; }
+  if (!empId || !amount || amount <= 0) { toast('اختر الموظف والمبلغ', 'error'); return; }
+  if (type === 'loan' && (!monthly || monthly <= 0)) { toast('أدخل القسط الشهري للقرض', 'error'); return; }
   try {
     const res = await authenticatedFetch('/api/hrm/advances', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -554,7 +556,7 @@ async function addAdvance() {
     renderHRMAdvances();
     broadcastChange('hrm', { section: 'advances', action: 'add' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -562,7 +564,7 @@ async function repayAdvance(id, remaining) {
   const amountStr = prompt(`المبلغ المتبقي: ${fmt(remaining)}\nأدخل مبلغ التسديد:`);
   if (!amountStr) return;
   const amount = +amountStr;
-  if (!amount || amount <= 0) { toast('مبلغ غير صالح', false); return; }
+  if (!amount || amount <= 0) { toast('مبلغ غير صالح', 'error'); return; }
   try {
     const res = await authenticatedFetch(`/api/hrm/advances/${id}/repay`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -574,7 +576,7 @@ async function repayAdvance(id, remaining) {
     renderHRMAdvances();
     broadcastChange('hrm', { section: 'advances', action: 'repay' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -622,7 +624,7 @@ async function renderHRMPayroll() {
 
 async function generatePayroll() {
   const period = G('hrm-pay-gen-period')?.value;
-  if (!period) { toast('اختر الفترة', false); return; }
+  if (!period) { toast('اختر الفترة', 'error'); return; }
   if (!confirm(`توليد رواتب لشهر ${period}؟`)) return;
   try {
     const res = await authenticatedFetch('/api/hrm/payroll/generate', {
@@ -634,7 +636,7 @@ async function generatePayroll() {
     renderHRMPayroll();
     broadcastChange('hrm', { section: 'payroll', action: 'generate' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -648,7 +650,7 @@ async function approvePayroll(id) {
     renderHRMPayroll();
     broadcastChange('hrm', { section: 'payroll', action: 'approve' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -665,7 +667,7 @@ async function payPayroll(id) {
     renderHRMPayroll();
     broadcastChange('hrm', { section: 'payroll', action: 'pay' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -712,7 +714,7 @@ async function renderHRMCashLedger() {
 async function adjustCashLedger() {
   const amount = +(G('hrm-cl-adj-amount')?.value || 0);
   const reason = G('hrm-cl-adj-reason')?.value?.trim() || '';
-  if (!amount || !reason) { toast('أدخل المبلغ والسبب', false); return; }
+  if (!amount || !reason) { toast('أدخل المبلغ والسبب', 'error'); return; }
   try {
     const res = await authenticatedFetch('/api/hrm/cash-ledger/adjust', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -726,7 +728,7 @@ async function adjustCashLedger() {
     renderHRMCashLedger();
     broadcastChange('hrm', { section: 'cash-ledger', action: 'adjust' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -754,10 +756,10 @@ async function loadHRMEmployeeDropdown(selectId) {
    ═══════════════════════════════════════════════════════════════ */
 function printPayroll(period) {
   const payrows = DB._hrmPayrows || [];
-  if (!payrows.length) { toast('لا توجد رواتب لهذه الفترة', false); return; }
+  if (!payrows.length) { toast('لا توجد رواتب لهذه الفترة', 'error'); return; }
   const company = currentCompany();
   const win = window.open('', '_blank', 'width=900,height=1100');
-  if (!win) { toast('تعذر فتح نافذة الطباعة', false); return; }
+  if (!win) { toast('تعذر فتح نافذة الطباعة', 'error'); return; }
   const now = new Date().toLocaleString('ar');
   const totalGross = payrows.reduce((s, p) => s + p.grossSalary, 0);
   const totalDeductions = payrows.reduce((s, p) => s + p.totalDeductions, 0);
@@ -814,10 +816,10 @@ function printPayroll(period) {
 
 function printEmployeeList() {
   const emps = DB._hrmEmployees || [];
-  if (!emps.length) { toast('لا يوجد موظفون', false); return; }
+  if (!emps.length) { toast('لا يوجد موظفون', 'error'); return; }
   const company = currentCompany();
   const win = window.open('', '_blank', 'width=900,height=1100');
-  if (!win) { toast('تعذر فتح نافذة الطباعة', false); return; }
+  if (!win) { toast('تعذر فتح نافذة الطباعة', 'error'); return; }
   const now = new Date().toLocaleString('ar');
   const rowsHtml = emps.map((e, i) => {
     const statusLabel = e.status === 'active' ? 'نشط' : e.status === 'inactive' ? 'غير نشط' : 'منتهي';
@@ -902,7 +904,7 @@ async function renderHRMReports() {
    ═══════════════════════════════════════════════════════════════ */
 function exportHRMEmployees() {
   const emps = DB._hrmEmployees || [];
-  if (!emps.length) { toast('لا يوجد موظفون للتصدير', false); return; }
+  if (!emps.length) { toast('لا يوجد موظفون للتصدير', 'error'); return; }
   const headers = ['رقم', 'الاسم', 'الهاتف', 'نوع العقد', 'القسم', 'المنصب', 'أجر الساعة', 'أجر الأوفرتايم', 'الراتب الشهري', 'تاريخ الالتحاق', 'الحالة'];
   const rows = emps.map(e => {
     const statusLabel = e.status === 'active' ? 'نشط' : e.status === 'inactive' ? 'غير نشط' : 'منتهي';
@@ -914,7 +916,7 @@ function exportHRMEmployees() {
 
 function exportHRMAttendance() {
   const recs = DB._hrmAttendance || [];
-  if (!recs.length) { toast('لا توجد سجلات حضور للتصدير', false); return; }
+  if (!recs.length) { toast('لا توجد سجلات حضور للتصدير', 'error'); return; }
   const headers = ['التاريخ', 'رقم الموظف', 'الموظف', 'وقت الدخول', 'وقت الخروج', 'الساعات', 'أوفرتايم', 'الحالة'];
   const rows = recs.map(r => {
     const statusLabel = { present: 'حاضر', absent: 'غائب', late: 'متأخر', half_day: 'نصف يوم', leave: 'إجازة' }[r.status] || r.status;
@@ -925,7 +927,7 @@ function exportHRMAttendance() {
 
 function exportHRMPayroll() {
   const payrows = DB._hrmPayrows || [];
-  if (!payrows.length) { toast('لا توجد رواتب للتصدير', false); return; }
+  if (!payrows.length) { toast('لا توجد رواتب للتصدير', 'error'); return; }
   const headers = ['الفترة', 'رقم', 'الموظف', 'ساعات العمل', 'أوفرتايم', 'أجر الساعة', 'الإجمالي الخام', 'خصم السلف', 'خصم القروض', 'إجمالي الخصومات', 'الصافي', 'الحالة'];
   const rows = payrows.map(p => {
     const statusLabel = { draft: 'مسودة', approved: 'معتمدة', paid: 'مدفوعة', cancelled: 'ملغاة' }[p.status] || p.status;
@@ -936,7 +938,7 @@ function exportHRMPayroll() {
 
 function exportHRMAdvances() {
   const advances = DB._hrmAdvances || [];
-  if (!advances.length) { toast('لا توجد سلف للتصدير', false); return; }
+  if (!advances.length) { toast('لا توجد سلف للتصدير', 'error'); return; }
   const headers = ['التاريخ', 'الموظف', 'النوع', 'المبلغ', 'المتبقي', 'القسط الشهري', 'عدد الأقساط', 'المدفوع', 'الحالة', 'السبب'];
   const rows = advances.map(a => {
     const typeLabel = a.type === 'advance' ? 'سلفة' : 'قرض';
@@ -948,7 +950,7 @@ function exportHRMAdvances() {
 
 function exportHRMCashLedger() {
   const entries = DB._hrmCashLedger || [];
-  if (!entries.length) { toast('لا توجد حركات للتصدير', false); return; }
+  if (!entries.length) { toast('لا توجد حركات للتصدير', 'error'); return; }
   const headers = ['التاريخ', 'النوع', 'المبلغ', 'الرصيد', 'الفئة', 'الوصف', 'الموظف'];
   const rows = entries.map(e => [e.date, e.type === 'in' ? 'وارد' : 'صادر', e.amount, e.balanceAfter, e.category, e.description, e.employeeName || '']);
   _exportTable(headers, rows, 'سجل-الخزينة', 'hrm-cash-ledger');
@@ -1100,7 +1102,7 @@ function renderHRMAdvancesChart(advances) {
    ═══════════════════════════════════════════════════════════════ */
 function exportPayrollPDF() {
   const payrows = DB._hrmPayrows || [];
-  if (!payrows.length) { toast('لا توجد رواتب للتصدير', false); return; }
+  if (!payrows.length) { toast('لا توجد رواتب للتصدير', 'error'); return; }
   const period = G('hrm-pay-period')?.value || '';
   const totalGross = payrows.reduce((s, p) => s + p.grossSalary, 0);
   const totalDeductions = payrows.reduce((s, p) => s + p.totalDeductions, 0);
@@ -1134,7 +1136,7 @@ function exportPayrollPDF() {
 function openPerformanceEval(empId) {
   const emps = DB._hrmEmployees || [];
   const emp = emps.find(e => e._id === empId);
-  if (!emp) { toast('الموظف غير موجود', false); return; }
+  if (!emp) { toast('الموظف غير موجود', 'error'); return; }
   openModal('hrm-perf-modal');
   G('hrm-perf-emp-id').value = empId;
   G('hrm-perf-emp-name').textContent = `${emp.employeeNo} — ${emp.name}`;
@@ -1149,7 +1151,7 @@ async function savePerformanceEval() {
   const teamwork = +(G('hrm-perf-teamwork')?.value || 3);
   const attendance = +(G('hrm-perf-attendance')?.value || 3);
   const notes = G('hrm-perf-notes')?.value?.trim() || '';
-  if (!empId) { toast('الموظف مطلوب', false); return; }
+  if (!empId) { toast('الموظف مطلوب', 'error'); return; }
   const avg = ((quality + productivity + teamwork + attendance) / 4).toFixed(1);
   const grade = avg >= 4.5 ? 'ممتاز' : avg >= 3.5 ? 'جيد جداً' : avg >= 2.5 ? 'جيد' : avg >= 1.5 ? 'مقبول' : 'ضعيف';
   try {
@@ -1163,7 +1165,7 @@ async function savePerformanceEval() {
     closeModal('hrm-perf-modal');
     broadcastChange('hrm', { section: 'performance', action: 'add' });
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
@@ -1226,29 +1228,29 @@ function stopHRMAutoBackup() {
    ═══════════════════════════════════════════════════════════════ */
 async function exportPerformanceExcel() {
   const empId = G('hrm-perf-list-emp')?.value || '';
-  if (!empId) { toast('اختر موظفاً أولاً', false); return; }
+  if (!empId) { toast('اختر موظفاً أولاً', 'error'); return; }
   try {
     const res = await authenticatedFetch(`/api/hrm/performance?employeeId=${empId}`);
     const data = await res.json();
     if (data.status !== 'success') throw new Error(data.message);
     const evals = data.evaluations || [];
-    if (!evals.length) { toast('لا توجد تقييمات للتصدير', false); return; }
+    if (!evals.length) { toast('لا توجد تقييمات للتصدير', 'error'); return; }
     const headers = ['التاريخ', 'جودة', 'إنتاجية', 'فريق', 'حضور', 'المتوسط', 'التقدير', 'ملاحظات'];
     const rows = evals.map(e => [e.date, e.quality, e.productivity, e.teamwork, e.attendance, e.average, e.grade, e.notes || '']);
     _exportTable(headers, rows, 'تقييمات-' + empId, 'hrm-performance');
   } catch (err) {
-    toast(err.message, false);
+    toast(err.message, 'error');
   }
 }
 
 function exportPerformancePDF() {
   const empId = G('hrm-perf-list-emp')?.value || '';
-  if (!empId) { toast('اختر موظفاً أولاً', false); return; }
+  if (!empId) { toast('اختر موظفاً أولاً', 'error'); return; }
   const emps = DB._hrmEmployees || [];
   const emp = emps.find(e => e._id === empId);
-  if (!emp) { toast('الموظف غير موجود', false); return; }
+  if (!emp) { toast('الموظف غير موجود', 'error'); return; }
   const tbody = G('hrm-perf-list-tbody');
-  if (!tbody || !tbody.rows.length) { toast('لا توجد تقييمات', false); return; }
+  if (!tbody || !tbody.rows.length) { toast('لا توجد تقييمات', 'error'); return; }
   const h = ['التاريخ','جودة','إنتاجية','فريق','حضور','المتوسط','التقدير','ملاحظات'];
   const rows = Array.from(tbody.rows).map(r => Array.from(r.cells).map(c => c.textContent));
   const scores = Array.from(tbody.rows).map(r => parseFloat(r.cells[5]?.textContent) || 0);
@@ -1341,7 +1343,7 @@ function getRecentDate(days) {
 async function openEmployeeArchive(empId) {
   const emps = DB._hrmEmployees || [];
   const emp = emps.find(e => e._id === empId);
-  if (!emp) { toast('الموظف غير موجود', false); return; }
+  if (!emp) { toast('الموظف غير موجود', 'error'); return; }
   openModal('hrm-archive-modal');
   G('hrm-archive-name').textContent = `${emp.employeeNo} — ${emp.name}`;
   const sections = G('hrm-archive-sections');
@@ -1469,7 +1471,7 @@ function registerHRMSW() {
    ═══════════════════════════════════════════════════════════════ */
 function exportAttendancePDF() {
   const records = DB._hrmAttendance || [];
-  if (!records.length) { toast('لا توجد سجلات حضور', false); return; }
+  if (!records.length) { toast('لا توجد سجلات حضور', 'error'); return; }
   const date = G('hrm-att-date')?.value || new Date().toISOString().slice(0, 10);
   const h = ['#','رقم الموظف','الموظف','دخول','خروج','الساعات','الحالة'];
   const rows = records.map((r, i) => {
@@ -1500,7 +1502,7 @@ function exportAttendancePDF() {
    ═══════════════════════════════════════════════════════════════ */
 function exportCashLedgerPDF() {
   const entries = DB._hrmCashLedger || [];
-  if (!entries.length) { toast('لا توجد حركات', false); return; }
+  if (!entries.length) { toast('لا توجد حركات', 'error'); return; }
   const h = ['التاريخ','النوع','المبلغ','الرصيد','الفئة','الوصف','الموظف'];
   const rows = entries.map(e => {
     const typeLabel = e.type === 'in' ? 'وارد' : 'صادر';
@@ -1525,7 +1527,7 @@ function exportCashLedgerPDF() {
    ═══════════════════════════════════════════════════════════════ */
 function exportAdvancesPDF() {
   const advances = DB._hrmAdvances || [];
-  if (!advances.length) { toast('لا توجد سلف', false); return; }
+  if (!advances.length) { toast('لا توجد سلف', 'error'); return; }
   const h = ['#','التاريخ','الموظف','النوع','المبلغ','المتبقي','الأقساط','الحالة'];
   const rows = advances.map((a, i) => {
     const typeLabel = a.type === 'advance' ? 'سلفة' : 'قرض';
