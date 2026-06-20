@@ -23,7 +23,7 @@ function addSiLine(){
   if(qty>item.qty){toast('الرصيد الحالي أقل من الكمية المطلوبة. سيتم التحقق عند التسليم.','info')}
   _siL.push({itemId:id,name:item.name,qty,price,disc,buyPrice:item.buy,total:Math.max(0,qty*price-disc)});
   renderSiL();
-  G('si-qty').value='1';G('si-disc').value='0';G('si-price').value='';G('si-ltot').value='';G('si-item-sel').value='';if(G('si-item-search'))G('si-item-search').value='';
+  G('si-qty').value='1';G('si-disc').value='0';G('si-price').value='';G('si-ltot').value='';G('si-item-sel').value='';if(G('si-item-search'))G('si-item-search').value='';filterItemSelect('','si');
 }
 function renderSiL(){
   const tb=G('si-lines-tb');

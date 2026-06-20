@@ -1,4 +1,22 @@
-/* ═══ SMART ITEM SEARCH (Autocomplete) ═══ */
+/* ═══ SMART ITEM SEARCH (Filter select) ═══ */
+function filterItemSelect(val,prefix){
+  const sel=G(prefix+'-item-sel');
+  if(!sel)return;
+  const term=(val||'').trim().toLowerCase();
+  const opts=sel.options;
+  for(let i=1;i<opts.length;i++){
+    const txt=(opts[i].text||'').toLowerCase();
+    const match=!term||txt.includes(term);
+    opts[i].hidden=!match;
+    opts[i].disabled=!match;
+  }
+  if(term){
+    for(let i=1;i<opts.length;i++){
+      if(!opts[i].hidden){sel.selectedIndex=i;break}
+    }
+  }
+  sel.dispatchEvent(new Event('change'));
+}
 let _itemSearchIdx={}; // prefix -> current highlighted index
 let _itemSearchResults={}; // prefix -> filtered results
 
