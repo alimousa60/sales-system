@@ -509,8 +509,8 @@
       <div class="modal-body">
         <!-- SECTION 1: Basic Info -->
         <div class="hrm-section" data-open="true">
-          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
-            <h4><i class="ti ti-user icon-accent"></i> البيانات الأساسية</h4>
+          <div class="hrm-section-hd blue" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-user"></i> البيانات الأساسية</h4>
               <i class="ti ti-chevron-down"></i>
             </div>
             <div class="hrm-section-body">
@@ -529,8 +529,8 @@
 
         <!-- SECTION 2: Job Info -->
         <div class="hrm-section" data-open="true">
-          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
-            <h4><i class="ti ti-briefcase icon-green"></i> بيانات الوظيفة</h4>
+          <div class="hrm-section-hd green" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-briefcase"></i> بيانات الوظيفة</h4>
               <i class="ti ti-chevron-down"></i>
             </div>
             <div class="hrm-section-body">
@@ -557,8 +557,8 @@
 
         <!-- SECTION 3: Salary -->
         <div class="hrm-section" data-open="true">
-          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
-            <h4><i class="ti ti-cash icon-amber"></i> الراتب والأجور</h4>
+          <div class="hrm-section-hd amber" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-cash"></i> الراتب والأجور</h4>
             <i class="ti ti-chevron-down"></i>
           </div>
           <div class="hrm-section-body">
@@ -576,9 +576,9 @@
         </div>
 
         <!-- SECTION 4: Notes -->
-        <div class="hrm-section">
-          <div class="hrm-section-hd" onclick="toggleHRMSection(this)">
-            <h4><i class="ti ti-notes icon-purple"></i> ملاحظات</h4>
+        <div class="hrm-section" data-open="false">
+          <div class="hrm-section-hd purple" onclick="toggleHRMSection(this)">
+            <h4><i class="ti ti-notes"></i> ملاحظات</h4>
             <i class="ti ti-chevron-down"></i>
           </div>
             <div class="hrm-section-body">
@@ -626,21 +626,21 @@
     <!-- TAB: ATTENDANCE -->
     <div id="hrm-attendance" class="hrm-tab" style="display:none">
       <div class="card mb-14">
-        <div class="card-hd"><h3><i class="ti ti-clock icon-accent"></i> تسجيل حضور</h3></div>
+        <div class="card-hd"><h3><span class="card-icon-badge blue"><i class="ti ti-clock"></i></span> تسجيل حضور</h3></div>
         <div class="modal-body">
           <div class="form-grid g3 mb-10">
             <div class="fg"><label>الموظف *</label><select id="hrm-att-emp"><option value="">— اختر —</option></select></div>
             <div class="fg"><label>التاريخ</label><input id="hrm-att-date-add" type="date"></div>
-            <div class="fg"><label>الحالة</label>
-              <select id="hrm-att-status">
-                <option value="present">حاضر</option>
-                <option value="absent">غائب</option>
-                <option value="late">متأخر</option>
-                <option value="half_day">نصف يوم</option>
-                <option value="leave">إجازة</option>
-              </select>
-            </div>
+            <div class="fg"><label>الحالة *</label></div>
           </div>
+          <div class="hrm-att-chips mb-10" id="hrm-att-chips">
+            <div class="hrm-att-chip sel" data-status="present" onclick="setAttStatus('present')"><i class="ti ti-check"></i> حاضر</div>
+            <div class="hrm-att-chip" data-status="late" onclick="setAttStatus('late')"><i class="ti ti-clock"></i> متأخر</div>
+            <div class="hrm-att-chip" data-status="half_day" onclick="setAttStatus('half_day')"><i class="ti ti-clock-half"></i> نصف يوم</div>
+            <div class="hrm-att-chip" data-status="leave" onclick="setAttStatus('leave')"><i class="ti ti-beach"></i> إجازة</div>
+            <div class="hrm-att-chip" data-status="absent" onclick="setAttStatus('absent')"><i class="ti ti-x"></i> غائب</div>
+          </div>
+          <input type="hidden" id="hrm-att-status" value="present">
           <div class="form-grid g3">
             <div class="fg"><label>وقت الدخول</label><input id="hrm-att-checkin" type="time"></div>
             <div class="fg"><label>وقت الخروج</label><input id="hrm-att-checkout" type="time"></div>
@@ -666,24 +666,28 @@
     <!-- TAB: ADVANCES -->
     <div id="hrm-advances" class="hrm-tab" style="display:none">
       <div class="card mb-14">
-        <div class="card-hd"><h3><i class="ti ti-wallet" icon-accent"></i> صرف سلفة / قرض</h3></div>
+        <div class="card-hd"><h3><span class="card-icon-badge amber"><i class="ti ti-wallet"></i></span> صرف سلفة / قرض</h3></div>
         <div class="modal-body">
           <div class="form-grid g3 mb-10">
             <div class="fg"><label>الموظف *</label><select id="hrm-adv-emp"><option value="">— اختر —</option></select></div>
-            <div class="fg"><label>النوع</label>
-              <select id="hrm-adv-type">
-                <option value="advance">سلفة</option>
-                <option value="loan">قرض</option>
+            <div class="fg"><label>النوع *</label>
+              <select id="hrm-adv-type" onchange="onAdvTypeChange()">
+                <option value="advance">سلفة (صرف دفعة واحدة)</option>
+                <option value="loan">قرض (أقساط شهرية)</option>
               </select>
             </div>
             <div class="fg"><label>المبلغ (د.ل) *</label><input id="hrm-adv-amount" type="number" step="0.001" min="0" placeholder="0.000"></div>
           </div>
-          <div class="form-grid g3 mb-10">
-            <div class="fg"><label>القسط الشهري (د.ل)</label><input id="hrm-adv-monthly" type="number" step="0.001" min="0" placeholder="للقروض فقط"></div>
-            <div class="fg"><label>عدد الأقساط</label><input id="hrm-adv-total" type="number" min="1" value="1"></div>
+          <div class="form-grid g3 mb-10" id="hrm-adv-monthly-wrap">
+            <div class="fg"><label>القسط الشهري (د.ل) *</label><input id="hrm-adv-monthly" type="number" step="0.001" min="0" placeholder="المبلغ المدفوع شهرياً"></div>
+            <div class="fg"><label>عدد الأقساط</label><input id="hrm-adv-total" type="number" min="1" value="12"></div>
             <div class="fg"><label>التاريخ</label><input id="hrm-adv-date" type="date"></div>
           </div>
-          <div class="fg"><label>السبب</label><input id="hrm-adv-purpose" placeholder="سبب السلفة"></div>
+          <div class="fg"><label>السبب / الملاحظات</label><input id="hrm-adv-purpose" placeholder="سبب السلفة أو القرض"></div>
+          <div class="accounting-note acn-amber mt-8" id="hrm-adv-hint" style="display:none">
+            <i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>
+            <span id="hrm-adv-hint-text"></span>
+          </div>
         </div>
         <div class="modal-footer"><button class="btn btn-primary" onclick="addAdvance()"><i class="ti ti-check"></i> صرف</button></div>
       </div>
@@ -779,7 +783,7 @@
     <div id="hrm-reports" class="hrm-tab" style="display:none">
       <div class="card mb-14">
         <div class="card-hd">
-          <h3><i class="ti ti-chart-bar" icon-accent"></i> ملخص الرواتب</h3>
+          <h3><span class="card-icon-badge blue"><i class="ti ti-chart-bar"></i></span> ملخص الرواتب</h3>
           <div class="flex-gap6">
             <input id="hrm-rpt-period" type="month" onchange="renderHRMReports()">
           </div>
@@ -790,12 +794,12 @@
         </div>
       </div>
       <div class="hrm-chart-grid">
-        <div class="card"><div class="card-hd"><h3 class="fs-13">الرواتب حسب الموظف</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-payroll"></canvas></div></div>
-        <div class="card"><div class="card-hd"><h3 class="fs-13">الحضور اليوم</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-attendance"></canvas></div></div>
-        <div class="card"><div class="card-hd"><h3 class="fs-13">السلف حسب النوع</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-advances"></canvas></div></div>
+        <div class="card"><div class="card-hd"><h3><span class="card-icon-badge green"><i class="ti ti-chart-bar"></i></span> الرواتب حسب الموظف</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-payroll"></canvas></div></div>
+        <div class="card"><div class="card-hd"><h3><span class="card-icon-badge cyan"><i class="ti ti-clock"></i></span> الحضور اليوم</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-attendance"></canvas></div></div>
+        <div class="card"><div class="card-hd"><h3><span class="card-icon-badge amber"><i class="ti ti-wallet"></i></span> السلف حسب النوع</h3></div><div class="modal-body" style="height:280px"><canvas id="hrm-chart-advances"></canvas></div></div>
       </div>
       <div class="card mt-14">
-        <div class="card-hd"><h3><i class="ti ti-star" icon-accent"></i> تقييم الأداء</h3></div>
+        <div class="card-hd"><h3><span class="card-icon-badge purple"><i class="ti ti-star"></i></span> تقييم الأداء</h3></div>
         <div class="modal-body">
           <div class="form-grid g3 mb-10">
             <div class="fg"><label>التاريخ</label><input id="hrm-perf-date" type="date"></div>

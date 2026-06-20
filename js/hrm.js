@@ -12,6 +12,7 @@ function renderHRM() {
   startHRMAutoBackup();
   populateHRMDeptFilter();
   initEmployeeForm();
+  setTimeout(()=>onAdvTypeChange(),100);
 }
 
 function initEmployeeForm() {
@@ -420,6 +421,22 @@ async function renderHRMAttendance() {
   }
 }
 
+let _attStatus='present';
+function setAttStatus(status){
+  _attStatus=status;
+  const el=G('hrm-att-status');if(el)el.value=status;
+  document.querySelectorAll('#hrm-att-chips .hrm-att-chip').forEach(c=>{
+    c.classList.toggle('sel',c.dataset.status===status);
+  });
+  const ci=G('hrm-att-checkin'),co=G('hrm-att-checkout');
+  if(status==='absent'||status==='leave'){
+    if(ci)ci.value='';if(co)co.value='';
+    if(ci)ci.disabled=true;if(co)co.disabled=true;
+  }else{
+    if(ci)ci.disabled=false;if(co)co.disabled=false;
+  }
+}
+
 async function saveAttendance() {
   const empId = G('hrm-att-emp')?.value;
   const date = G('hrm-att-date-add')?.value || new Date().toISOString().slice(0, 10);
@@ -495,6 +512,22 @@ async function renderHRMAdvances() {
     });
   } catch (err) {
     console.error('خطأ في تحميل السلف:', err);
+  }
+}
+
+function onAdvTypeChange(){
+  const type=G('hrm-adv-type')?.value;
+  const wrap=G('hrm-adv-monthly-wrap');
+  const hint=G('hrm-adv-hint');
+  const hintTxt=G('hrm-adv-hint-text');
+  if(type==='advance'){
+    if(wrap){wrap.classList.add('hidden');wrap.classList.remove('visible')}
+    if(hint){hint.style.display='none'}
+    G('hrm-adv-total').value='1';
+  }else{
+    if(wrap){wrap.classList.remove('hidden');wrap.classList.add('visible')}
+    if(hint&&hintTxt){hint.style.display='flex';hintTxt.textContent='القرض: سيتم خصم القسط الشهري تلقائياً من راتب الموظف عند إعداد الرواتب'}
+    if(!G('hrm-adv-total').value||G('hrm-adv-total').value==='1')G('hrm-adv-total').value='12';
   }
 }
 
@@ -828,17 +861,17 @@ async function renderHRMReports() {
     const el = G('hrm-rpt-summary');
     if (!el) return;
     el.innerHTML = `
-      <div class="stats-grid" style="margin-bottom:14px">
-        <div class="stat-card blue"><div class="stat-lbl">عدد الموظفين</div><div class="stat-val">${s.totalEmployees || 0}</div></div>
-        <div class="stat-card green"><div class="stat-lbl">إجمالي الرواتب الخام</div><div class="stat-val">${fmt(s.totalGross || 0)}</div></div>
-        <div class="stat-card amber"><div class="stat-lbl">إجمالي الخصومات</div><div class="stat-val">${fmt(s.totalDeductions || 0)}</div></div>
-        <div class="stat-card red"><div class="stat-lbl">صافي الرواتب</div><div class="stat-val">${fmt(s.totalNet || 0)}</div></div>
+      <div class="hrm-rpt-grid">
+        <div class="hrm-rpt-card blue"><div class="rpt-icon"><i class="ti ti-users"></i></div><div class="rpt-val">${s.totalEmployees || 0}</div><div class="rpt-lbl">عدد الموظفين</div></div>
+        <div class="hrm-rpt-card green"><div class="rpt-icon"><i class="ti ti-cash"></i></div><div class="rpt-val">${fmt(s.totalGross || 0)}</div><div class="rpt-lbl">إجمالي الرواتب الخام</div></div>
+        <div class="hrm-rpt-card amber"><div class="rpt-icon"><i class="ti ti-discount"></i></div><div class="rpt-val">${fmt(s.totalDeductions || 0)}</div><div class="rpt-lbl">إجمالي الخصومات</div></div>
+        <div class="hrm-rpt-card red"><div class="rpt-icon"><i class="ti ti-wallet"></i></div><div class="rpt-val">${fmt(s.totalNet || 0)}</div><div class="rpt-lbl">صافي الرواتب</div></div>
       </div>
-      <div class="stats-grid" style="margin-bottom:14px">
-        <div class="stat-card blue"><div class="stat-lbl">إجمالي ساعات العمل</div><div class="stat-val">${(s.totalHours || 0).toFixed(1)}</div></div>
-        <div class="stat-card green"><div class="stat-lbl">إجمالي الأوفرتايم</div><div class="stat-val">${(s.totalOT || 0).toFixed(1)}</div></div>
-        <div class="stat-card amber"><div class="stat-lbl">مسودات</div><div class="stat-val">${s.draft || 0}</div></div>
-        <div class="stat-card green"><div class="stat-lbl">مدفوعة</div><div class="stat-val">${s.paid || 0}</div></div>
+      <div class="hrm-rpt-grid">
+        <div class="hrm-rpt-card cyan"><div class="rpt-icon"><i class="ti ti-clock"></i></div><div class="rpt-val">${(s.totalHours || 0).toFixed(1)}</div><div class="rpt-lbl">إجمالي ساعات العمل</div></div>
+        <div class="hrm-rpt-card purple"><div class="rpt-icon"><i class="ti ti-clock-hour-4"></i></div><div class="rpt-val">${(s.totalOT || 0).toFixed(1)}</div><div class="rpt-lbl">إجمالي الأوفرتايم</div></div>
+        <div class="hrm-rpt-card amber"><div class="rpt-icon"><i class="ti ti-file"></i></div><div class="rpt-val">${s.draft || 0}</div><div class="rpt-lbl">مسودات</div></div>
+        <div class="hrm-rpt-card green"><div class="rpt-icon"><i class="ti ti-check"></i></div><div class="rpt-val">${s.paid || 0}</div><div class="rpt-lbl">مدفوعة</div></div>
       </div>`;
   } catch (err) {
     console.error('خطأ في تقرير الرواتب:', err);

@@ -892,23 +892,93 @@ kbd{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:
 @media (max-width:740px){.hrm-comparative-grid{grid-template-columns:1fr}}
 
 /* ═══ HRM EMPLOYEE FORM ═══ */
-.hrm-section{border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
-.hrm-section-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none;background:var(--bg-elevated);transition:background .15s}
+.hrm-section{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:all .3s}
+.hrm-section:hover{border-color:var(--border-strong)}
+.hrm-section-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;background:var(--bg-elevated);transition:all .2s}
 .hrm-section-hd:hover{background:var(--bg-hover)}
-.hrm-section-hd h4{font-size:13px;font-weight:600;margin:0;display:flex;align-items:center;gap:6px}
-.hrm-section-hd i:last-child{font-size:14px;color:var(--muted);transition:transform .2s}
-.hrm-section-body{padding:10px 14px}
+.hrm-section-hd h4{font-size:13px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px}
+.hrm-section-hd i:first-child{font-size:16px;transition:transform .3s}
+.hrm-section-hd i:last-child{font-size:14px;color:var(--muted);transition:transform .3s}
+.hrm-section[data-open="false"] .hrm-section-hd i:last-child{transform:rotate(-90deg)}
+.hrm-section[data-open="false"] .hrm-section-body{display:none}
+.hrm-section-body{padding:12px 16px;animation:sectionIn .25s ease}
+@keyframes sectionIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+.hrm-section-hd.blue{background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(79,142,247,.02))}
+.hrm-section-hd.blue h4{color:var(--accent)}
+.hrm-section-hd.green{background:linear-gradient(135deg,rgba(45,209,126,.08),rgba(45,209,126,.02))}
+.hrm-section-hd.green h4{color:var(--green)}
+.hrm-section-hd.amber{background:linear-gradient(135deg,rgba(245,166,35,.08),rgba(245,166,35,.02))}
+.hrm-section-hd.amber h4{color:var(--amber)}
+.hrm-section-hd.purple{background:linear-gradient(135deg,rgba(155,114,247,.08),rgba(155,114,247,.02))}
+.hrm-section-hd.purple h4{color:var(--purple)}
+
+body.light-mode .hrm-section-hd.blue{background:linear-gradient(135deg,rgba(37,99,235,.06),rgba(37,99,235,.01))}
+body.light-mode .hrm-section-hd.green{background:linear-gradient(135deg,rgba(22,163,74,.06),rgba(22,163,74,.01))}
+body.light-mode .hrm-section-hd.amber{background:linear-gradient(135deg,rgba(217,119,6,.06),rgba(217,119,6,.01))}
+body.light-mode .hrm-section-hd.purple{background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(124,58,237,.01))}
+
 .hrm-auto-tag{font-size:10px;background:var(--accent);color:#fff;padding:1px 6px;border-radius:8px;margin-right:4px;font-weight:400}
 .hrm-must{color:var(--red);font-size:11px}
 #hrm-emp-notes{border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;font-family:inherit;font-size:13px;background:var(--bg-elevated);color:var(--text-primary)}
 #hrm-emp-notes:focus{outline:none;border-color:var(--accent)}
 .fg input:invalid,.fg input.hrm-invalid{border-color:var(--red) !important}
 .fg input.hrm-valid{border-color:var(--green) !important}
+
+/* HRM Advance dynamic fields */
+#hrm-adv-monthly-wrap{transition:all .3s;overflow:hidden}
+#hrm-adv-monthly-wrap.hidden{max-height:0;opacity:0;padding:0;margin:0;border:0;pointer-events:none}
+#hrm-adv-monthly-wrap.visible{max-height:100px;opacity:1}
+
+/* HRM Attendance status chips */
+.hrm-att-chips{display:flex;gap:6px;flex-wrap:wrap}
+.hrm-att-chip{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);cursor:pointer;font-size:12px;font-weight:500;color:var(--text-secondary);transition:all .2s;min-height:40px}
+.hrm-att-chip:hover{border-color:var(--border-strong);color:var(--text-primary)}
+.hrm-att-chip.sel{font-weight:700}
+.hrm-att-chip[data-status="present"].sel{background:rgba(45,209,126,.12);color:var(--green);border-color:rgba(45,209,126,.3)}
+.hrm-att-chip[data-status="absent"].sel{background:rgba(240,84,84,.12);color:var(--red);border-color:rgba(240,84,84,.3)}
+.hrm-att-chip[data-status="late"].sel{background:rgba(245,166,35,.12);color:var(--amber);border-color:rgba(245,166,35,.3)}
+.hrm-att-chip[data-status="half_day"].sel{background:rgba(79,142,247,.12);color:var(--accent);border-color:rgba(79,142,247,.3)}
+.hrm-att-chip[data-status="leave"].sel{background:rgba(155,114,247,.12);color:var(--purple);border-color:rgba(155,114,247,.3)}
+.hrm-att-chip i{font-size:15px}
+
+/* HRM Report stat cards */
+.hrm-rpt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.hrm-rpt-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center;transition:all .3s;position:relative;overflow:hidden}
+.hrm-rpt-card:hover{border-color:var(--border-strong);transform:translateY(-2px)}
+.hrm-rpt-card .rpt-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 8px}
+.hrm-rpt-card .rpt-val{font-size:20px;font-weight:700;font-family:var(--mono);line-height:1.2}
+.hrm-rpt-card .rpt-lbl{font-size:10px;color:var(--text-muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.hrm-rpt-card.blue .rpt-icon{background:rgba(79,142,247,.12);color:var(--accent)}
+.hrm-rpt-card.blue .rpt-val{color:var(--accent)}
+.hrm-rpt-card.green .rpt-icon{background:rgba(45,209,126,.12);color:var(--green)}
+.hrm-rpt-card.green .rpt-val{color:var(--green)}
+.hrm-rpt-card.amber .rpt-icon{background:rgba(245,166,35,.12);color:var(--amber)}
+.hrm-rpt-card.amber .rpt-val{color:var(--amber)}
+.hrm-rpt-card.red .rpt-icon{background:rgba(240,84,84,.12);color:var(--red)}
+.hrm-rpt-card.red .rpt-val{color:var(--red)}
+.hrm-rpt-card.purple .rpt-icon{background:rgba(155,114,247,.12);color:var(--purple)}
+.hrm-rpt-card.purple .rpt-val{color:var(--purple)}
+.hrm-rpt-card.cyan .rpt-icon{background:rgba(34,211,238,.12);color:var(--cyan)}
+.hrm-rpt-card.cyan .rpt-val{color:var(--cyan)}
+
+body.light-mode .hrm-rpt-card.blue .rpt-icon{background:rgba(37,99,235,.08)}
+body.light-mode .hrm-rpt-card.green .rpt-icon{background:rgba(22,163,74,.08)}
+body.light-mode .hrm-rpt-card.amber .rpt-icon{background:rgba(217,119,6,.08)}
+body.light-mode .hrm-rpt-card.red .rpt-icon{background:rgba(185,28,28,.08)}
+
 @media (max-width:740px){
   .form-grid.g4{grid-template-columns:1fr !important}
-  .hrm-section-hd{padding:8px 10px}
-  .hrm-section-body{padding:8px 10px}
+  .hrm-section-hd{padding:10px 12px}
+  .hrm-section-body{padding:10px 12px}
+  .hrm-rpt-grid{grid-template-columns:1fr 1fr !important;gap:8px}
+  .hrm-att-chips{gap:4px}
+  .hrm-att-chip{padding:8px 10px;font-size:11px;min-height:36px}
 }
+@media (max-width:480px){
+  .hrm-rpt-grid{grid-template-columns:1fr !important}
+}
+
 
 /* ═══ REDUCED MOTION SUPPORT ═══ */
 @media (prefers-reduced-motion: reduce){
