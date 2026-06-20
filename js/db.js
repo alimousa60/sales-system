@@ -442,13 +442,49 @@ function requireAdmin(){
 
 function toggleSidebar(){
   const sb=document.querySelector('.sidebar');
-  sb.classList.toggle('on');
+  const bd=document.getElementById('sidebar-backdrop');
+  const isOpen=sb.classList.contains('on');
+  if(isOpen){
+    sb.classList.remove('on');
+    if(bd)bd.classList.remove('on');
+  }else{
+    sb.classList.add('on');
+    if(bd)bd.classList.add('on');
+  }
 }
 function closeSidebarIfMobile(){
   if(window.innerWidth<=1050){
-    document.querySelector('.sidebar')?.classList.remove('on');
+    const sb=document.querySelector('.sidebar');
+    const bd=document.getElementById('sidebar-backdrop');
+    if(sb)sb.classList.remove('on');
+    if(bd)bd.classList.remove('on');
   }
 }
+
+// Touch swipe for sidebar
+(function(){
+  let sx=0,sy=0,sw=false;
+  document.addEventListener('touchstart',function(e){
+    if(e.target.closest('.sidebar')||e.target.closest('.modal-backdrop')||e.target.closest('.modal'))return;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;sw=true;
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!sw)return;
+    const dx=e.touches[0].clientX-sx;
+    const dy=Math.abs(e.touches[0].clientY-sy);
+    if(dy>40)sw=false;
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(!sw)return;sw=false;
+    const dx=e.changedTouches[0].clientX-sx;
+    const sb=document.querySelector('.sidebar');
+    if(!sb)return;
+    if(window.innerWidth<=1050){
+      if(dx>60&&!sb.classList.contains('on'))toggleSidebar();
+      else if(dx<-60&&sb.classList.contains('on'))toggleSidebar();
+    }
+  },{passive:true});
+})();
 
 /* ═══ BACKUP / EXPORT / IMPORT ═══ */
 function exportLocalBackup(){
