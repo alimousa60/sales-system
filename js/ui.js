@@ -300,25 +300,23 @@ function openModal(id){
     if(!requireAdmin())return;
     G('uu-username').value='';G('uu-pass').value='';G('uu-name').value='';G('uu-role').value='sales';
   }
-  // Push to stack and set z-index
+  const el=G(id);
+  // Move to end of body so it renders on top of all siblings
+  document.body.appendChild(el);
+  // Set z-index based on stack depth
   const zIndex=MODAL_BASE_Z+(_modalStack.length*10);
   _modalStack.push(id);
-  const el=G(id);
   el.style.zIndex=zIndex;
-  // Darken backdrop slightly more for stacked modals
-  if(_modalStack.length>1){
-    el.style.background=`rgba(0,0,0,${0.55+(_modalStack.length*0.05)})`;
-  }
   el.classList.add('on');
 }
 function closeModal(id){
-  G(id).classList.remove('on');
-  G(id).style.zIndex='';
-  G(id).style.background='';
+  const el=G(id);
+  el.classList.remove('on');
+  el.style.zIndex='';
   _modalStack=_modalStack.filter(x=>x!==id);
   // Re-z-index remaining stacked modals
   _modalStack.forEach((mid,i)=>{
-    G(mid).style.zIndex=MODAL_BASE_Z+((i)*10);
+    G(mid).style.zIndex=MODAL_BASE_Z+(i*10);
   });
 }
 
