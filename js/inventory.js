@@ -1,43 +1,118 @@
-/* ═══ BARCODE SEARCH ═══ */
-let _barcodeSearchTimer=null;
-function searchItemByBarcode(val,prefix,selectFirst=false){
-  clearTimeout(_barcodeSearchTimer);
+/* ═══ SMART ITEM SEARCH (Autocomplete) ═══ */
+let _itemSearchIdx={}; // prefix -> current highlighted index
+let _itemSearchResults={}; // prefix -> filtered results
+
+function itemSearch(val,prefix){
   const term=(val||'').trim().toLowerCase();
-  const sel=G(prefix+'-item-sel');
-  if(!sel)return;
-  if(!term){sel.value='';return}
-  _barcodeSearchTimer=setTimeout(()=>{
-    const matches=DB.items.filter(x=>{
+  const dd=G(prefix+'-item-dd');
+  const hidden=G(prefix+'-item-sel');
+  if(!dd)return;
+  _itemSearchIdx[prefix]=-1;
+  if(!term){
+    // Show all items when empty
+    _itemSearchResults[prefix]=[...DB.items].slice(0,50);
+  } else {
+    _itemSearchResults[prefix]=DB.items.filter(x=>{
       const bc=String(x.barcode||'').toLowerCase();
       const nm=String(x.name||'').toLowerCase();
       const cd=String(x.code||'').toLowerCase();
-      return bc.includes(term)||nm.includes(term)||cd.includes(term);
-    });
-    if(matches.length===1){
-      sel.value=matches[0].id;
-      if(prefix==='si')autoSellPrice();else autoBuyPrice();
-      if(selectFirst){
-        if(prefix==='si')addSiLine();else addPiLine();
-        G(prefix+'-barcode').value='';
-      }
-    } else if(matches.length>1){
-      // Show matches in select for user to pick
-      sel.innerHTML='<option value="">-- '+matches.length+' نتائج --</option>'+
-        matches.map(x=>`<option value="${x.id}" selected>${x.name} (${x.code||x.barcode||''})</option>`).join('');
-      sel.value=matches[0].id;
-      if(prefix==='si')autoSellPrice();else autoBuyPrice();
-    } else {
-      // No match - try partial name match
-      const partial=DB.items.filter(x=>String(x.name||'').toLowerCase().split(' ').some(w=>w.startsWith(term)));
-      if(partial.length>0){
-        sel.innerHTML='<option value="">-- نتائج جزئية --</option>'+
-          partial.map(x=>`<option value="${x.id}">${x.name} (${x.code||x.barcode||''})</option>`).join('');
-        sel.value=partial[0].id;
-        if(prefix==='si')autoSellPrice();else autoBuyPrice();
-      }
+      return nm.includes(term)||bc.includes(term)||cd.includes(term);
+    }).slice(0,30);
+  }
+  const results=_itemSearchResults[prefix];
+  if(!results.length){
+    dd.innerHTML=`<div class="item-search-empty">لا توجد نتائج — اضغط Enter لإضافة صنف جديد</div>`;
+    dd.classList.add('on');
+    return;
+  }
+  const t=term;
+  dd.innerHTML=results.map((x,i)=>{
+    let nameHtml=x.name;
+    if(t){
+      const idx=x.name.toLowerCase().indexOf(t);
+      if(idx>=0) nameHtml=x.name.substring(0,idx)+'<mark>'+x.name.substring(idx,idx+t.length)+'</mark>'+x.name.substring(idx+t.length);
     }
-  },selectFirst?0:150);
+    const stock=x.qty>0?`<span class="isb-stock">${x.qty} ${x.unit||''}</span>`:`<span class="isb-stock out">نفد</span>`;
+    return`<div class="item-search-row${i===_itemSearchIdx[prefix]?' active':''}" onmousedown="selectItem(${x.id},'${prefix}')" data-idx="${i}">
+      <div class="isb-info">
+        <div class="isb-name">${nameHtml}</div>
+        <div class="isb-meta">${x.code||''} ${x.barcode?'• '+x.barcode:''} ${x.cat?'• '+x.cat:''}</div>
+      </div>
+      <div class="isb-right">
+        <div class="isb-price">${fmt(x.sell)} د.ل</div>
+        ${stock}
+      </div>
+    </div>`;
+  }).join('');
+  dd.classList.add('on');
 }
+
+function selectItem(id,prefix){
+  const item=DB.items.find(x=>x.id===id);
+  if(!item)return;
+  const hidden=G(prefix+'-item-sel');
+  const input=G(prefix+'-item-search');
+  hidden.value=id;
+  input.value=item.name;
+  // Auto-fill price
+  if(prefix==='si'){
+    G('si-price').value=item.sell;
+    calcSiLine();
+  } else {
+    G('pi-price').value=item.buy;
+    calcPiLine();
+  }
+  closeItemSearch(prefix);
+  // Focus qty field
+  G(prefix+'-qty').focus();
+}
+
+function itemSearchKey(e,prefix){
+  const dd=G(prefix+'-item-dd');
+  const results=_itemSearchResults[prefix]||[];
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    _itemSearchIdx[prefix]=Math.min(_itemSearchIdx[prefix]+1,results.length-1);
+    _highlightItem(dd,prefix);
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    _itemSearchIdx[prefix]=Math.max(_itemSearchIdx[prefix]-1,0);
+    _highlightItem(dd,prefix);
+  } else if(e.key==='Enter'){
+    e.preventDefault();
+    if(_itemSearchIdx[prefix]>=0 && results[_itemSearchIdx[prefix]]){
+      selectItem(results[_itemSearchIdx[prefix]].id,prefix);
+    } else if(results.length===1){
+      selectItem(results[0].id,prefix);
+    }
+  } else if(e.key==='Escape'){
+    closeItemSearch(prefix);
+  }
+}
+
+function _highlightItem(dd,prefix){
+  const rows=dd.querySelectorAll('.item-search-row');
+  rows.forEach((r,i)=>r.classList.toggle('active',i===_itemSearchIdx[prefix]));
+  if(rows[_itemSearchIdx[prefix]]) rows[_itemSearchIdx[prefix]].scrollIntoView({block:'nearest'});
+}
+
+function closeItemSearch(prefix){
+  const dd=G(prefix+'-item-dd');
+  if(dd)dd.classList.remove('on');
+}
+
+// Update openModal to clear item search
+const _origOpenModal=window.openModal;
+window.openModal=function(id){
+  _origOpenModal.call(this,id);
+  if(id==='m-invoice'||id==='m-pur'){
+    const p=id==='m-invoice'?'si':'pi';
+    const input=G(p+'-item-search');
+    const hidden=G(p+'-item-sel');
+    if(input)input.value='';
+    if(hidden)hidden.value='';
+  }
+};
 
 /* ═══ ITEMS ═══ */
 function saveItem(){
