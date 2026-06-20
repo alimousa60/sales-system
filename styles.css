@@ -1101,6 +1101,207 @@ body.light-mode .isb-stock.out{background:rgba(239,68,68,.12);color:#dc2626}
 .item-search-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:12px}
 
 /* ═══════════════════════════════════════════════
+   DASHBOARD MOBILE — تحسين الصفحة الرئيسية للجوال
+═══════════════════════════════════════════════ */
+
+/* Stat Cards — تأثيرات محسّنة */
+#p-dash .stat-card{position:relative;overflow:hidden;transition:all .3s cubic-bezier(.4,0,.2,1)}
+#p-dash .stat-card::before{content:'';position:absolute;top:-40%;right:-20%;width:120px;height:120px;border-radius:50%;opacity:.06;transition:all .4s}
+#p-dash .stat-card:hover::before{opacity:.12;transform:scale(1.3)}
+#p-dash .stat-card.blue::before{background:var(--accent)}
+#p-dash .stat-card.green::before{background:var(--green)}
+#p-dash .stat-card.amber::before{background:var(--amber)}
+#p-dash .stat-card.red::before{background:var(--red)}
+#p-dash .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s}
+#p-dash .stat-card:hover::after{opacity:1}
+#p-dash .stat-card.blue::after{background:linear-gradient(90deg,var(--accent),transparent)}
+#p-dash .stat-card.green::after{background:linear-gradient(90deg,var(--green),transparent)}
+#p-dash .stat-card.amber::after{background:linear-gradient(90deg,var(--amber),transparent)}
+#p-dash .stat-card.red::after{background:linear-gradient(90deg,var(--red),transparent)}
+.stat-delta{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;margin-top:4px}
+.stat-delta.up{background:rgba(45,209,126,.1);color:var(--green)}
+.stat-delta.down{background:rgba(240,84,84,.1);color:var(--red)}
+.stat-delta.neutral{background:rgba(255,255,255,.04);color:var(--text-muted)}
+body.light-mode .stat-delta.neutral{background:rgba(0,0,0,.04)}
+
+/* Quick Nav — شريط تنقل سريع */
+.dash-quick-nav{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0}
+.dash-quick-nav::-webkit-scrollbar{display:none}
+.dash-qn-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 14px;border-radius:14px;background:var(--bg-surface);border:1px solid var(--border);cursor:pointer;transition:all .3s;flex-shrink:0;min-width:80px;text-decoration:none;-webkit-tap-highlight-color:transparent}
+.dash-qn-item:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.dash-qn-item:active{transform:translateY(0);box-shadow:none}
+.dash-qn-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;transition:transform .2s}
+.dash-qn-item:hover .dash-qn-icon{transform:scale(1.1)}
+.dash-qn-label{font-size:10px;font-weight:600;color:var(--text-secondary);text-align:center;white-space:nowrap}
+.dash-qn-icon.blue{background:rgba(79,142,247,.12);color:var(--accent)}
+.dash-qn-icon.green{background:rgba(45,209,126,.12);color:var(--green)}
+.dash-qn-icon.amber{background:rgba(245,166,35,.12);color:var(--amber)}
+.dash-qn-icon.red{background:rgba(240,84,84,.12);color:var(--red)}
+.dash-qn-icon.purple{background:rgba(155,114,247,.12);color:var(--purple)}
+.dash-qn-icon.cyan{background:rgba(34,211,238,.12);color:var(--cyan)}
+body.light-mode .dash-qn-icon.blue{background:rgba(37,99,235,.08)}
+body.light-mode .dash-qn-icon.green{background:rgba(22,163,74,.08)}
+body.light-mode .dash-qn-icon.amber{background:rgba(217,119,6,.08)}
+body.light-mode .dash-qn-icon.red{background:rgba(185,28,28,.08)}
+body.light-mode .dash-qn-icon.purple{background:rgba(124,58,237,.08)}
+body.light-mode .dash-qn-icon.cyan{background:rgba(8,145,178,.08)}
+
+/* FAB — زر عائم */
+.dash-fab{position:fixed;bottom:24px;left:24px;z-index:200;display:none}
+.dash-fab-btn{width:56px;height:56px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--accent),#9b72f7);color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 20px rgba(79,142,247,.35);transition:all .3s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.dash-fab-btn:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(79,142,247,.45)}
+.dash-fab-btn:active{transform:scale(.95)}
+.dash-fab-menu{position:absolute;bottom:68px;left:0;display:flex;flex-direction:column;gap:8px;opacity:0;transform:translateY(10px) scale(.9);pointer-events:none;transition:all .25s cubic-bezier(.4,0,.2,1)}
+.dash-fab-menu.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.dash-fab-opt{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;box-shadow:var(--shadow-sm)}
+.dash-fab-opt:hover{border-color:var(--accent);background:var(--accent-dim)}
+.dash-fab-opt:active{transform:scale(.97)}
+.dash-fab-opt .fab-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.dash-fab-opt .fab-icon.blue{background:rgba(79,142,247,.12);color:var(--accent)}
+.dash-fab-opt .fab-icon.green{background:rgba(45,209,126,.12);color:var(--green)}
+.dash-fab-opt .fab-icon.amber{background:rgba(245,166,35,.12);color:var(--amber)}
+.dash-fab-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199;display:none;opacity:0;transition:opacity .25s}
+.dash-fab-backdrop.on{display:block;opacity:1}
+
+/* Card View — عرض البطاقات للجداول على الموبايل */
+.dash-card-view{display:none}
+.dash-cv-item{background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;transition:all .2s;position:relative;overflow:hidden}
+.dash-cv-item:hover{border-color:var(--border-strong)}
+.dash-cv-item::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 4px 4px 0}
+.dash-cv-item.cv-blue::before{background:var(--accent)}
+.dash-cv-item.cv-green::before{background:var(--green)}
+.dash-cv-item.cv-amber::before{background:var(--amber)}
+.dash-cv-item.cv-red::before{background:var(--red)}
+.dash-cv-item.cv-purple::before{background:var(--purple)}
+.dash-cv-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.dash-cv-title{font-size:13px;font-weight:700;color:var(--text-primary)}
+.dash-cv-badge{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600}
+.dash-cv-body{display:flex;flex-wrap:wrap;gap:6px}
+.dash-cv-field{flex:1;min-width:calc(50% - 4px)}
+.dash-cv-field-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;font-weight:600}
+.dash-cv-field-value{font-size:12px;color:var(--text-secondary);font-weight:500}
+.dash-cv-field-value.mono{font-family:var(--mono);font-weight:700}
+
+/* Insight Cards — تحسين */
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.insight-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:14px 16px;transition:all .3s;position:relative;overflow:hidden}
+.insight-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:50%;opacity:.06;transition:opacity .3s}
+.insight-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.insight-card span{display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;font-weight:600}
+.insight-card strong{display:block;font-size:20px;font-weight:700;color:var(--text-primary);font-family:var(--mono);line-height:1.2}
+.insight-card small{font-size:10px;color:var(--text-secondary);margin-top:4px;display:block}
+.insight-card.blue{border-top:2px solid var(--accent)}
+.insight-card.blue::before{background:var(--accent)}
+.insight-card.blue strong{color:var(--accent)}
+.insight-card.amber{border-top:2px solid var(--amber)}
+.insight-card.amber::before{background:var(--amber)}
+.insight-card.amber strong{color:var(--amber)}
+.insight-card.red{border-top:2px solid var(--red)}
+.insight-card.red::before{background:var(--red)}
+.insight-card.red strong{color:var(--red)}
+
+/* Alert Strips — تحسين */
+.alert-strip{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--amber-dim);border:1px solid rgba(245,166,35,.18);border-radius:12px;margin-bottom:6px;font-size:12px;color:var(--amber);transition:all .2s;animation:alertSlideIn .3s ease-out both}
+.alert-strip:hover{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.3)}
+.alert-strip i{font-size:18px;flex-shrink:0;animation:icon-wobble .8s ease-in-out}
+.alert-strip strong{font-weight:700}
+
+/* Activity Log — تصميم Timeline */
+.dash-log-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);transition:background .15s}
+.dash-log-item:last-child{border-bottom:none}
+.dash-log-item:hover{background:var(--bg-hover);margin:0 -12px;padding:10px 12px;border-radius:8px}
+.dash-log-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;position:relative}
+.dash-log-dot::after{content:'';position:absolute;top:12px;left:50%;width:1px;height:calc(100% + 12px);background:var(--border);transform:translateX(-50%)}
+.dash-log-item:last-child .dash-log-dot::after{display:none}
+.dash-log-dot.dot-blue{background:var(--accent)}
+.dash-log-dot.dot-green{background:var(--green)}
+.dash-log-dot.dot-amber{background:var(--amber)}
+.dash-log-dot.dot-red{background:var(--red)}
+.dash-log-content{flex:1;min-width:0}
+.dash-log-title{font-size:12px;color:var(--text-primary);font-weight:500}
+.dash-log-meta{font-size:10px;color:var(--text-muted);margin-top:2px}
+.dash-log-amount{font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0}
+
+/* Pull to Refresh */
+.ptr-indicator{position:absolute;top:-50px;left:50%;transform:translateX(-50%);width:36px;height:36px;border-radius:50%;background:var(--bg-surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;transition:top .3s;z-index:10;box-shadow:var(--shadow-sm)}
+.ptr-indicator.on{top:10px}
+.ptr-indicator .ti{font-size:18px;color:var(--accent);transition:transform .3s}
+.ptr-indicator.loading .ti{animation:icon-spin .8s linear infinite}
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD RESPONSIVE — تكيّف الشاشات
+═══════════════════════════════════════════════ */
+@media (max-width:740px){
+  /* Stat Cards */
+  #p-dash .stats-grid{grid-template-columns:1fr 1fr !important;gap:8px}
+  #p-dash .stat-card{padding:14px 12px;min-height:90px}
+  #p-dash .stat-val{font-size:17px}
+  #p-dash .stat-lbl{font-size:9px;line-height:1.3}
+  #p-dash .stat-sub{font-size:8px}
+  .stat-icon-wrap{width:34px;height:34px;font-size:16px}
+
+  /* Quick Nav */
+  .dash-quick-nav{display:flex !important;gap:6px;margin-bottom:12px;padding:0 2px}
+  .dash-qn-item{min-width:72px;padding:10px 10px;border-radius:12px}
+  .dash-qn-icon{width:38px;height:38px;font-size:16px;border-radius:10px}
+  .dash-qn-label{font-size:9px}
+
+  /* FAB */
+  .dash-fab{display:block !important}
+  .content{padding-bottom:80px !important}
+
+  /* Card View */
+  .dash-card-view{display:block !important}
+  .dash-card-view + .tbl-wrap{display:none !important}
+
+  /* Charts — fullscreen */
+  #p-dash > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;gap:10px}
+  #p-dash .card{margin-bottom:10px;padding:10px}
+  #p-dash .card h3{font-size:12px}
+  #p-dash canvas{max-height:200px}
+
+  /* Insight Cards */
+  .insight-grid{grid-template-columns:1fr 1fr !important;gap:8px}
+  .insight-card{padding:12px}
+  .insight-card strong{font-size:16px}
+
+  /* Alert Strip */
+  .alert-strip{padding:10px 12px;font-size:11px;border-radius:10px}
+  .alert-strip i{font-size:16px}
+
+  /* Tables → Card View fallback */
+  .tbl-wrap table{min-width:400px}
+  .tbl-wrap{border-radius:10px}
+
+  /* Activity Log */
+  #d-log-list{padding:0 4px}
+
+  /* Dashboard Hero */
+  .dashboard-hero{padding:14px;border-radius:14px}
+  .dashboard-hero h2{font-size:16px}
+  .dashboard-hero p{font-size:11px}
+}
+
+@media (max-width:480px){
+  #p-dash .stats-grid{grid-template-columns:1fr !important;gap:6px}
+  #p-dash .stat-card{padding:12px;min-height:80px;display:flex;align-items:center;gap:12px}
+  #p-dash .stat-icon-wrap{margin-bottom:0}
+  #p-dash .stat-val{font-size:20px}
+  .insight-grid{grid-template-columns:1fr !important}
+  .dash-qn-item{min-width:66px;padding:8px}
+  .dash-qn-icon{width:34px;height:34px;font-size:14px}
+}
+
+/* Light mode adjustments */
+body.light-mode .dash-fab-btn{box-shadow:0 4px 20px rgba(37,99,235,.25)}
+body.light-mode .dash-cv-item{background:#fff;border-color:#e5e7eb}
+body.light-mode .dash-cv-item:hover{border-color:#d1d5db}
+body.light-mode .dash-qn-item{background:#fff;border-color:#e5e7eb}
+body.light-mode .dash-qn-item:hover{border-color:var(--accent)}
+body.light-mode .dash-fab-opt{background:#fff;border-color:#e5e7eb}
+body.light-mode .ptr-indicator{background:#fff;border-color:#e5e7eb}
+
+/* ═══════════════════════════════════════════════
    ERP REPORT SYSTEM
 ═══════════════════════════════════════════════ */
 

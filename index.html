@@ -90,6 +90,16 @@
 
   <!-- DASHBOARD -->
   <div class="page on" id="p-dash">
+    <!-- QUICK NAV -->
+    <div class="dash-quick-nav">
+      <div class="dash-qn-item" onclick="navigateTo('sales')"><div class="dash-qn-icon blue"><i class="ti ti-receipt"></i></div><div class="dash-qn-label">فواتير البيع</div></div>
+      <div class="dash-qn-item" onclick="navigateTo('inventory')"><div class="dash-qn-icon cyan"><i class="ti ti-package"></i></div><div class="dash-qn-label">الأصناف</div></div>
+      <div class="dash-qn-item" onclick="navigateTo('customers')"><div class="dash-qn-icon green"><i class="ti ti-user-circle"></i></div><div class="dash-qn-label">الزبائن</div></div>
+      <div class="dash-qn-item" onclick="navigateTo('purchases')"><div class="dash-qn-icon purple"><i class="ti ti-truck"></i></div><div class="dash-qn-label">المشتريات</div></div>
+      <div class="dash-qn-item" onclick="navigateTo('finance')"><div class="dash-qn-icon amber"><i class="ti ti-cash"></i></div><div class="dash-qn-label">الخزينة</div></div>
+      <div class="dash-qn-item" onclick="navigateTo('hrm')"><div class="dash-qn-icon red"><i class="ti ti-users-group"></i></div><div class="dash-qn-label">HRM</div></div>
+    </div>
+
     <div class="stats-grid">
       <div class="stat-card blue dash-card-anim">
         <div class="stat-icon-wrap blue"><i class="ti ti-trending-up"></i></div>
@@ -131,10 +141,12 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card dash-card-anim" style="animation-delay:.36s">
         <div class="card-hd"><h3><span class="card-icon-badge purple"><i class="ti ti-receipt"></i></span> آخر فواتير البيع</h3></div>
+        <div class="dash-card-view" id="d-inv-cv"></div>
         <div class="tbl-wrap"><table><thead><tr><th>رقم</th><th>الزبون</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody id="d-inv-tb"></tbody></table></div>
       </div>
       <div class="card dash-card-anim" style="animation-delay:.42s">
         <div class="card-hd"><h3><span class="card-icon-badge red"><i class="ti ti-alert-triangle"></i></span> أصناف منخفضة</h3></div>
+        <div class="dash-card-view" id="d-low-cv"></div>
         <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الرصيد</th><th>الحد</th></tr></thead><tbody id="d-low-tb"></tbody></table></div>
       </div>
     </div>
@@ -885,9 +897,24 @@
 
   </div><!-- /p-hrm -->
 
+  <!-- PULL TO REFRESH INDICATOR -->
+  <div class="ptr-indicator" id="ptr-indicator"><i class="ti ti-refresh"></i></div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /shell -->
+
+<!-- FAB — Floating Action Button -->
+<div class="dash-fab-backdrop" id="fab-backdrop" onclick="toggleFab()"></div>
+<div class="dash-fab" id="dash-fab">
+  <div class="dash-fab-menu" id="fab-menu">
+    <div class="dash-fab-opt" onclick="toggleFab();openModal('m-invoice')"><div class="fab-icon blue"><i class="ti ti-receipt"></i></div> فاتورة بيع جديدة</div>
+    <div class="dash-fab-opt" onclick="toggleFab();openModal('m-item')"><div class="fab-icon green"><i class="ti ti-package"></i></div> صنف جديد</div>
+    <div class="dash-fab-opt" onclick="toggleFab();openCollectStandalone()"><div class="fab-icon amber"><i class="ti ti-cash"></i></div> استلام دفعة</div>
+    <div class="dash-fab-opt" onclick="toggleFab();openModal('m-inv')"><div class="fab-icon purple"><i class="ti ti-truck"></i></div> فاتورة شراء</div>
+  </div>
+  <button class="dash-fab-btn" onclick="toggleFab()" id="fab-btn"><i class="ti ti-plus"></i></button>
+</div>
 
 <!-- ═══ MODALS ═══ -->
 

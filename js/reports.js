@@ -371,14 +371,21 @@ function renderAudit(search){
 function renderDashLog(){
   const d=G('d-log-list');if(!d)return;
   if(!DB.log.length){d.innerHTML='<div style="font-size:11px;color:var(--text-muted);padding:8px">لا سجلات بعد.</div>';return}
-  d.innerHTML=DB.log.slice(0,6).map(l=>`<div class="log-entry" style="padding:6px 0">
-    <div class="log-dot" data-color="${l.color}" style="margin-top:4px"></div>
-    <div class="log-text" style="font-size:11px">
-      <span style="font-weight:600;color:var(--text-primary)">${l.action}</span> — ${l.detail}
-      <div class="log-time">${l.date} ${l.time}</div>
-    </div>
-  </div>`).join('');
-  d.querySelectorAll('.log-dot').forEach(el=>{const c=el.dataset.color;if(c)el.style.background=c})
+  d.innerHTML=DB.log.slice(0,8).map(l=>{
+    const c=l.color||'#798ef7';
+    let dotClass='dot-blue';
+    if(c.includes('45,209')||c.includes('green')||c==='#2dd17e') dotClass='dot-green';
+    else if(c.includes('245,166')||c.includes('amber')||c==='#f5a623') dotClass='dot-amber';
+    else if(c.includes('240,84')||c.includes('red')||c==='#f05454') dotClass='dot-red';
+    return `<div class="dash-log-item">
+      <div class="dash-log-dot ${dotClass}"></div>
+      <div class="dash-log-content">
+        <div class="dash-log-title">${l.action}</div>
+        <div class="dash-log-meta">${l.detail}</div>
+      </div>
+      <div class="dash-log-meta" style="white-space:nowrap">${l.date} ${l.time}</div>
+    </div>`;
+  }).join('');
 }
 
 /* ═══ SOA — EXCEL EXPORT ═══ */

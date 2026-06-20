@@ -39,15 +39,127 @@ function updateStats(){
   ${alerts.slice(0,3).map(x=>`<div class="alert-strip"><i class="ti ti-alert-triangle"></i> الصنف "<strong>${x.name}</strong>" — الرصيد: ${x.qty} ${x.unit} (حد الأمان: ${x.reorder})</div>`).join('')}`;
   renderDash()
 }
+
 function renderDash(){
   const it=G('d-inv-tb');
+  const cvInv=G('d-inv-cv');
   const recent=[...DB.invs].slice(-5).reverse();
+
+  /* Table view */
   it.innerHTML=recent.length?recent.map(inv=>`<tr>
     <td style="color:var(--accent);font-weight:600">${inv.num}</td>
     <td>${inv.custName}</td>
     <td class="td-mono" style="font-weight:700">${fmt(inv.total)} د.ل</td>
     <td>${invPayStatus(inv)}</td>
   </tr>`).join(''):emptyRow(4,'لا فواتير');
+
+  /* Card view — mobile */
+  if(cvInv){
+    cvInv.innerHTML=recent.length?recent.map(inv=>{
+      const payLabel=inv.payStatus==='paid'?'cv-green':inv.payStatus==='partial'?'cv-amber':'cv-blue';
+      return `<div class="dash-cv-item ${payLabel}">
+        <div class="dash-cv-header">
+          <div class="dash-cv-title">${inv.num}</div>
+          <div class="dash-cv-badge badge badge-${inv.payStatus==='paid'?'green':inv.payStatus==='partial'?'amber':'blue'}">${invPayStatus(inv)}</div>
+        </div>
+        <div class="dash-cv-body">
+          <div class="dash-cv-field"><div class="dash-cv-field-label">الزبون</div><div class="dash-cv-field-value">${inv.custName}</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">الإجمالي</div><div class="dash-cv-field-value mono">${fmt(inv.total)} د.ل</div></div>
+        </div>
+      </div>`;
+    }).join(''):'<div class="dash-cv-item"><div class="dash-cv-body"><div class="dash-cv-field"><div class="dash-cv-field-value" style="text-align:center;color:var(--text-muted)">لا فواتير</div></div></div></div>';
+  }
+
+  const lt=G('d-low-tb');
+  const cvLow=G('d-low-cv');
+  const low=DB.items.filter(x=>x.qty<=x.reorder);
+
+  /* Table view */
+  lt.innerHTML=low.length?low.map(x=>{
+    const shortage = x.reorder - x.qty;
+    const shortageLabel = shortage > 0 ? `<span class="text-red">${fmt(shortage)}</span>` : `<span class="text-green">0</span>`;
+    return `<tr>
+      <td>${x.name}</td>
+      <td class="td-mono" style="color:var(--amber);font-weight:700">${x.qty}</td>
+      <td class="td-mono">${x.reorder}</td>
+      <td class="td-mono">${shortageLabel}</td>
+    </tr>`
+  }).join(''):'<tr><td colspan="4"><div class="empty-st" style="padding:18px"><i class="ti ti-check"></i><span>كل الأصناف بمستويات جيدة</span></div></td></tr>';
+
+  /* Card view — mobile */
+  if(cvLow){
+    cvLow.innerHTML=low.length?low.map(x=>{
+      const shortage=x.reorder-x.qty;
+      const colorClass=shortage>0?'cv-red':'cv-green';
+      return `<div class="dash-cv-item ${colorClass}">
+        <div class="dash-cv-header">
+          <div class="dash-cv-title">${x.name}</div>
+          <div class="dash-cv-badge badge badge-${shortage>0?'red':'green'}">${shortage>0?'نقص':'جيد'}</div>
+        </div>
+        <div class="dash-cv-body">
+          <div class="dash-cv-field"><div class="dash-cv-field-label">الرصيد</div><div class="dash-cv-field-value mono" style="color:var(--amber)">${x.qty} ${x.unit}</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">حد الأمان</div><div class="dash-cv-field-value mono">${x.reorder}</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">النقص</div><div class="dash-cv-field-value mono" style="color:var(--red)">${shortage>0?shortage:'-'}</div></div>
+        </div>
+      </div>`;
+    }).join(''):'<div class="dash-cv-item cv-green"><div class="dash-cv-body"><div class="dash-cv-field"><div class="dash-cv-field-value" style="text-align:center;color:var(--green)"><i class="ti ti-check"></i> كل الأصناف بمستويات جيدة</div></div></div></div>';
+  }
+
+  renderDashLog();
+  setTimeout(renderDashCharts,50);
+}
+
+/* ═══ NAVIGATION — الانتقال السريع ═══ */
+function navigateTo(page){
+  const navItem=document.querySelector(`.nav-item[data-page="${page}"]`);
+  if(navItem)navItem.click();
+}
+
+/* ═══ FAB — الزر العائم ═══ */
+let fabOpen=false;
+function toggleFab(){
+  fabOpen=!fabOpen;
+  const menu=G('fab-menu');
+  const backdrop=G('fab-backdrop');
+  const btn=G('fab-btn');
+  if(menu)menu.classList.toggle('open',fabOpen);
+  if(backdrop)backdrop.classList.toggle('on',fabOpen);
+  if(btn)btn.style.transform=fabOpen?'rotate(45deg)':'rotate(0)';
+  document.body.style.overflow=fabOpen?'hidden':'';
+}
+
+/* ═══ PULL TO REFRESH ═══ */
+(function initPTR(){
+  let startY=0,pulling=false,canPull=false;
+  const ptr=G('ptr-indicator');
+  if(!ptr)return;
+  document.addEventListener('touchstart',e=>{
+    const content=document.querySelector('.content');
+    if(content&&content.scrollTop<=0){canPull=true;startY=e.touches[0].clientY}
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!canPull)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>30&&dy<150){
+      pulling=true;
+      ptr.classList.add('on');
+      ptr.querySelector('.ti').style.transform=`rotate(${dy*2}deg)`;
+    }
+  },{passive:true});
+  document.addEventListener('touchend',()=>{
+    if(pulling){
+      ptr.classList.add('loading');
+      setTimeout(()=>{
+        updateStats();
+        renderDash();
+        ptr.classList.remove('loading','on');
+        ptr.querySelector('.ti').style.transform='';
+        toast('تم التحديث','success');
+      },800);
+    }
+    pulling=false;canPull=false;
+  });
+})();
   const lt=G('d-low-tb');
   const low=DB.items.filter(x=>x.qty<=x.reorder);
   lt.innerHTML=low.length?low.map(x=>{
