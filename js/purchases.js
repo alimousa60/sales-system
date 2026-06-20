@@ -50,7 +50,7 @@ function savePur(){
   saveState();
   closeModal('m-pur');renderPurs();renderItems();updateStats();
   broadcastChange('purchases', { num, supName: sup?.name, total });
-  toast(`تم حفظ فاتورة الشراء ${num} — ${note}`)
+  toast(`ف. ${num} — "${sup?.name}" — ${fmt(total)} د.ل`,{icon:'ti-shopping-cart',title:'فاتورة شراء جديدة',duration:4000})
 }
 function renderPurs(search=''){
   const tb=G('pur-tb');

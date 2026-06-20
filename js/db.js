@@ -210,7 +210,7 @@ async function syncCloud(){
   if(!currentUser){toast('سجل الدخول أولاً للمزامنة','error');return}
   if(!cloudOnline()){toast('لا يوجد اتصال بالإنترنت حالياً','error');syncStatusMsg();return}
   const btn=G('sync-btn'); if(btn) btn.disabled=true;
-  toast('جاري المزامنة مع السحابة...','info');
+  toast('جاري المزامنة مع السحابة...','info',{icon:'ti-refresh',sound:false,duration:2000});
   let success=false;
   try{
     const snapshot={
@@ -228,7 +228,7 @@ async function syncCloud(){
       DB.lastSynced=new Date().toLocaleString('ar');
       DB.pendingSync=[];
       saveState();
-      toast('تمت المزامنة بنجاح','success');
+      toast('تمت المزامنة بنجاح','success',{icon:'ti-cloud-upload'});
     } else {
       toast('فشل حفظ البيانات السحابية','error');
     }
@@ -239,8 +239,8 @@ async function syncCloud(){
   if(btn) btn.disabled=false;
   updateSyncUI();
 }
-window.addEventListener('online',()=>{toast('الاتصال عاد، جاري المزامنة تلقائياً...','info');syncCloud();});
-window.addEventListener('offline',()=>{toast('تم فقدان الاتصال، سيتم العمل محلياً','error');updateSyncUI();});
+window.addEventListener('online',()=>{toast('الاتصال عاد — جاري المزامنة تلقائياً...','success',{title:'اتصال مُستعاد',icon:'ti-wifi'});syncCloud();});
+window.addEventListener('offline',()=>{toast('تم فقدان الاتصال — سيتم العمل محلياً','warning',{title:'انقطع الاتصال',icon:'ti-wifi-off',duration:5000});updateSyncUI();});
 function resetStore(){
   Object.assign(DB,defaultStore());
 }
@@ -389,7 +389,7 @@ async function handleLogin(){
     });
     const data=await resp.json();
     if(!resp.ok){
-      toast(data?.message||'بيانات الدخول غير صحيحة','error');
+      toast(data?.message||'بيانات الدخول غير صحيحة','error',{title:'فشل تسجيل الدخول'});
       return;
     }
     if(currentUser && currentUser.username!==data.user.username){
@@ -402,7 +402,7 @@ async function handleLogin(){
     saveState();
     renderCurrentUser();
     hideLogin();
-    toast(`مرحباً ${currentUser.name}`,'info');
+    toast(`مرحباً ${currentUser.name}`,'success',{title:'تم تسجيل الدخول',icon:'ti-user'});
   }catch(e){
     console.warn('login failed',e);
     toast('فشل الاتصال بخادم المصادقة','error');

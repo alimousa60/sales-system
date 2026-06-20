@@ -57,7 +57,7 @@ function saveInv(){
   saveState();
   closeModal('m-invoice');renderSales();updateStats();
   broadcastChange('sales', { num, custName: cust?.name, total });
-  toast(`تم حفظ الفاتورة ${num} — الذمة المدينة مسجَّلة`)
+  toast(`فاتورة ${num}`,'success',{title:'فاتورة بيع جديدة',icon:'ti-receipt',duration:4000})
 }
 function renderSales(search=''){
   const filter=G('sal-filter')?.value||'';
@@ -153,7 +153,7 @@ function savePayment(){
   saveState();
   closeModal('m-collect');renderSales();updateStats();renderFin();
   broadcastChange('payments', { pId, invId, amount });
-  toast(`تم استلام ${fmt(amount)} د.ل من الزبون ${inv.custName} ✓`)
+  toast(`${fmt(amount)} د.ل — ${inv.custName}`,'success',{title:'تم استلام الدفعة',icon:'ti-cash',duration:4000})
 }
 
 function deletePayment(payId){
@@ -164,6 +164,7 @@ function deletePayment(payId){
   saveState();
   renderSales();updateStats();renderFin();
   broadcastChange('payments', { payId, deleted: true });
+  toast(`${payId} — ${fmt(pay.amount)} د.ل`,'warning',{title:'تم حذف الدفعة',icon:'ti-trash'})
   const invId=pay.invId;
   if(invId){const inv=DB.invs.find(x=>x.id===invId);if(inv)viewInv(invId)}
   toast(`تم حذف الدفعة ${payId}`)
@@ -511,7 +512,7 @@ function saveSettlement(){
   saveState();
   closeModal('m-settle');renderSales();updateStats();
   broadcastChange('settlements', { settlementId: settlement.id, custName: cust.name });
-  toast(`تم تطبيق تسوية ${fmt(amt)} د.ل على ${applied.length} فاتورة ✓`)
+  toast(`${fmt(amt)} د.ل على ${applied.length} فاتورة`,'success',{title:'تم تطبيق التسوية',icon:'ti-discount',duration:4000})
 }
 
 /* ═══ DELIVER ═══ */
@@ -556,7 +557,7 @@ function confirmDeliver(){
   saveState();
   closeModal('m-deliver');renderSales();renderItems();updateStats();
   broadcastChange('sales', { invNum: inv.num, delivered: true });
-  toast(`تم تسليم الفاتورة ${inv.num} — المخزون خُصِم ✓`)
+  toast(`ف. ${inv.num} — المستلم: ${recv}`,'success',{title:'تم التسليم',icon:'ti-truck-delivery',duration:4000})
 }
 
 /* ═══ VIEW INVOICE ═══ */

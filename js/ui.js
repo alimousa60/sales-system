@@ -40,9 +40,13 @@ function renderPag(key, total, renderFn) {
 }
 
 /* ═══ TOAST & LOG ═══ */
-function toast(msg,type='success'){
-  const t=G('toast');
-  const icon=type==='success'?'ti-check':type==='info'?'ti-info-circle':'ti-alert-triangle';
+function toast(msg,type='success',opts={}){
+  if(typeof type==='object'){opts=type;type='success'}
+  return window.notify ? notify(msg, type, opts) : _legacyToast(msg, type);
+}
+function _legacyToast(msg,type='success'){
+  const t=G('toast');if(!t)return;
+  const icon=type==='success'?'ti-check':type==='error'?'ti-alert-triangle':'ti-info-circle';
   t.innerHTML=`<i class="ti ${icon}"></i> ${msg}`;
   t.className=`toast on ${type}`;
   setTimeout(()=>t.classList.remove('on'),3400)

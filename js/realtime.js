@@ -101,7 +101,12 @@ function handleRealtimeMessage(msg) {
       refreshCurrentPage();
   }
 
-  toast('تم تحديث البيانات من خادم آخر', 'info');
+  toast('تم تحديث البيانات من خادم آخر', 'sync', {
+    title: 'تحديث فوري',
+    icon: 'ti-refresh',
+    sound: false,
+    duration: 2500
+  });
 }
 
 function refreshCurrentPage() {

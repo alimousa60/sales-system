@@ -21,7 +21,7 @@ function saveItem(){
   if(G('pi-item-sel')) popSel('pi-item-sel',DB.items,'id','name','-- اختر صنف --');
   updateStats();
   broadcastChange('items', { id: item.id, name });
-  toast(`تم إضافة الصنف "${name}" بنجاح`)
+  toast(`"${name}" — سعر البيع: ${fmt(item.sell)} د.ل`,{icon:'ti-package',title:'صنف جديد'})
 }
 function filterItems(q){renderItems(q)}
 function renderItems(q=''){
@@ -241,7 +241,7 @@ function saveCust(){
   addLog('إضافة زبون',`"${name}" رصيد افتتاحي: ${fmt(openBal)} د.ل`,'#9b72f7');
   closeModal('m-cust');renderCusts();
   broadcastChange('customers', { id, name });
-  toast(`تم إضافة الزبون "${name}"`)
+  toast(`"${name}" — رصيد افتتاحي: ${fmt(openBal)} د.ل`,{icon:'ti-user',title:'زبون جديد'})
 }
 function renderCusts(search=''){
   const tb=G('cust-tb');
@@ -272,7 +272,7 @@ function saveSup(){
   addLog('إضافة مورد',`"${name}"`,'#22d3ee');
   closeModal('m-sup');renderSups();
   broadcastChange('suppliers', { name });
-  toast(`تم إضافة المورد "${name}"`)
+  toast(`"${name}"`,{icon:'ti-truck',title:'مورد جديد'})
 }
 function renderSups(search=''){
   const tb=G('sup-tb');
