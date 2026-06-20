@@ -1,3 +1,44 @@
+/* ═══ BARCODE SEARCH ═══ */
+let _barcodeSearchTimer=null;
+function searchItemByBarcode(val,prefix,selectFirst=false){
+  clearTimeout(_barcodeSearchTimer);
+  const term=(val||'').trim().toLowerCase();
+  const sel=G(prefix+'-item-sel');
+  if(!sel)return;
+  if(!term){sel.value='';return}
+  _barcodeSearchTimer=setTimeout(()=>{
+    const matches=DB.items.filter(x=>{
+      const bc=String(x.barcode||'').toLowerCase();
+      const nm=String(x.name||'').toLowerCase();
+      const cd=String(x.code||'').toLowerCase();
+      return bc.includes(term)||nm.includes(term)||cd.includes(term);
+    });
+    if(matches.length===1){
+      sel.value=matches[0].id;
+      if(prefix==='si')autoSellPrice();else autoBuyPrice();
+      if(selectFirst){
+        if(prefix==='si')addSiLine();else addPiLine();
+        G(prefix+'-barcode').value='';
+      }
+    } else if(matches.length>1){
+      // Show matches in select for user to pick
+      sel.innerHTML='<option value="">-- '+matches.length+' نتائج --</option>'+
+        matches.map(x=>`<option value="${x.id}" selected>${x.name} (${x.code||x.barcode||''})</option>`).join('');
+      sel.value=matches[0].id;
+      if(prefix==='si')autoSellPrice();else autoBuyPrice();
+    } else {
+      // No match - try partial name match
+      const partial=DB.items.filter(x=>String(x.name||'').toLowerCase().split(' ').some(w=>w.startsWith(term)));
+      if(partial.length>0){
+        sel.innerHTML='<option value="">-- نتائج جزئية --</option>'+
+          partial.map(x=>`<option value="${x.id}">${x.name} (${x.code||x.barcode||''})</option>`).join('');
+        sel.value=partial[0].id;
+        if(prefix==='si')autoSellPrice();else autoBuyPrice();
+      }
+    }
+  },selectFirst?0:150);
+}
+
 /* ═══ ITEMS ═══ */
 function saveItem(){
   const name=G('fi-name').value.trim();

@@ -809,6 +809,28 @@ kbd{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:
   .stat-card{border-top-width:3px}
   .card{border-width:2px}
   .modal{border-width:2px}
-  .ti{filter:none}
-  .icon-circle{border-width:2px}
+   .ti{filter:none}
+   .icon-circle{border-width:2px}
+}
+
+/* Barcode search input */
+#si-barcode,#pi-barcode{
+  background:var(--bg-elevated);border:2px dashed var(--accent);
+  border-radius:var(--r);font-size:13px;font-weight:600;
+  letter-spacing:1px;padding:8px 12px;
+  transition:all .2s;
+}
+#si-barcode:focus,#pi-barcode:focus{
+  border-style:solid;box-shadow:0 0 0 3px rgba(79,142,247,.15);
+  outline:none;
+}
+#si-barcode::placeholder,#pi-barcode::placeholder{
+  font-size:11px;font-weight:400;letter-spacing:0;opacity:.5;
+}
+body.light-mode #si-barcode,body.light-mode #pi-barcode{
+  border-color:rgba(59,130,246,.4);
+  background:#f8fafc;
+}
+body.light-mode #si-barcode:focus,body.light-mode #pi-barcode:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1);
 }

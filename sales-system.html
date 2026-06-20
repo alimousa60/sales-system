@@ -907,6 +907,7 @@
     </div>
     <div class="divider"></div>
     <div class="flex-gap6 items-end mb-10 flex-wrap">
+      <div class="fg" style="flex:1;min-width:100px"><label>باركود / اسم الصنف</label><input id="si-barcode" type="text" placeholder="امسح الباركود أو اكتب الاسم..." oninput="searchItemByBarcode(this.value,'si')" onkeydown="if(event.key==='Enter'){searchItemByBarcode(this.value,'si',true);event.preventDefault()}"></div>
       <div class="fg" style="flex:3;min-width:120px"><label>الصنف</label><select id="si-item-sel" onchange="autoSellPrice()"><option value="">-- اختر صنف --</option></select></div>
       <div class="fg" style="flex:1;min-width:60px"><label>الكمية</label><input id="si-qty" type="number" min="1" value="1" oninput="calcSiLine()"></div>
       <div class="fg" style="flex:1.2;min-width:70px"><label>السعر (د.ل)</label><input id="si-price" type="number" step="0.001" oninput="calcSiLine()"></div>
@@ -1044,6 +1045,7 @@
     </div>
     <div class="divider"></div>
     <div class="flex-gap6 items-end mb-10 flex-wrap">
+      <div class="fg" style="flex:1;min-width:100px"><label>باركود / اسم الصنف</label><input id="pi-barcode" type="text" placeholder="امسح الباركود أو اكتب الاسم..." oninput="searchItemByBarcode(this.value,'pi')" onkeydown="if(event.key==='Enter'){searchItemByBarcode(this.value,'pi',true);event.preventDefault()}"></div>
       <div class="fg" style="flex:3;min-width:120px">
         <label>الصنف</label>
         <div class="flex-gap6">
