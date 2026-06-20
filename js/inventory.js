@@ -45,6 +45,16 @@ function itemSearch(val,prefix){
     </div>`;
   }).join('');
   dd.classList.add('on');
+  // Position dropdown with fixed positioning to escape modal overflow
+  const wrap=G(prefix+'-item-wrap');
+  if(wrap){
+    const r=wrap.getBoundingClientRect();
+    dd.style.position='fixed';
+    dd.style.top=(r.bottom+2)+'px';
+    dd.style.left=r.left+'px';
+    dd.style.width=r.width+'px';
+    dd.style.zIndex='99999';
+  }
 }
 
 function selectItem(id,prefix){

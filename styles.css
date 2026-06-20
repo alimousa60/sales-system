@@ -849,10 +849,10 @@ body.light-mode .item-search-input{background:#f8fafc;border-color:#e2e8f0}
 body.light-mode .item-search-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 
 .item-search-dd{
-  position:absolute;top:calc(100% + 4px);left:0;right:0;
+  position:fixed;
   background:var(--bg-surface);border:1px solid var(--border-strong);
   border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.35);
-  max-height:320px;overflow-y:auto;z-index:9999;
+  max-height:320px;overflow-y:auto;z-index:99999;
   display:none;padding:6px;
 }
 .item-search-dd.on{display:block;animation:ddIn .15s ease}
