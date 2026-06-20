@@ -264,7 +264,7 @@ function _initModalFields(id){
     G('si-num').value='INV-'+String(DB.cI).padStart(5,'0');
     G('si-date').value=today();
     popSel('si-cust',DB.custs,'id','name','-- اختر زبون --');
-    G('si-item-sel').value='';G('si-item-search').value='';
+    popSel('si-item-sel',DB.items,'id','name','-- اختر صنف --');
     _siL=[];renderSiL();
     G('si-price').value='';G('si-qty').value='1';G('si-disc').value='0';G('si-ltot').value='';
   }
@@ -272,7 +272,7 @@ function _initModalFields(id){
     G('pi-num').value='PUR-'+String(DB.cP).padStart(5,'0');
     G('pi-date').value=today();
     popSel('pi-sup',DB.sups,'id','name','-- اختر مورد --');
-    G('pi-item-sel').value='';G('pi-item-search').value='';
+    popSel('pi-item-sel',DB.items,'id','name','-- اختر صنف --');
     _piL=[];renderPiL();
     G('pi-price').value='';G('pi-qty').value='1';G('pi-ltot').value='';
     G('pi-recv').checked=false;

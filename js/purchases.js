@@ -1,4 +1,5 @@
 /* ═══ PURCHASE INVOICE ═══ */
+function onPiItemSelect(){autoBuyPrice()}
 function autoBuyPrice(){
   const id=parseInt(G('pi-item-sel').value);
   const item=DB.items.find(x=>x.id===id);
@@ -18,7 +19,7 @@ function addPiLine(){
   if(price<=0){toast('أدخل سعراً صالحاً','error');return}
   _piL.push({itemId:id,name:item.name,qty,price,total:qty*price});
   renderPiL();
-  G('pi-qty').value='1';G('pi-price').value='';G('pi-ltot').value='';G('pi-item-sel').value='';G('pi-item-search').value='';
+  G('pi-qty').value='1';G('pi-price').value='';G('pi-ltot').value='';G('pi-item-sel').value='';
 }
 function renderPiL(){
   const tb=G('pi-lines-tb');
