@@ -697,14 +697,38 @@ function printInvoice(type,id){
     const barcode=item?.barcode||'';
     const code=item?.code||'';
     const discCell=type==='sale'?`<td>${l.disc>0?fmt(l.disc)+' د.ل':'—'}</td>`:'';
-    const barcodeHtml=barcode||code?`<div style="font-family:monospace;font-size:8px;color:#64748b;direction:ltr;letter-spacing:1px;margin-top:1px">${barcode||code}</div>`:'';
+
+    const bcSettings=getBarcodeSettings();
+    let barcodeHtml='';
+    if(bcSettings.show!=='none'&&bcSettings.show!=='invoice'&&(barcode||code)){
+      const bcValue=barcode||code;
+      const bcId='bc-line-'+i+'-'+Math.random().toString(36).slice(2,8);
+      const sizeConfig=BC_SIZES[bcSettings.size]||BC_SIZES.medium;
+      const barWidth=BC_WIDTHS[bcSettings.width]||1.5;
+      setTimeout(()=>{
+        const svgEl=document.getElementById(bcId);
+        if(svgEl){try{JsBarcode(svgEl,bcValue,{format:bcSettings.type,width:barWidth,height:sizeConfig.height*0.6,margin:1,displayValue:bcSettings.text==='yes',font:'monospace',fontSize:9,textMargin:1,background:'transparent',lineColor:'#475569'})}catch(e){svgEl.innerHTML='<text x="2" y="12" fill="#94a3b8" font-size="9" font-family="monospace">'+bcValue+'</text>'}}}
+      },0);
+
+      if(bcSettings.position==='under-name'){
+        barcodeHtml=`<div style="margin-top:3px"><svg id="${bcId}" style="max-width:120px;height:auto"></svg></div>`;
+      } else if(bcSettings.position==='separate-col'){
+        barcodeHtml='';
+      }
+    }
+
+    const nameCell=bcSettings.position==='under-name'
+      ?`<td style="font-weight:600;color:#1e293b"><div>${l.name}</div>${barcodeHtml}</td>`
+      :`<td style="font-weight:600;color:#1e293b">${l.name}</td>`;
+
     return`<tr>
       <td style="text-align:center;color:#94a3b8;font-size:10px">${i+1}</td>
-      <td style="font-weight:600;color:#1e293b">${l.name}${barcodeHtml}</td>
+      ${nameCell}
       <td style="text-align:center">${l.qty}</td>
       <td style="direction:ltr;text-align:right;font-family:monospace">${fmt(l.price)} د.ل</td>
       ${discCell}
       <td style="direction:ltr;text-align:right;font-family:monospace;font-weight:700;color:#1e293b">${fmt(l.total)} د.ل</td>
+      ${bcSettings.position==='separate-col'?`<td style="text-align:center"><svg id="${barcode??code?i:''}" style="max-width:80px;height:auto"></svg></td>`:''}
     </tr>`;
   }).join('');
 
@@ -846,6 +870,7 @@ function printInvoice(type,id){
       <div class="inv-qr-section">
         <div class="inv-qr-box">${qrSvg}</div>
         <div class="inv-qr-label">امسح للتحقق</div>
+        ${(getBarcodeSettings().show==='item+invoice'||getBarcodeSettings().show==='invoice')?`<div style="margin-top:12px;text-align:center" id="inv-bc-section">${renderInvoiceBarcode(num.replace(/[^a-zA-Z0-9]/g,''),{size:'small'})}</div><div style="font-size:9px;color:#94a3b8;margin-top:4px;font-family:monospace;direction:ltr;letter-spacing:1px">${num}</div>`:''}
       </div>
       <div class="inv-totals">
         <div class="inv-totals-row"><span>الإجمالي قبل الخصم</span><span>${fmt(total+discount)} د.ل</span></div>

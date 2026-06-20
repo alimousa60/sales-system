@@ -12,6 +12,7 @@
 <title>نظام إدارة المبيعات — v3.0</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <link rel="stylesheet" href="styles.css?t=20260620b">
 </head>
 <body>
@@ -173,6 +174,7 @@
           </select>
           <button class="btn btn-sm btn-secondary" onclick="exportItems()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
           <button class="btn btn-sm" onclick="printItemsPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
+          <button class="btn btn-sm btn-secondary" onclick="printAllItemLabels()" title="طباعة ملصقات جميع الأصناف"><i class="ti ti-barcode"></i> ملصقات</button>
           <button class="btn btn-primary" onclick="openModal('m-item')"><i class="ti ti-plus"></i> صنف جديد</button>
         </div></div>
       <div class="tbl-wrap"><table>
@@ -380,6 +382,63 @@
         <div id="backup-list" style="display:none">
           <label>النسخ الاحتياطية المحفوظة</label>
           <div id="backup-items" class="mt-6" style="max-height:200px;overflow-y:auto"></div>
+        </div>
+
+        <!-- BARCODE SETTINGS -->
+        <div class="fg" style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+          <label style="font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;margin-bottom:12px"><i class="ti ti-barcode" style="color:var(--accent)"></i> إعدادات الباركود</label>
+          <div class="form-grid g3" style="gap:12px">
+            <div class="fg"><label>إظهار الباركود في الفاتورة</label>
+              <select id="bc-show" onchange="saveBarcodeSettings()">
+                <option value="item+invoice">باركود الصنف + باركود الفاتورة</option>
+                <option value="item">باركود الصنف فقط</option>
+                <option value="invoice">باركود الفاتورة فقط</option>
+                <option value="none">إخفاء الباركود</option>
+              </select>
+            </div>
+            <div class="fg"><label>نوع الباركود</label>
+              <select id="bc-type" onchange="saveBarcodeSettings()">
+                <option value="CODE128">Code128</option>
+                <option value="CODE39">Code39</option>
+                <option value="EAN13">EAN-13</option>
+                <option value="UPC">UPC</option>
+                <option value="ITF">ITF</option>
+              </select>
+            </div>
+            <div class="fg"><label>حجم الباركود</label>
+              <select id="bc-size" onchange="saveBarcodeSettings()">
+                <option value="small">صغير</option>
+                <option value="medium">متوسط</option>
+                <option value="large">كبير</option>
+              </select>
+            </div>
+            <div class="fg"><label>إظهار النص أسفل الباركود</label>
+              <select id="bc-text" onchange="saveBarcodeSettings()">
+                <option value="yes">نعم</option>
+                <option value="no">لا</option>
+              </select>
+            </div>
+            <div class="fg"><label>موقع الباركود في الفاتورة</label>
+              <select id="bc-position" onchange="saveBarcodeSettings()">
+                <option value="under-name">أسفل اسم الصنف</option>
+                <option value="separate-col">عمود منفصل</option>
+                <option value="footer">أسفل الفاتورة</option>
+              </select>
+            </div>
+            <div class="fg"><label>عرض الباركود</label>
+              <select id="bc-width" onchange="saveBarcodeSettings()">
+                <option value="thin">رفيع</option>
+                <option value="normal">عادي</option>
+                <option value="thick">عريض</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn btn-sm btn-secondary" onclick="previewBarcode()"><i class="ti ti-eye"></i> معاينة</button>
+            <div id="bc-preview" style="margin-top:10px;padding:12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;display:none">
+              <svg id="bc-preview-svg"></svg>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1465,6 +1524,7 @@
 <script src="js/charts.js?t=20260620b"></script>
 <script src="js/hrm.js?t=20260620b"></script>
 <script src="js/reports-erp.js?t=20260620e"></script>
+<script src="js/barcode-settings.js?t=20260620f"></script>
 <script src="js/main.js?t=20260620b"></script>
 <script>
 navigator.serviceWorker?.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
