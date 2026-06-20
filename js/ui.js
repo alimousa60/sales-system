@@ -257,7 +257,6 @@ setInterval(()=>G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:
 /* ═══ MODALS ═══ */
 /* ═══ MODAL STACK — professional layered modals ═══ */
 let _modalStack=[];
-const MODAL_BASE_Z=100;
 function openModal(id){
   if(!requireAuth())return;
   // Initialize fields
@@ -301,23 +300,22 @@ function openModal(id){
     G('uu-username').value='';G('uu-pass').value='';G('uu-name').value='';G('uu-role').value='sales';
   }
   const el=G(id);
-  // Move to end of body so it renders on top of all siblings
+  // Remove on-top from all others, move this one to end of body, add on-top
+  document.querySelectorAll('.modal-backdrop.on-top').forEach(m=>m.classList.remove('on-top'));
   document.body.appendChild(el);
-  // Set z-index based on stack depth
-  const zIndex=MODAL_BASE_Z+(_modalStack.length*10);
+  el.classList.add('on','on-top');
   _modalStack.push(id);
-  el.style.zIndex=zIndex;
-  el.classList.add('on');
 }
 function closeModal(id){
   const el=G(id);
-  el.classList.remove('on');
-  el.style.zIndex='';
+  el.classList.remove('on','on-top');
   _modalStack=_modalStack.filter(x=>x!==id);
-  // Re-z-index remaining stacked modals
-  _modalStack.forEach((mid,i)=>{
-    G(mid).style.zIndex=MODAL_BASE_Z+(i*10);
-  });
+  // Restore on-top to the last remaining modal in stack
+  if(_modalStack.length>0){
+    const topId=_modalStack[_modalStack.length-1];
+    document.body.appendChild(G(topId));
+    G(topId).classList.add('on-top');
+  }
 }
 
 /* ═══ UTILITY FUNCTIONS ═══ */
