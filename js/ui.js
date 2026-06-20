@@ -255,8 +255,12 @@ G('clear-search')?.addEventListener('click', ()=>{
 setInterval(()=>G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}),1000);
 
 /* ═══ MODALS ═══ */
+/* ═══ MODAL STACK — professional layered modals ═══ */
+let _modalStack=[];
+const MODAL_BASE_Z=100;
 function openModal(id){
   if(!requireAuth())return;
+  // Initialize fields
   if(id==='m-invoice'){
     G('si-num').value='INV-'+String(DB.cI).padStart(5,'0');
     G('si-date').value=today();
@@ -296,9 +300,27 @@ function openModal(id){
     if(!requireAdmin())return;
     G('uu-username').value='';G('uu-pass').value='';G('uu-name').value='';G('uu-role').value='sales';
   }
-  G(id).classList.add('on')
+  // Push to stack and set z-index
+  const zIndex=MODAL_BASE_Z+(_modalStack.length*10);
+  _modalStack.push(id);
+  const el=G(id);
+  el.style.zIndex=zIndex;
+  // Darken backdrop slightly more for stacked modals
+  if(_modalStack.length>1){
+    el.style.background=`rgba(0,0,0,${0.55+(_modalStack.length*0.05)})`;
+  }
+  el.classList.add('on');
 }
-function closeModal(id){G(id).classList.remove('on')}
+function closeModal(id){
+  G(id).classList.remove('on');
+  G(id).style.zIndex='';
+  G(id).style.background='';
+  _modalStack=_modalStack.filter(x=>x!==id);
+  // Re-z-index remaining stacked modals
+  _modalStack.forEach((mid,i)=>{
+    G(mid).style.zIndex=MODAL_BASE_Z+((i)*10);
+  });
+}
 
 /* ═══ UTILITY FUNCTIONS ═══ */
 function debounce(fn,ms=300){
@@ -313,8 +335,13 @@ function debounce(fn,ms=300){
   function openHelp(){openModal('m-help')}
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){
-      const m=document.querySelector('.modal-backdrop.on');
-      if(m){closeModal(m.id);e.preventDefault()}
+      if(_modalStack.length>0){
+        closeModal(_modalStack[_modalStack.length-1]);
+      } else {
+        const m=document.querySelector('.modal-backdrop.on');
+        if(m) closeModal(m.id);
+      }
+      e.preventDefault();
       return;
     }
     if(e.ctrlKey&&e.key==='k'){e.preventDefault();G('global-search')?.focus();return}

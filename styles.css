@@ -195,7 +195,8 @@ select option{background:var(--bg-elevated)}
 .pay-chip i{font-size:13px}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
 .modal-backdrop.on{display:flex}
-.modal{background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:16px;width:580px;max-width:100%;max-height:92vh;overflow-y:auto;animation:mIn .18s ease;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.modal{background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:16px;width:580px;max-width:100%;max-height:92vh;overflow-y:auto;animation:mIn .18s ease;box-shadow:0 24px 60px rgba(0,0,0,.6);transition:z-index 0s}
+.modal-backdrop .modal{position:relative}
 @keyframes mIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:none}}
 .modal-lg{width:720px}.modal-xl{width:860px}
 .modal-hd{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg-surface);z-index:1;border-radius:16px 16px 0 0}
