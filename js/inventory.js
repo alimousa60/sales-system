@@ -101,19 +101,6 @@ function closeItemSearch(prefix){
   if(dd)dd.classList.remove('on');
 }
 
-// Update openModal to clear item search
-const _origOpenModal=window.openModal;
-window.openModal=function(id){
-  _origOpenModal.call(this,id);
-  if(id==='m-invoice'||id==='m-pur'){
-    const p=id==='m-invoice'?'si':'pi';
-    const input=G(p+'-item-search');
-    const hidden=G(p+'-item-sel');
-    if(input)input.value='';
-    if(hidden)hidden.value='';
-  }
-};
-
 /* ═══ ITEMS ═══ */
 function saveItem(){
   const name=G('fi-name').value.trim();
