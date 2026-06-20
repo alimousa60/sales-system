@@ -357,6 +357,11 @@ app.patch('/api/v1/company', authGuard, activeAccountGuard, async (req, res) => 
   }
 });
 
+// Serve main HTML page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'sales-system.html'));
+});
+
 // Error handler (must be last)
 app.use(errorHandler);
 
