@@ -503,6 +503,33 @@
     <div id="fin-credit" style="display:none"><div class="card"><div class="card-hd"><h3>الذمم المدينة (آجَل مستحق)</h3></div><div class="tbl-wrap"><table><thead><tr><th>الفاتورة</th><th>الزبون</th><th>الإجمالي</th><th>المحصَّل</th><th>المتبقي</th><th>تاريخ الفاتورة</th></tr></thead><tbody id="crd-tb"></tbody></table></div></div></div>
   </div>
 
+  <!-- EXPENSES -->
+  <div class="page" id="p-expenses">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)" id="exp-stats"></div>
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-receipt-2 color-accent"></i> <span data-i18n="nav_expenses">المصروفات</span></h3>
+        <div class="flex-gap6">
+          <select id="exp-cat-filter" class="compact-select" onchange="renderExpenses()" style="max-width:150px">
+            <option value="">كل الفئات</option>
+            <option value="rent">إيجار</option><option value="utilities">مرافق</option>
+            <option value="salaries">رواتب</option><option value="supplies">لوازم</option>
+            <option value="marketing">تسويق</option><option value="transport">نقل</option>
+            <option value="maintenance">صيانة</option><option value="insurance">تأمين</option>
+            <option value="taxes">ضرائب</option><option value="office">مكتبية</option>
+            <option value="travel">سفر</option><option value="other">أخرى</option>
+          </select>
+          <input type="date" id="exp-date-from" class="input" style="font-size:12px;padding:5px 8px" onchange="renderExpenses()">
+          <span style="font-size:11px;color:var(--text-muted)">الى</span>
+          <input type="date" id="exp-date-to" class="input" style="font-size:12px;padding:5px 8px" onchange="renderExpenses()">
+          <button class="btn btn-sm btn-secondary" onclick="exportExpenses()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-primary" onclick="openExpenseModal()"><i class="ti ti-plus"></i> مصروف جديد</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>الفئة</th><th>البيان</th><th>المبلغ</th><th>طريقة الدفع</th><th>الحالة</th><th></th></tr></thead><tbody id="exp-tb"></tbody></table></div>
+      <div class="pagination" id="pag-exp-tb"></div>
+    </div>
+  </div>
+
   <!-- P&L -->
   <div class="page" id="p-pl">
     <div class="stats-grid">
@@ -1533,6 +1560,8 @@
 <script defer src="js/reports-erp.js?t=20260625a"></script>
 <script defer src="js/barcode-settings.js?t=20260625a"></script>
 <script defer src="js/customize-page.js?t=20260625a"></script>
+<script defer src="js/expenses.js?t=20260625b"></script>
+<script defer src="js/barcode-scanner.js?t=20260625b"></script>
 <script defer src="js/main.js?t=20260625a"></script>
 </body>
 </html>

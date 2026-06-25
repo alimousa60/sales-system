@@ -58,6 +58,7 @@
     <div class="nav-item" data-page="suppliers"><span class="nav-icon amber"><i class="ti ti-users"></i></span><span data-i18n="nav_suppliers">الموردون</span></div>
     <div class="nav-item" data-page="soa"><span class="nav-icon blue"><i class="ti ti-file-description"></i></span><span data-i18n="nav_soa">كشف الحساب</span></div>
     <div class="nav-item" data-page="finance"><span class="nav-icon green"><i class="ti ti-cash"></i></span><span data-i18n="nav_finance_cash">الخزينة</span></div>
+    <div class="nav-item" data-page="expenses"><span class="nav-icon red"><i class="ti ti-receipt-2"></i></span><span data-i18n="nav_expenses">المصروفات</span></div>
     <div class="nav-item" data-page="pl"><span class="nav-icon cyan"><i class="ti ti-chart-bar"></i></span><span data-i18n="nav_pl">الأرباح والخسائر</span></div>
     <div class="nav-item" data-page="users"><span class="nav-icon purple"><i class="ti ti-users-pin"></i></span><span data-i18n="nav_users">حسابات المستخدمين</span></div>
     <div class="nav-item" data-page="companies"><span class="nav-icon blue"><i class="ti ti-building"></i></span><span data-i18n="nav_companies">إدارة الشركات</span></div>
@@ -195,6 +196,7 @@
           <input type="file" id="import-csv-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleCSVImport(this)">
           <button class="btn btn-sm" onclick="printItemsPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
           <button class="btn btn-sm btn-secondary" onclick="printAllItemLabels()" title="طباعة ملصقات جميع الأصناف"><i class="ti ti-barcode"></i> ملصقات</button>
+          <button class="btn btn-sm btn-secondary" onclick="startBarcodeScanner()" title="مسح باركود"><i class="ti ti-scan"></i> مسح</button>
           <button class="btn btn-primary" onclick="openNewItem()"><i class="ti ti-plus"></i> صنف جديد</button>
         </div></div>
       <div id="batch-bar" style="display:none;padding:8px 14px;background:var(--accent-dim);border-bottom:1px solid var(--accent);display:none;align-items:center;gap:10px;flex-wrap:wrap">
@@ -469,6 +471,14 @@
         </div>
       </div>
     </div>
+
+    <!-- SESSIONS -->
+    <div class="card mt-12">
+      <div class="card-hd"><h3><i class="ti ti-key color-accent"></i> الجلسات النشطة</h3>
+        <button class="btn btn-sm btn-danger" onclick="terminateAllSessions()"><i class="ti ti-power"></i> إنهاء الكل</button>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>الجهاز</th><th>عنوان IP</th><th>آخر نشاط</th><th>تاريخ الدخول</th><th></th></tr></thead><tbody id="sessions-tb"></tbody></table></div>
+    </div>
   </div>
 
   <!-- SOA -->
@@ -520,6 +530,84 @@
     <div id="fin-check" style="display:none"><div class="card"><div class="card-hd"><h3>الصكوك المستلمة</h3></div><div class="tbl-wrap"><table><thead><tr><th>البيان</th><th>التاريخ</th><th>الزبون</th><th>القيمة</th><th>الحالة</th></tr></thead><tbody id="chk-tb"></tbody></table></div></div></div>
     <div id="fin-supout" style="display:none"><div class="card"><div class="card-hd"><h3>المدفوعات للموردين</h3></div><div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المورد</th><th>المبلغ</th><th>طريقة الدفع</th></tr></thead><tbody id="supout-tb"></tbody></table></div></div></div>
     <div id="fin-credit" style="display:none"><div class="card"><div class="card-hd"><h3>الذمم المدينة (آجَل مستحق)</h3></div><div class="tbl-wrap"><table><thead><tr><th>الفاتورة</th><th>الزبون</th><th>الإجمالي</th><th>المحصَّل</th><th>المتبقي</th><th>تاريخ الفاتورة</th></tr></thead><tbody id="crd-tb"></tbody></table></div></div></div>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="page" id="p-expenses">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)" id="exp-stats"></div>
+    <div class="card">
+      <div class="card-hd"><h3><i class="ti ti-receipt-2 color-accent"></i> <span data-i18n="nav_expenses">المصروفات</span></h3>
+        <div class="flex-gap6">
+          <select id="exp-cat-filter" class="compact-select" onchange="renderExpenses()" style="max-width:150px">
+            <option value="">كل الفئات</option>
+            <option value="rent">إيجار</option><option value="utilities">مرافق</option>
+            <option value="salaries">رواتب</option><option value="supplies">لوازم</option>
+            <option value="marketing">تسويق</option><option value="transport">نقل</option>
+            <option value="maintenance">صيانة</option><option value="insurance">تأمين</option>
+            <option value="taxes">ضرائب</option><option value="office">مكتبية</option>
+            <option value="travel">سفر</option><option value="other">أخرى</option>
+          </select>
+          <input type="date" id="exp-date-from" class="input" style="font-size:12px;padding:5px 8px" onchange="renderExpenses()">
+          <span style="font-size:11px;color:var(--text-muted)">الى</span>
+          <input type="date" id="exp-date-to" class="input" style="font-size:12px;padding:5px 8px" onchange="renderExpenses()">
+          <button class="btn btn-sm btn-secondary" onclick="exportExpenses()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-primary" onclick="openExpenseModal()"><i class="ti ti-plus"></i> مصروف جديد</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>الفئة</th><th>البيان</th><th>المبلغ</th><th>طريقة الدفع</th><th>الحالة</th><th></th></tr></thead><tbody id="exp-tb"></tbody></table></div>
+      <div class="pagination" id="pag-exp-tb"></div>
+    </div>
+  </div>
+
+  <!-- EXPENSE MODAL -->
+  <div class="modal-backdrop" id="m-expense">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-hd"><h3 id="m-exp-title">مصروف جديد</h3><button class="btn btn-icon" onclick="closeModal('m-expense')"><i class="ti ti-x"></i></button></div>
+      <div class="modal-body">
+        <div class="form-grid g2">
+          <div class="fg"><label>الفئة</label><select id="exp-category" class="input">
+            <option value="rent">إيجار</option><option value="utilities">مرافق</option>
+            <option value="salaries">رواتب</option><option value="supplies">لوازم</option>
+            <option value="marketing">تسويق</option><option value="transport">نقل</option>
+            <option value="maintenance">صيانة</option><option value="insurance">تأمين</option>
+            <option value="taxes">ضرائب</option><option value="office">مكتبية</option>
+            <option value="travel">سفر</option><option value="other">أخرى</option>
+          </select></div>
+          <div class="fg"><label>المبلغ</label><input type="number" id="exp-amount" class="input" step="0.001" min="0"></div>
+        </div>
+        <div class="fg"><label>البيان</label><input type="text" id="exp-desc" class="input" placeholder="وصف المصروف..."></div>
+        <div class="form-grid g2">
+          <div class="fg"><label>التاريخ</label><input type="date" id="exp-date" class="input"></div>
+          <div class="fg"><label>طريقة الدفع</label><select id="exp-payment" class="input">
+            <option value="cash">نقداً</option><option value="check">صك</option>
+            <option value="bank_transfer">تحويل بنكي</option><option value="card">بطاقة</option>
+          </select></div>
+        </div>
+        <div class="fg"><label>ملاحظات</label><textarea id="exp-notes" class="input" rows="2"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('m-expense')">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveExpense()">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARCODE SCANNER MODAL -->
+  <div class="modal-backdrop" id="m-barcode-scanner">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-hd"><h3><i class="ti ti-scan color-accent"></i> مسح الباركود</h3><button class="btn btn-icon" onclick="stopBarcodeScanner()"><i class="ti ti-x"></i></button></div>
+      <div class="modal-body" style="padding:0">
+        <div id="barcode-reader" style="width:100%;min-height:280px"></div>
+        <div id="barcode-result" style="padding:12px;text-align:center;display:none">
+          <div style="font-size:12px;color:var(--text-muted)">تم مسح الباركود:</div>
+          <div id="barcode-value" style="font-size:18px;font-weight:700;color:var(--accent);margin-top:4px;font-family:monospace"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div style="flex:1;font-size:11px;color:var(--text-muted)" id="scanner-status">وجّه الكاميرا نحو الباركود</div>
+        <button class="btn" onclick="stopBarcodeScanner()">إغلاق</button>
+      </div>
+    </div>
   </div>
 
   <!-- P&L -->
@@ -1023,6 +1111,20 @@
     <div class="form-grid g2">
       <div class="fg"><label>الوحدة</label><input id="fi-unit" placeholder="قطعة / كيلو / لتر"></div>
       <div class="fg"><label>الفئة</label><input id="fi-cat" placeholder="إلكترونيات / غذاء..."></div>
+    </div>
+    <div class="fg mt-8">
+      <label>صورة الصنف</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="fi-img-preview" style="width:80px;height:80px;border-radius:10px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background:var(--bg-elevated)">
+          <i class="ti ti-photo" style="font-size:24px;color:var(--text-muted)"></i>
+        </div>
+        <div style="flex:1">
+          <input type="file" id="fi-img-input" accept="image/*" style="display:none" onchange="handleItemImage(this)">
+          <button class="btn btn-sm btn-secondary" onclick="G('fi-img-input').click()" type="button"><i class="ti ti-upload"></i> رفع صورة</button>
+          <button class="btn btn-sm" onclick="clearItemImage()" type="button" style="margin-top:4px"><i class="ti ti-x"></i> حذف الصورة</button>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">PNG, JPG — حد أقصى 2MB</div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="modal-footer"><button class="btn" onclick="closeModal('m-item')">إلغاء</button><button class="btn btn-primary" id="m-item-save-btn" onclick="saveItem()"><i class="ti ti-check"></i> حفظ الصنف</button></div>
@@ -1548,6 +1650,8 @@
 <script defer src="js/reports-erp.js?t=20260625a"></script>
 <script defer src="js/barcode-settings.js?t=20260625a"></script>
 <script defer src="js/customize-page.js?t=20260625a"></script>
+<script defer src="js/expenses.js?t=20260625b"></script>
+<script defer src="js/barcode-scanner.js?t=20260625b"></script>
 <script defer src="js/main.js?t=20260625a"></script>
 </body>
 </html>

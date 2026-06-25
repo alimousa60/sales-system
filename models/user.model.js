@@ -23,7 +23,15 @@ const userSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
-  lastLogin: Date
+  lastLogin: Date,
+  sessions: [{
+    token: { type: String },
+    ip: { type: String },
+    userAgent: { type: String },
+    loginAt: { type: Date, default: Date.now },
+    lastActive: { type: Date },
+    isActive: { type: Boolean, default: true }
+  }]
 }, {
   timestamps: false
 });

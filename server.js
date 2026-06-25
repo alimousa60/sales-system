@@ -293,6 +293,8 @@ const syncRoutes = require('./routes/sync.routes');
 const usersRoutes = require('./routes/users.routes');
 const backupRoutes = require('./routes/backup.routes');
 const hrmRoutes = require('./routes/hrm.routes');
+const expenseRoutes = require('./routes/expense.routes');
+const errorLogRoutes = require('./routes/error-log.routes');
 
 // ========== Mount Routes ==========
 app.use('/api/v1/auth/login', sanitizeBody(), authRoutes);
@@ -306,6 +308,8 @@ app.use('/api/v1/transactions', authGuard, activeAccountGuard, transactionRoutes
 app.use('/api/v1/admin', authGuard, activeAccountGuard, requireAdmin, adminRoutes);
 app.use('/api/v1/users', authGuard, activeAccountGuard, usersRoutes);
 app.use('/api/v1/backups', authGuard, activeAccountGuard, backupRoutes);
+app.use('/api/v1/expenses', authGuard, activeAccountGuard, expenseRoutes);
+app.use('/api/v1/errors', errorLogRoutes);
 app.use('/api/hrm', authGuard, activeAccountGuard, hrmRoutes);
 
 // Company routes

@@ -146,6 +146,7 @@ function openNewItem(){
 function saveItem(){
   const name=G('fi-name').value.trim();
   if(!name){toast(t('inv_name_ph'),'error');return}
+  const imgData=G('fi-img-preview')?.querySelector('img')?.src||null;
   if(_editingItemId){
     const item=DB.items.find(x=>x.id===_editingItemId);
     if(!item){toast(t('inv_not_found'),'error');return}
@@ -158,6 +159,7 @@ function saveItem(){
     item.reorder=parseFloat(G('fi-reorder').value)||5;
     item.unit=G('fi-unit').value||'قطعة';
     item.cat=G('fi-cat').value||'عام';
+    if(imgData!==null) item.image=imgData;
     addLog(t('inv_edit'),`"${name}" — '+t('inv_sell_price')+': ${fmt(item.sell)}  ${t('currency_sym')}`,'#4f8ef7');
     toast(t('inv_item_updated')+' "'+name+'"',{icon:'ti-package',title:t('inv_updated_done')});
   } else {
@@ -171,7 +173,8 @@ function saveItem(){
       qty:parseFloat(G('fi-qty').value)||0,
       reorder:parseFloat(G('fi-reorder').value)||5,
       unit:G('fi-unit').value||'قطعة',
-      cat:G('fi-cat').value||'عام'
+      cat:G('fi-cat').value||'عام',
+      image:imgData
     };
     DB.items.push(item);
     addLog(t('inv_add'),`"${name}" — '+t('inv_sell_price')+': ${fmt(item.sell)}  ${t('currency_sym')}`,'#2dd17e');
@@ -196,6 +199,14 @@ function editItem(id){
   G('fi-cat').value=item.cat||'عام';
   G('m-item-title').textContent=t('inv_edit');
   G('m-item-save-btn').innerHTML='<i class="ti ti-device-floppy"></i> '+t('pur_save_edits');
+  const prev=G('fi-img-preview');
+  if(prev){
+    if(item.image){
+      prev.innerHTML=`<img src="${item.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+    }else{
+      prev.innerHTML=`<i class="ti ti-photo" style="font-size:24px;color:var(--text-muted)"></i>`;
+    }
+  }
   openModal('m-item');
 }
 function filterItems(q){renderItems(q)}
@@ -293,6 +304,7 @@ function renderSettings(){
     sel.value=DB.companyId||'';
   }
   loadCloudBackups();
+  loadSessions();
 }
 function openCompanyModal(id){
   if(!requireAdmin()) return;
@@ -606,4 +618,24 @@ function handleCSVImport(input){
   reader.readAsText(file);
   input.value='';
 }
+
+function handleItemImage(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>2*1024*1024){toast('حجم الصورة يتجاوز 2MB','error');return}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const prev=G('fi-img-preview');
+    if(prev) prev.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearItemImage(){
+  const prev=G('fi-img-preview');
+  if(prev) prev.innerHTML=`<i class="ti ti-photo" style="font-size:24px;color:var(--text-muted)"></i>`;
+  const input=G('fi-img-input');
+  if(input) input.value='';
+}
+
 

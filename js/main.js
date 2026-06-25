@@ -185,8 +185,19 @@ window.addEventListener('appinstalled', ()=>{toast(t('install_success'),'success
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('service-worker.js')
-      .then(()=>console.log('Service worker registered'))
+      .then(reg=>{console.log('Service worker registered');
+        navigator.serviceWorker.addEventListener('message',e=>{
+          if(e.data?.type==='synced'){toast('تمت مزامنة البيانات المحفوظة offline','success',{icon:'ti-cloud-upload'});renderCurrentPage();}
+        });
+      })
       .catch(err=>console.warn('SW registration failed',err));
+  });
+  window.addEventListener('online',()=>{
+    if(navigator.serviceWorker.controller){navigator.serviceWorker.controller.postMessage('replay-queue');}
+    const banner=G('offline-banner');if(banner)banner.style.display='none';
+  });
+  window.addEventListener('offline',()=>{
+    const banner=G('offline-banner');if(banner){banner.style.display='flex';banner.innerHTML='<i class="ti ti-wifi-off"></i> <span>أنت offline — سيتم حفظ التغييرات تلقائياً</span>';}
   });
 }
 

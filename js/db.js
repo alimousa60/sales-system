@@ -8,6 +8,32 @@ const AUTH_USER_KEY='salesSystemAuthUser';
 const API_BASE_URL=(window.location.port === '3000' || window.location.port === '' || window.location.port === '443' || window.location.port === '80')
   ? `${window.location.origin}/api/v1`
   : `${window.location.protocol}//${window.location.hostname}:3000/api/v1`;
+
+/* ═══ ERROR TRACKER ═══ */
+(function initErrorTracker(){
+  window._errorCounts={};
+  window._lastErrorTime={};
+  window.trackError=function(msg,source,filename,line,col,stack){
+    const now=Date.now();
+    const key=msg+'|'+filename+'|'+line;
+    if(window._lastErrorTime[key]&&now-window._lastErrorTime[key]<5000)return;
+    window._lastErrorTime[key]=now;
+    window._errorCounts[key]=(window._errorCounts[key]||0)+1;
+    try{
+      fetch(API_BASE_URL.replace('/api/v1','')+'/api/v1/errors',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem(AUTH_TOKEN_KEY)||'')},
+        body:JSON.stringify({message:msg,source,filename,lineno:line,colno:col,stack,url:window.location.href,level:'error'})
+      }).catch(()=>{});
+    }catch(e){}
+  };
+  window.addEventListener('error',function(e){
+    window.trackError(e.message||'Unknown',e.filename?'script':e.type,e.filename,e.lineno,e.colno,e.error?.stack);
+  });
+  window.addEventListener('unhandledrejection',function(e){
+    window.trackError(String(e.reason||'Unhandled rejection'),'promise','','','','');
+  });
+})();
 const CLOUD_STORAGE_KEY='salesSystemCloud';
 const CLOUD_ENDPOINT=''; // ضع رابط API السحابة هنا إذا كان متاحاً
 const DB={
@@ -617,4 +643,44 @@ async function deleteCloudBackup(id){
     toast(t('backup_exported'));
     loadCloudBackups();
   }catch(err){toast(t('backup_save_error')+': '+err.message,'error')}
+}
+
+/* ═══ SESSION MANAGEMENT ═══ */
+async function loadSessions(){
+  try{
+    const res=await authenticatedFetch('/api/auth/sessions');
+    const d=await res.json();
+    const tb=G('sessions-tb');
+    if(!tb)return;
+    const sessions=d.sessions||[];
+    if(!sessions.length){tb.innerHTML=emptyRow(5,'لا توجد جلسات نشطة');return}
+    tb.innerHTML=sessions.map(s=>{
+      const ua=s.userAgent||'غير معروف';
+      const device=ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':ua.includes('Edge')?'Edge':ua.includes('Mobile')?'Mobile':'Browser';
+      const isCurrent=s.token&&localStorage.getItem(AUTH_TOKEN_KEY)?.endsWith(s.token);
+      return`<tr>
+        <td><span class="badge ${isCurrent?'b-green':'b-blue'}">${device}</span></td>
+        <td class="td-mono" style="font-size:11px">${s.ip||'—'}</td>
+        <td style="font-size:11px">${s.lastActive?new Date(s.lastActive).toLocaleString('ar-LY'):'—'}</td>
+        <td style="font-size:11px">${s.loginAt?new Date(s.loginAt).toLocaleString('ar-LY'):'—'}</td>
+        <td>${isCurrent?'<span class="badge b-green">الجلسة الحالية</span>':`<button class="btn btn-sm btn-danger btn-icon" onclick="terminateSession('${s._id}')" title="إنهاء"><i class="ti ti-power"></i></button>`}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){console.error('sessions error:',e)}
+}
+async function terminateSession(sessionId){
+  if(!confirm('إنهاء هذه الجلسة؟'))return;
+  try{
+    await authenticatedFetch('/api/auth/sessions/'+sessionId,{method:'DELETE'});
+    toast('تم إنهاء الجلسة','success');
+    loadSessions();
+  }catch(e){toast(e.message,'error')}
+}
+async function terminateAllSessions(){
+  if(!confirm('إنهاء جميع الجلسات الأخرى؟'))return;
+  try{
+    await authenticatedFetch('/api/auth/sessions',{method:'DELETE'});
+    toast('تم إنهاء جميع الجلسات','success');
+    loadSessions();
+  }catch(e){toast(e.message,'error')}
 }

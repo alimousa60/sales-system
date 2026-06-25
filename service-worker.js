@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sales-system-v5';
+const CACHE_NAME = 'sales-system-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -20,6 +20,8 @@ const STATIC_ASSETS = [
   '/js/realtime.js',
   '/js/notify.js',
   '/js/barcode-settings.js',
+  '/js/barcode-scanner.js',
+  '/js/expenses.js',
   '/js/customize-page.js'
 ];
 
@@ -45,9 +47,81 @@ self.addEventListener('activate', event => {
   );
 });
 
+/* ═══ OFFLINE MUTATION QUEUE ═══ */
+const QUEUE_DB = 'offline-sync-queue';
+const QUEUE_STORE = 'mutations';
+
+function openQueueDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(QUEUE_DB, 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+        db.createObjectStore(QUEUE_STORE, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function queueMutation(request, body) {
+  try {
+    const db = await openQueueDB();
+    const tx = db.transaction(QUEUE_STORE, 'readwrite');
+    tx.objectStore(QUEUE_STORE).add({
+      url: request.url,
+      method: request.method,
+      body: body,
+      headers: { 'Authorization': request.headers.get('Authorization') },
+      timestamp: Date.now()
+    });
+  } catch (e) {}
+}
+
+async function replayQueue() {
+  try {
+    const db = await openQueueDB();
+    const tx = db.transaction(QUEUE_STORE, 'readwrite');
+    const store = tx.objectStore(QUEUE_STORE);
+    const all = await new Promise((res, rej) => {
+      const req = store.getAll();
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+    for (const item of all) {
+      try {
+        await fetch(item.url, {
+          method: item.method,
+          headers: { 'Content-Type': 'application/json', ...item.headers },
+          body: item.body
+        });
+        store.delete(item.id);
+      } catch (e) { break; }
+    }
+  } catch (e) {}
+}
+
+/* ═══ FETCH HANDLER ═══ */
 self.addEventListener('fetch', event => {
   const { request } = event;
-  if (request.method !== 'GET') return;
+
+  if (request.method !== 'GET') {
+    if (request.url.includes('/api/')) {
+      event.respondWith(
+        fetch(request.clone()).catch(async () => {
+          const body = await request.clone().text().catch(() => null);
+          await queueMutation(request, body);
+          return new Response(JSON.stringify({ queued: true, message: 'offline_queued' }), {
+            status: 202,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
+      );
+      return;
+    }
+    return;
+  }
 
   if (request.url.includes('/api/')) {
     event.respondWith(
@@ -98,8 +172,23 @@ self.addEventListener('fetch', event => {
   );
 });
 
+/* ═══ MESSAGE HANDLER ═══ */
 self.addEventListener('message', event => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();
   }
+  if (event.data === 'replay-queue') {
+    replayQueue();
+  }
+  if (event.data?.type === 'online') {
+    replayQueue();
+  }
+});
+
+/* ═══ ONLINE DETECTION ═══ */
+self.addEventListener('online', () => {
+  replayQueue();
+  self.clients.matchAll().then(clients => {
+    clients.forEach(c => c.postMessage({ type: 'synced' }));
+  });
 });
