@@ -1,4 +1,4 @@
-/* ═══ SOA ═══ */
+﻿/* ═══ SOA ═══ */
 function renderSOA(){
   const type=G('soa-type')?.value||'customer';
   const id=parseInt(G('soa-cust').value);
@@ -7,17 +7,17 @@ function renderSOA(){
   const from=G('soa-from').value,to=G('soa-to').value;
   if(type==='supplier'){
     const s=DB.sups.find(x=>x.id===id);
-    if(!s){out.innerHTML='<div class="card" style="text-align:center;color:var(--text-muted);padding:40px"><i class="ti ti-users" style="font-size:36px;display:block;margin-bottom:8px;opacity:.3"></i>اختر موردًا لعرض كشف حسابه</div>';return}
+    if(!s){out.innerHTML='<div class="card" style="text-align:center;color:var(--text-muted);padding:40px"><i class="ti ti-users" style="font-size:36px;display:block;margin-bottom:8px;opacity:.3"></i>'+t('soa_choose_supplier')+'</div>';return}
     let txns=[];
     DB.purs.filter(p=>p.supId===id).forEach(p=>{if(from&&p.date<from)return;if(to&&p.date>to)return;txns.push({date:p.date,desc:`فاتورة شراء ${p.num}`,dr:p.total,cr:0,type:'pur'})});
     DB.supPayments.filter(p=>p.supId===id).forEach(p=>{if(from&&p.date<from)return;if(to&&p.date>to)return;txns.push({date:p.date,desc:`دفعة ${p.id}`,dr:0,cr:p.amount,type:'pay'})});
     txns.sort((a,b)=>a.date.localeCompare(b.date));
     let bal=0;
-    const rows=txns.map(t=>{bal+=t.dr-t.cr;return`<tr><td>${t.date}</td><td>${t.desc}</td><td class="td-mono" style="color:var(--red)">${t.dr?fmt(t.dr)+' د.ل':'—'}</td><td class="td-mono" style="color:var(--green)">${t.cr?fmt(t.cr)+' د.ل':'—'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} د.ل</td></tr>`}).join('');
+    const rows=txns.map(t=>{bal+=t.dr-t.cr;return`<tr><td>${t.date}</td><td>${t.desc}</td><td class="td-mono" style="color:var(--red)">${t.dr?fmt(t.dr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="color:var(--green)">${t.cr?fmt(t.cr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} ${t('currency_sym')}</td></tr>`}).join('');
     out.innerHTML=renderSOATable(company,s.name,rows,bal,txns)
   } else {
     const c=DB.custs.find(x=>x.id===id);
-    if(!c){out.innerHTML='<div class="card" style="text-align:center;color:var(--text-muted);padding:40px"><i class="ti ti-user-circle" style="font-size:36px;display:block;margin-bottom:8px;opacity:.3"></i>اختر زبوناً لعرض كشف حسابه</div>';return}
+    if(!c){out.innerHTML='<div class="card" style="text-align:center;color:var(--text-muted);padding:40px"><i class="ti ti-user-circle" style="font-size:36px;display:block;margin-bottom:8px;opacity:.3"></i>'+t('soa_choose_customer')+'</div>';return}
     let txns=[];
     const openBal=parseFloat(c.openBal)||0;
     if(openBal>0){txns.push({date:'—',desc:'رصيد افتتاحي (مديونية سابقة)',dr:openBal,cr:0,type:'obal'})}
@@ -26,14 +26,14 @@ function renderSOA(){
     DB.rets.filter(r=>{const inv=DB.invs.find(i=>i.num===r.invNum);return inv&&inv.custId===id}).forEach(r=>{if(from&&r.date<from)return;if(to&&r.date>to)return;txns.push({date:r.date,desc:`مرتجع ${r.num}`,dr:-r.amt,cr:r.amt,type:'ret'})});
     txns.sort((a,b)=>a.date.localeCompare(b.date));
     let bal=0;
-    const rows=txns.map(t=>{bal+=t.dr-t.cr;const drAmount=t.dr<0?0:t.dr;return`<tr><td>${t.date}</td><td>${t.desc}</td><td class="td-mono" style="color:var(--red)">${drAmount?fmt(drAmount)+' د.ل':'—'}</td><td class="td-mono" style="color:var(--green)">${t.cr?fmt(t.cr)+' د.ل':'—'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} د.ل</td></tr>`}).join('');
+    const rows=txns.map(t=>{bal+=t.dr-t.cr;const drAmount=t.dr<0?0:t.dr;return`<tr><td>${t.date}</td><td>${t.desc}</td><td class="td-mono" style="color:var(--red)">${drAmount?fmt(drAmount)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="color:var(--green)">${t.cr?fmt(t.cr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} ${t('currency_sym')}</td></tr>`}).join('');
     out.innerHTML=renderSOATable(company,c.name,rows,bal,txns)
   }
 }
 function renderSOATable(company,name,rows,bal,txns){
   const totalDr=(txns||[]).reduce((s,t)=>s+(t.dr>0?t.dr:0),0);
   const totalCr=(txns||[]).reduce((s,t)=>s+(t.cr||0),0);
-  return`<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div><h2 style="font-size:18px;margin:0">${company.name}</h2><div style="font-size:11px;color:var(--text-muted)">${company.address}</div></div><h3 style="color:var(--accent)">${name}</h3></div><div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead><tbody>${rows||'<tr><td colspan="5"><div class="empty-st">لا توجد حركات.</div></td></tr>'}</tbody></table></div><div style="display:flex;gap:30px;margin-top:12px;padding:10px;border-top:1px solid var(--border)"><span><strong>إجمالي المدين:</strong> ${fmt(totalDr)} د.ل</span><span><strong>إجمالي الدائن:</strong> ${fmt(totalCr)} د.ل</span><span style="color:${bal>0?'var(--red)':'var(--green)'}"><strong>الرصيد النهائي:</strong> ${fmt(bal)} د.ل</span></div></div>`;
+  return`<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div><h2 style="font-size:18px;margin:0">${company.name}</h2><div style="font-size:11px;color:var(--text-muted)">${company.address}</div></div><h3 style="color:var(--accent)">${name}</h3></div><div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead><tbody>${rows||'<tr><td colspan="5"><div class="empty-st">لا توجد حركات.</div></td></tr>'}</tbody></table></div><div style="display:flex;gap:30px;margin-top:12px;padding:10px;border-top:1px solid var(--border)"><span><strong>إجمالي المدين:</strong> ${fmt(totalDr)} ${t('currency_sym')}</span><span><strong>إجمالي الدائن:</strong> ${fmt(totalCr)} ${t('currency_sym')}</span><span style="color:${bal>0?'var(--red)':'var(--green)'}"><strong>الرصيد النهائي:</strong> ${fmt(bal)} ${t('currency_sym')}</span></div></div>`;
 }
 
 function printSOA(){
@@ -43,12 +43,12 @@ function printSOA(){
   const from=G('soa-from').value,to=G('soa-to').value;
   let name='';let txns=[];
   if(type==='supplier'){
-    const s=DB.sups.find(x=>x.id===id);if(!s){toast('اختر مورداً أولاً','error');return}
+    const s=DB.sups.find(x=>x.id===id);if(!s){toast(t('pur_choose_supplier_first'),'error');return}
     name=s.name;
     DB.purs.filter(p=>p.supId===id).forEach(p=>{if(from&&p.date<from)return;if(to&&p.date>to)return;txns.push({date:p.date,desc:`فاتورة شراء ${p.num}`,dr:p.total,cr:0})});
     DB.supPayments.filter(p=>p.supId===id).forEach(p=>{if(from&&p.date<from)return;if(to&&p.date>to)return;txns.push({date:p.date,desc:`دفعة ${p.id}`,dr:0,cr:p.amount})});
   } else {
-    const c=DB.custs.find(x=>x.id===id);if(!c){toast('اختر زبوناً أولاً','error');return}
+    const c=DB.custs.find(x=>x.id===id);if(!c){toast(t('pay_choose_customer'),'error');return}
     name=c.name;
     const openBal=parseFloat(c.openBal)||0;
     if(openBal>0)txns.push({date:'—',desc:'رصيد افتتاحي',dr:openBal,cr:0});
@@ -61,7 +61,7 @@ function printSOA(){
   const totalDr=txns.reduce((s,t)=>s+(t.dr>0?t.dr:0),0);
   const totalCr=txns.reduce((s,t)=>s+(t.cr||0),0);
   const win=window.open('','_blank','width=960,height=1150');
-  if(!win){toast('تعذر فتح نافذة الطباعة — تأكد من السماح النوافذ المنبثقة','error');return}
+  if(!win){toast(t('sales_print_err'),'error');return}
   const now=new Date();
   const dateStr=now.toLocaleDateString('ar-LY');
   const timeStr=now.toLocaleTimeString('ar-LY',{hour:'2-digit',minute:'2-digit'});
@@ -182,15 +182,15 @@ function printSOA(){
     <div class="soa-summary">
       <div class="soa-sc red">
         <div class="soa-sc-label">إجمالي المدين</div>
-        <div class="soa-sc-value">${fmt(totalDr)} د.ل</div>
+        <div class="soa-sc-value">${fmt(totalDr)} ${t('currency_sym')}</div>
       </div>
       <div class="soa-sc green">
         <div class="soa-sc-label">إجمالي الدائن</div>
-        <div class="soa-sc-value">${fmt(totalCr)} د.ل</div>
+        <div class="soa-sc-value">${fmt(totalCr)} ${t('currency_sym')}</div>
       </div>
       <div class="soa-sc blue" style="border-color:${balBorder};background:${balBg}">
         <div class="soa-sc-label">الرصيد النهائي</div>
-        <div class="soa-sc-value" style="color:${balColor}">${fmt(Math.abs(bal))} د.ل ${balLabel}</div>
+        <div class="soa-sc-value" style="color:${balColor}">${fmt(Math.abs(bal))} ${t('currency_sym')} ${balLabel}</div>
       </div>
     </div>
 
@@ -204,9 +204,9 @@ function printSOA(){
       <thead><tr>
         <th style="width:80px">التاريخ</th>
         <th>البيان</th>
-        <th style="width:90px">مدين (د.ل)</th>
-        <th style="width:90px">دائن (د.ل)</th>
-        <th style="width:100px">الرصيد (د.ل)</th>
+        <th style="width:90px">مدين (${t('currency_sym')})</th>
+        <th style="width:90px">دائن (${t('currency_sym')})</th>
+        <th style="width:100px">الرصيد (${t('currency_sym')})</th>
       </tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
@@ -256,18 +256,18 @@ function renderFin(search){
   const checkEl=G('f-chv');if(checkEl)checkEl.textContent=fmt(totalCheck);
   const supEl=G('f-sup-out');if(supEl)supEl.textContent=fmt(totalSupOut);
   const cashTb=G('cash-tb');
-  if(cashTb){cashTb.innerHTML=cashPayments.length?[...cashPayments].reverse().map(p=>`<tr><td class="td-mono">${p.date}</td><td>${p.id} — ${p.invNum||''}</td><td>${p.custName||''}</td><td class="td-mono" style="font-weight:700;color:var(--green)">+${fmt(p.amount)} د.ل</td></tr>`).join(''):emptyRow(4,'لا توجد دفعات نقدية واردة')}
+  if(cashTb){cashTb.innerHTML=cashPayments.length?[...cashPayments].reverse().map(p=>`<tr><td class="td-mono">${p.date}</td><td>${p.id} — ${p.invNum||''}</td><td>${p.custName||''}</td><td class="td-mono" style="font-weight:700;color:var(--green)">+${fmt(p.amount)} ${t('currency_sym')}</td></tr>`).join(''):emptyRow(4,t('hrm_no_movements'))}
   const chkTb=G('chk-tb');
-  if(chkTb){chkTb.innerHTML=checkPayments.length?[...checkPayments].reverse().map(p=>`<tr><td>${p.id} — ${p.invNum||''}</td><td class="td-mono">${p.date}</td><td>${p.custName||''}</td><td class="td-mono" style="font-weight:700;color:var(--green)">+${fmt(p.amount)} د.ل</td><td>${payLbl(p.mode)}</td></tr>`).join(''):emptyRow(5,'لا توجد صكوك واردة')}
+  if(chkTb){chkTb.innerHTML=checkPayments.length?[...checkPayments].reverse().map(p=>`<tr><td>${p.id} — ${p.invNum||''}</td><td class="td-mono">${p.date}</td><td>${p.custName||''}</td><td class="td-mono" style="font-weight:700;color:var(--green)">+${fmt(p.amount)} ${t('currency_sym')}</td><td>${payLbl(p.mode)}</td></tr>`).join(''):emptyRow(5,t('hrm_no_movements'))}
   const supoutTb=G('supout-tb');
-  if(supoutTb){supoutTb.innerHTML=supOutPayments.length?[...supOutPayments].reverse().map(p=>`<tr><td class="td-mono">${p.date}</td><td>${p.id} — ${p.purNum||''}</td><td>${p.supName||''}</td><td class="td-mono" style="font-weight:700;color:var(--red)">-${fmt(p.amount)} د.ل</td><td>${payLbl(p.mode)}</td></tr>`).join(''):emptyRow(5,'لا توجد مدفوعات للموردين')}
+  if(supoutTb){supoutTb.innerHTML=supOutPayments.length?[...supOutPayments].reverse().map(p=>`<tr><td class="td-mono">${p.date}</td><td>${p.id} — ${p.purNum||''}</td><td>${p.supName||''}</td><td class="td-mono" style="font-weight:700;color:var(--red)">-${fmt(p.amount)} ${t('currency_sym')}</td><td>${payLbl(p.mode)}</td></tr>`).join(''):emptyRow(5,t('hrm_no_movements'))}
   const crdTb=G('crd-tb');
   if(crdTb){
     let creditInvs=DB.invs.filter(i=>{const rem=invRemaining(i);return rem>0.001});
     if(term) creditInvs=creditInvs.filter(i=>normalizeText(i.num||'').includes(term)||normalizeText(i.custName||'').includes(term)||normalizeText(i.date||'').includes(term));
     if(from) creditInvs=creditInvs.filter(i=>i.date>=from);
     if(to) creditInvs=creditInvs.filter(i=>i.date<=to);
-    crdTb.innerHTML=creditInvs.length?creditInvs.map(i=>`<tr><td class="td-bold" style="color:var(--accent)">${i.num}</td><td>${i.custName}</td><td class="td-mono">${fmt(i.total)} د.ل</td><td class="td-mono" style="color:var(--green)">${fmt(invPaid(i))} د.ل</td><td class="td-mono" style="color:var(--red);font-weight:700">${fmt(invRemaining(i))} د.ل</td><td class="td-mono">${i.date}</td></tr>`).join(''):emptyRow(6,'لا توجد ذمم مدينة')
+    crdTb.innerHTML=creditInvs.length?creditInvs.map(i=>`<tr><td class="td-bold" style="color:var(--accent)">${i.num}</td><td>${i.custName}</td><td class="td-mono">${fmt(i.total)} ${t('currency_sym')}</td><td class="td-mono" style="color:var(--green)">${fmt(invPaid(i))} ${t('currency_sym')}</td><td class="td-mono" style="color:var(--red);font-weight:700">${fmt(invRemaining(i))} ${t('currency_sym')}</td><td class="td-mono">${i.date}</td></tr>`).join(''):emptyRow(6,t('col_unpaid_invoices'))
   }
   // Type filter: show/hide tabs
   const tabs=document.querySelectorAll('#p-finance .tabs .tab');
@@ -326,16 +326,16 @@ function renderPL(search){
   let rows=Object.values(itemPL);
   if(term) rows=rows.filter(r=>normalizeText(r.name).includes(term));
   const tb=G('pl-tb');
-  if(!rows.length){tb.innerHTML=emptyRow(5,'لا توجد بيانات.');return}
+  if(!rows.length){tb.innerHTML=emptyRow(5,t('report_no_data'));return}
   tb.innerHTML=rows.map(r=>{
     const profit=r.rev-r.cost;
     const m=r.rev>0?((profit/r.rev)*100).toFixed(1):0;
     return`<tr>
       <td class="td-bold">${r.name}</td>
       <td class="td-mono">${r.qty}</td>
-      <td class="td-mono">${fmt(r.rev)} د.ل</td>
-      <td class="td-mono">${fmt(r.cost)} د.ل</td>
-      <td class="td-mono ${profit>=0?'text-green':'text-red'}" style="font-weight:700">${fmt(profit)} د.ل</td>
+      <td class="td-mono">${fmt(r.rev)} ${t('currency_sym')}</td>
+      <td class="td-mono">${fmt(r.cost)} ${t('currency_sym')}</td>
+      <td class="td-mono ${profit>=0?'text-green':'text-red'}" style="font-weight:700">${fmt(profit)} ${t('currency_sym')}</td>
       <td><span class="badge ${profit>=0?'b-green':'b-red'}">${m}%</span></td>
     </tr>`
   }).join('');
@@ -358,19 +358,19 @@ function renderAudit(search){
   if(userFilter) logs=logs.filter(l=>normalizeText(l.user||'').includes(userFilter));
   if(actionFilter) logs=logs.filter(l=>normalizeText(l.action||'').includes(actionFilter));
   const d=G('audit-list');
-  if(!logs.length){d.innerHTML='<div class="empty-st" style="padding:40px"><i class="ti ti-shield-check" style="font-size:32px;display:block;margin-bottom:8px;opacity:.2"></i><span>لا توجد سجلات مطابقة</span></div>';return}
+  if(!logs.length){d.innerHTML='<div class="empty-st" style="padding:40px"><i class="ti ti-shield-check" style="font-size:32px;display:block;margin-bottom:8px;opacity:.2"></i><span>'+t('no_results')+'</span></div>';return}
   d.innerHTML=logs.map(l=>`<div class="log-entry">
     <div class="log-dot" data-color="${l.color}"></div>
     <div class="log-text">
-      <div class="log-action">${l.action}<span style="font-weight:400;color:var(--text-secondary)"> — ${l.detail}</span></div>
-      <div class="log-time"><i class="ti ti-user" style="font-size:11px"></i> ${l.user} &nbsp;•&nbsp; ${l.date} ${l.time}</div>
+      <div class="log-action">${escapeHtml(l.action)}<span style="font-weight:400;color:var(--text-secondary)"> — ${escapeHtml(l.detail)}</span></div>
+      <div class="log-time"><i class="ti ti-user" style="font-size:11px"></i> ${escapeHtml(l.user)} &nbsp;•&nbsp; ${escapeHtml(l.date)} ${escapeHtml(l.time)}</div>
     </div>
   </div>`).join('');
   d.querySelectorAll('.log-dot').forEach(el=>{const c=el.dataset.color;if(c)el.style.background=c})
 }
 function renderDashLog(){
   const d=G('d-log-list');if(!d)return;
-  if(!DB.log.length){d.innerHTML='<div style="font-size:11px;color:var(--text-muted);padding:8px">لا سجلات بعد.</div>';return}
+  if(!DB.log.length){d.innerHTML='<div style="font-size:11px;color:var(--text-muted);padding:8px">'+t('lbl_no_data')+'</div>';return}
   d.innerHTML=DB.log.slice(0,8).map(l=>{
     const c=l.color||'#798ef7';
     let dotClass='dot-blue';
@@ -380,10 +380,10 @@ function renderDashLog(){
     return `<div class="dash-log-item">
       <div class="dash-log-dot ${dotClass}"></div>
       <div class="dash-log-content">
-        <div class="dash-log-title">${l.action}</div>
-        <div class="dash-log-meta">${l.detail}</div>
+        <div class="dash-log-title">${escapeHtml(l.action)}</div>
+        <div class="dash-log-meta">${escapeHtml(l.detail)}</div>
       </div>
-      <div class="dash-log-meta" style="white-space:nowrap">${l.date} ${l.time}</div>
+      <div class="dash-log-meta" style="white-space:nowrap">${escapeHtml(l.date)} ${escapeHtml(l.time)}</div>
     </div>`;
   }).join('');
 }
@@ -392,24 +392,24 @@ function renderDashLog(){
 function exportSOA() {
   const type = G('soa-type')?.value || 'customer';
   const id = parseInt(G('soa-cust').value);
-  if (!id) { toast('اختر جهة أولاً', 'info'); return; }
+  if (!id) { toast(t('soa_choose_customer'), 'info'); return; }
   const from = G('soa-from')?.value, to = G('soa-to')?.value;
   const h = ['التاريخ', 'البيان', 'مدين', 'دائن', 'الرصيد'];
   const rows = [];
   if (type === 'supplier') {
     const s = DB.sups.find(x => x.id === id);
-    if (!s) { toast('المورد غير موجود', 'info'); return; }
+    if (!s) { toast(t('pur_not_found'), 'info'); return; }
     let txns = [];
     DB.purs.filter(p => p.supId === id).forEach(p => { if (from && p.date < from) return; if (to && p.date > to) return; txns.push({ date: p.date, desc: `فاتورة شراء ${p.num}`, dr: p.total, cr: 0 }); });
     DB.supPayments.filter(p => p.supId === id).forEach(p => { if (from && p.date < from) return; if (to && p.date > to) return; txns.push({ date: p.date, desc: `دفعة ${p.id}`, dr: 0, cr: p.amount }); });
     txns.sort((a, b) => a.date.localeCompare(b.date));
     let bal = 0;
     txns.forEach(t => { bal += t.dr - t.cr; rows.push([t.date, t.desc, t.dr || '', t.cr || '', bal]); });
-    if (!rows.length) { toast('لا توجد حركات', 'info'); return; }
+    if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
     _exportTable(h, rows, `كشف حساب ${s.name}`, `soa-${s.name}`);
   } else {
     const c = DB.custs.find(x => x.id === id);
-    if (!c) { toast('الزبون غير موجود', 'info'); return; }
+    if (!c) { toast(t('inv_not_found'), 'info'); return; }
     let txns = [];
     const openBal = parseFloat(c.openBal) || 0;
     if (openBal > 0) txns.push({ date: '—', desc: 'رصيد افتتاحي', dr: openBal, cr: 0 });
@@ -419,8 +419,9 @@ function exportSOA() {
     txns.sort((a, b) => a.date.localeCompare(b.date));
     let bal = 0;
     txns.forEach(t => { bal += t.dr - t.cr; rows.push([t.date, t.desc, t.dr > 0 ? t.dr : '', t.cr || '', bal]); });
-    if (!rows.length) { toast('لا توجد حركات', 'info'); return; }
+    if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
     _exportTable(h, rows, `كشف حساب ${c.name}`, `soa-${c.name}`);
   }
-  toast('تم التصدير بنجاح');
+  toast(t('backup_exported'));
 }
+

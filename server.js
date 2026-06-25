@@ -1,11 +1,10 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
@@ -14,29 +13,28 @@ let MongoMemoryServer = null;
 try { MongoMemoryServer = require('mongodb-memory-server').MongoMemoryServer; } catch(e) {}
 const logger = require('./utils/logger');
 const { errorHandler } = require('./middleware/errorHandler');
-const companyRoutes = require('./routes/company.routes');
+const { authenticateToken, checkAccountStatus, requireAdmin, requireSystemAdmin } = require('./middleware/auth.middleware');
+const { sanitizeBody } = require('./middleware/validation');
+const { setupSwagger } = require('./config/swagger');
 
-// Models
+// Models (only for index creation)
 const User = require('./models/user.model');
 const Company = require('./models/company.model');
-const Account = require('./models/account.model');
-const Transaction = require('./models/transaction.model');
-const AuditLog = require('./models/auditLog.model');
 const Role = require('./models/rbac.models').Role;
 const RBACauditLog = require('./models/rbacAuditLog.model');
+const Transaction = require('./models/transaction.model');
+
+// Controllers
+const AuthController = require('./controllers/auth.controller');
+const CompanyController = require('./controllers/company.controller');
 
 mongoose.set('autoIndex', false);
 
 // ========== RBAC IMPORTS ==========
-let seedRBACRoles, authenticateTokenRBAC, checkAccountStatus, checkPermissionRBAC;
+let seedRBACRoles;
 try {
   const rbacSeed = require('./seeds/rbac.seed');
   seedRBACRoles = rbacSeed.seedRBACRoles;
-  
-  const rbacMiddleware = require('./middleware/rbac.middleware');
-  authenticateTokenRBAC = rbacMiddleware.authenticateToken;
-  checkAccountStatus = rbacMiddleware.checkAccountStatus;
-  checkPermissionRBAC = rbacMiddleware.checkPermission;
 } catch (err) {
   logger.warn('RBAC files not found. RBAC features will be disabled.');
 }
@@ -54,26 +52,65 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sales-
 const app = express();
 
 // Security middlewares
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(express.json({ limit: '10mb' }));
-app.use(cors({ origin: function(o, cb) { cb(null, true); }, credentials: true }));
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:5500').split(',').map(s => s.trim());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net/npm/chart.js", "https://cdn.sheetjs.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "ws:", "wss:"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use(cors({
+  origin: function(origin, cb) {
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes('*')) return cb(null, true);
+    cb(new Error('CORS مرفوض'));
+  },
+  credentials: true
+}));
 
-// Serve static frontend files with no-cache in production
-const path = require('path');
+// Global input sanitization
+app.use(sanitizeBody());
+
+// Swagger API Documentation (no auth required)
+setupSwagger(app);
+
+// Serve ONLY public frontend files (block server internals)
+const allowedStaticExts = ['.html', '.css', '.js', '.json', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'];
+const blockedPaths = ['/models/', '/routes/', '/middleware/', '/seeds/', '/utils/', '/logs/', '/.env', '/server.js', '/jest.config.js', '/package.json', '/render.yaml', '/AGENTS.md', '/jest.setup.js'];
+app.use((req, res, next) => {
+  for (const bp of blockedPaths) {
+    if (req.url === bp || req.url.startsWith(bp)) {
+      return res.status(403).json({ status: 'error', message: 'ممنوع' });
+    }
+  }
+  next();
+});
 app.use((req, res, next) => {
   if (req.method === 'GET' && !req.url.startsWith('/api/')) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
+    res.removeHeader('X-Powered-By');
   }
   next();
 });
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname), {
+  index: 'sales-system.html',
+  extensions: ['html']
+}));
 
 // Rate limiting
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: process.env.NODE_ENV === 'development' ? 50 : 5,
   message: 'عدد محاولات الدخول كثير جداً. حاول لاحقاً.'
 });
 
@@ -84,7 +121,6 @@ const apiLimiter = rateLimit({
 
 app.use('/api/v1/auth/login', loginLimiter);
 app.use('/api/v1/', apiLimiter);
-app.use('/api/v1/companies', companyRoutes);
 
 // MongoDB Connection
 async function connectDatabase() {
@@ -155,9 +191,12 @@ connectDatabase()
     const httpServer = http.createServer(app);
     const wss = new WebSocket.Server({ server: httpServer });
 
-    wss.on('connection', (ws) => {
+    wss.on('connection', (ws, req) => {
       ws.isAlive = true;
       ws.on('pong', () => { ws.isAlive = true; });
+      // Log connection for audit
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      logger.info(`WebSocket اتصال جديد من ${ip}`);
     });
 
     setInterval(() => {
@@ -200,9 +239,6 @@ connectDatabase()
   process.exit(1);
 });
 
-const authGuard = authenticateTokenRBAC || authenticateToken;
-const activeAccountGuard = checkAccountStatus || ((req, res, next) => next());
-
 // Models are now imported from models/ directory (self-registering with mongoose).
 
 // ========== MONGODB INDEXES ==========
@@ -232,65 +268,13 @@ async function ensureIndexes() {
 // ========== Helper Functions ==========
 
 async function logAudit(userId, action, resource, resourceId, changes, req) {
-  try {
-    await AuditLog.create({
-      userId,
-      action,
-      resource,
-      resourceId,
-      changes,
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent')
-    });
-  } catch (error) {
-    logger.error('خطأ في تسجيل التدقيق: ' + error.message);
-  }
+  const AuthService = require('./services/auth.service');
+  await AuthService.logAudit(userId, action, resource, resourceId, changes, req);
 }
 
-// ========== Middleware ==========
-
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ status: 'error', message: 'غير مصرح: البطاقة المرور مفقودة' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  jwt.verify(token, JWT_SECRET, (err, payload) => {
-    if (err) {
-      const message = err.name === 'TokenExpiredError'
-        ? 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.'
-        : 'بطاقة مرور غير صحيحة.';
-      return res.status(401).json({ status: 'error', message });
-    }
-
-    req.user = {
-      userId: payload.userId,
-      role: payload.role,
-      username: payload.username,
-      companyId: payload.companyId
-    };
-
-    next();
-  });
-}
-
-function requireAdmin(req, res, next) {
-  if (!['admin', 'system_admin'].includes(req.user?.role)) {
-    return res.status(403).json({ status: 'error', message: 'ممنوع: مطلوب صلاحيات الإدارة' });
-  }
-  next();
-}
-
-function requireSystemAdmin(req, res, next) {
-  if (req.user?.role !== 'system_admin') {
-    return res.status(403).json({
-      status: 'error',
-      message: 'ممنوع: مطلوب صلاحيات مدير النظام'
-    });
-  }
-  next();
-}
+// ========== Middleware Guards ==========
+const authGuard = authenticateToken;
+const activeAccountGuard = checkAccountStatus;
 
 // ========== Route Imports ==========
 const authRoutes = require('./routes/auth.routes');
@@ -303,97 +287,25 @@ const backupRoutes = require('./routes/backup.routes');
 const hrmRoutes = require('./routes/hrm.routes');
 
 // ========== Mount Routes ==========
-app.use('/api/v1/auth/login', authRoutes);
-app.post('/api/v1/auth/logout', authGuard, async (req, res) => {
-  try {
-    if (RBACauditLog) {
-      await RBACauditLog.create({
-        userId: req.user?.userId,
-        action: 'LOGOUT',
-        resource: 'User',
-        status: 'success',
-        ipAddress: req.ip
-      });
-    }
-    res.json({ status: 'success', message: 'تم تسجيل الخروج بنجاح' });
-  } catch (error) {
-    logger.error('خطأ في تسجيل الخروج: ' + error.message);
-    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
-  }
-});
-app.get('/api/v1/auth/profile', authGuard, activeAccountGuard, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId).select('-passwordHash').populate('roleId', 'name description hierarchy permissions');
-    if (!user) return res.status(404).json({ status: 'error', message: 'المستخدم غير موجود' });
-    res.json({ status: 'success', data: user });
-  } catch (error) {
-    logger.error('خطأ في جلب ملف التعريف: ' + error.message);
-    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
-  }
-});
-app.post('/api/v1/auth/create-user', authGuard, activeAccountGuard, requireSystemAdmin, async (req, res) => {
-  try {
-    const { username, password, name, email, role, companyId } = req.body;
-    if (!username || !password || !name) return res.status(400).json({ status: 'error', message: 'الحقول المطلوبة مفقودة.' });
-    const validRoles = ['system_admin', 'admin', 'manager', 'user', 'sales', 'inventory'];
-    if (!validRoles.includes(role)) return res.status(400).json({ status: 'error', message: 'دور غير صحيح.' });
-    if (!companyId) return res.status(400).json({ status: 'error', message: 'companyId مطلوب' });
-    const targetCompany = await Company.findById(companyId);
-    if (!targetCompany) return res.status(404).json({ status: 'error', message: 'الشركة غير موجودة' });
-    const existingUser = await User.findOne({ username });
-    if (existingUser) return res.status(409).json({ status: 'error', message: 'اسم المستخدم موجود بالفعل.' });
-    const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, passwordHash, name, email, role, companyId, createdBy: req.user.userId });
-    await newUser.save();
-    await logAudit(req.user.userId, 'CREATE_USER', 'User', newUser._id.toString(), { role, companyId }, req);
-    res.status(201).json({ status: 'success', message: 'تم إنشاء المستخدم بنجاح', user: { id: newUser._id, username: newUser.username, name: newUser.name, role: newUser.role, email: newUser.email, companyId: newUser.companyId } });
-  } catch (error) {
-    logger.error('خطأ في إنشاء مستخدم: ' + error.message);
-    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
-  }
-});
+app.use('/api/v1/auth/login', sanitizeBody(), authRoutes);
+app.post('/api/v1/auth/logout', authGuard, AuthController.logout);
+app.get('/api/v1/auth/profile', authGuard, activeAccountGuard, AuthController.profile);
+app.post('/api/v1/auth/create-user', authGuard, activeAccountGuard, requireSystemAdmin, AuthController.createUser);
 
 app.use('/api/v1/accounts', authGuard, activeAccountGuard, accountRoutes);
 app.use('/api/v1/sync', authGuard, activeAccountGuard, syncRoutes);
 app.use('/api/v1/transactions', authGuard, activeAccountGuard, transactionRoutes);
 app.use('/api/v1/admin', authGuard, activeAccountGuard, requireAdmin, adminRoutes);
-app.use('/api/v1/users', authGuard, usersRoutes);
+app.use('/api/v1/users', authGuard, activeAccountGuard, usersRoutes);
 app.use('/api/v1/backups', authGuard, activeAccountGuard, backupRoutes);
 app.use('/api/hrm', authGuard, activeAccountGuard, hrmRoutes);
 
-// معلومات الشركة الحالية
-app.get('/api/v1/company', authGuard, activeAccountGuard, async (req, res) => {
-  try {
-    const company = await Company.findById(req.user.companyId);
-    if (!company) return res.status(404).json({ status: 'error', message: 'الشركة غير موجودة' });
-    res.json({ status: 'success', company });
-  } catch (error) {
-    logger.error('خطأ في جلب بيانات الشركة: ' + error.message);
-    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
-  }
-});
+// Company routes
+app.get('/api/v1/company', authGuard, activeAccountGuard, CompanyController.getCompany);
+app.patch('/api/v1/company', authGuard, activeAccountGuard, requireAdmin, CompanyController.updateCompany);
 
-app.patch('/api/v1/company', authGuard, activeAccountGuard, async (req, res) => {
-  try {
-    const allowedUpdates = ['name', 'logo', 'address', 'phone', 'email', 'taxNumber', 'note', 'industry', 'country', 'timezone', 'status'];
-    const updates = {};
-    allowedUpdates.forEach((field) => { if (field in req.body) updates[field] = req.body[field]; });
-    if (Object.keys(updates).length === 0) return res.status(400).json({ status: 'error', message: 'لا توجد بيانات صالحة للتحديث' });
-    const company = await Company.findById(req.user.companyId);
-    if (!company) return res.status(404).json({ status: 'error', message: 'الشركة غير موجودة' });
-    if (company.owner?.toString() !== req.user.userId && req.user.role !== 'admin') return res.status(403).json({ status: 'error', message: 'ممنوع: مطلوب صلاحيات تحديث الشركة' });
-    updates.updatedAt = new Date();
-    const updatedCompany = await Company.findByIdAndUpdate(req.user.companyId, updates, { new: true, runValidators: true });
-    await logAudit(req.user.userId, 'UPDATE_COMPANY', 'Company', updatedCompany._id.toString(), updates, req);
-    res.json({ status: 'success', company: updatedCompany });
-  } catch (error) {
-    logger.error('خطأ في تحديث بيانات الشركة: ' + error.message);
-    res.status(500).json({ status: 'error', message: 'خطأ في الخادم' });
-  }
-});
-
-// Broadcast data change to all connected WebSocket clients
-app.post('/api/v1/sync/broadcast', authGuard, (req, res) => {
+// Broadcast data change to all connected WebSocket clients (admin only)
+app.post('/api/v1/sync/broadcast', authGuard, requireAdmin, (req, res) => {
   try {
     const { type, section, data } = req.body;
     if (global.broadcastWS) {
@@ -413,8 +325,8 @@ app.get('/', (req, res) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// حالة النظام
-app.get('/api/v1/status', (req, res) => {
+// حالة النظام (auth required)
+app.get('/api/v1/status', authGuard, (req, res) => {
   res.json({
     status: 'ok',
     version: '1.0.0',

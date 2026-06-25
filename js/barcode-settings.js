@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    BARCODE SETTINGS & RENDERING — إعدادات وعرض الباركود
    ═══════════════════════════════════════════════════════════════ */
 
@@ -44,7 +44,7 @@ function saveBarcodeSettings() {
     width: G('bc-width')?.value || 'normal'
   };
   localStorage.setItem(BARCODE_STORAGE_KEY, JSON.stringify(settings));
-  toast('تم حفظ إعدادات الباركود');
+  toast(t('barcode_settings_saved'));
 }
 
 function loadBarcodeSettingsUI() {
@@ -68,8 +68,8 @@ function previewBarcode() {
     JsBarcode(svg, 'INV-00001', {
       format: s.type,
       width: BC_WIDTHS[s.width] || 1.5,
-      height: BC_SIZES[s.height]?.height || 40,
-      margin: BC_SIZES[s.height]?.margin || 4,
+      height: BC_SIZES[s.size]?.height || 40,
+      margin: BC_SIZES[s.size]?.margin || 4,
       displayValue: s.text === 'yes',
       font: 'monospace',
       fontSize: 12,
@@ -78,7 +78,7 @@ function previewBarcode() {
       lineColor: '#1e293b'
     });
   } catch (e) {
-    svg.innerHTML = '<text x="10" y="20" fill="red" font-size="11">خطأ في إنشاء الباركود: ' + e.message + '</text>';
+    svg.innerHTML = '<text x="10" y="20" fill="var(--red)" font-size="11">'+t('barcode_error')+'</text>';
   }
 }
 
@@ -166,7 +166,7 @@ function renderInvoiceBarcode(value, opts = {}) {
    ═══════════════════════════════════════════════════════════════ */
 function printItemLabel(itemId) {
   const item = DB.items.find(x => x.id === itemId);
-  if (!item) { toast('الصنف غير موجود', 'error'); return; }
+  if (!item) { toast(t('barcode_item_not_found_msg'), 'error'); return; }
   const s = getBarcodeSettings();
   const company = currentCompany();
 
@@ -194,7 +194,7 @@ function printItemLabel(itemId) {
     <div class="label-barcode">
       <svg id="lbl-bc"></svg>
     </div>
-    <div class="label-price">${fmt(item.sell)} <small>د.ل</small></div>
+    <div class="label-price">${fmt(item.sell)} <small>t('currency_sym')</small></div>
     ${item.barcode ? `<div class="label-code">${item.barcode}</div>` : `<div class="label-code">${item.code}</div>`}
   </div>
   <script>
@@ -214,7 +214,7 @@ function printItemLabel(itemId) {
   <\/script></body></html>`;
 
   const win = window.open('', '_blank', 'width=400,height=300');
-  if (!win) { toast('تعذر فتح نافذة الطباعة', 'error'); return; }
+  if (!win) { toast(t('barcode_print_err'), 'error'); return; }
   win.document.write(html);
   win.document.close();
 }
@@ -224,7 +224,7 @@ function printItemLabel(itemId) {
    ═══════════════════════════════════════════════════════════════ */
 function printMultipleLabels(itemIds) {
   const items = itemIds.map(id => DB.items.find(x => x.id === id)).filter(Boolean);
-  if (!items.length) { toast('لا توجد أصناف', 'error'); return; }
+  if (!items.length) { toast(t('barcode_no_items_msg'), 'error'); return; }
   const s = getBarcodeSettings();
   const company = currentCompany();
   const sizeConfig = BC_SIZES[s.size] || BC_SIZES.medium;
@@ -237,7 +237,7 @@ function printMultipleLabels(itemIds) {
       <div class="label-barcode">
         <svg class="lbl-bc" data-value="${item.barcode || item.code}"></svg>
       </div>
-      <div class="label-price">${fmt(item.sell)} <small>د.ل</small></div>
+      <div class="label-price">${fmt(item.sell)} <small>t('currency_sym')</small></div>
       <div class="label-code">${item.barcode || item.code}</div>
     </div>
   `).join('');
@@ -278,7 +278,7 @@ function printMultipleLabels(itemIds) {
   <\/script></body></html>`;
 
   const win = window.open('', '_blank', 'width=800,height=600');
-  if (!win) { toast('تعذر فتح نافذة الطباعة', 'error'); return; }
+  if (!win) { toast(t('barcode_print_err'), 'error'); return; }
   win.document.write(html);
   win.document.close();
 }
@@ -288,7 +288,7 @@ function printMultipleLabels(itemIds) {
    ═══════════════════════════════════════════════════════════════ */
 function printAllItemLabels() {
   const items = DB.items.filter(x => x.qty > 0);
-  if (!items.length) { toast('لا توجد أصناف متوفرة للطباعة', 'error'); return; }
+  if (!items.length) { toast(t('barcode_no_available'), 'error'); return; }
   printMultipleLabels(items.map(x => x.id));
 }
 if (typeof initApp === 'function') {
@@ -300,3 +300,4 @@ if (typeof initApp === 'function') {
 } else {
   document.addEventListener('DOMContentLoaded', () => loadBarcodeSettingsUI());
 }
+

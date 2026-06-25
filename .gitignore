@@ -12,3 +12,7 @@ build/
 coverage/
 .vscode/
 test-db.json
+test-results/
+test-results/
+playwright-report/
+scripts/

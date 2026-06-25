@@ -1,0 +1,1214 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sales System API",
+    "description": "نظام المبيعات المتقدم — API شامل لإدارة الحسابات والمعاملات المالية والموظفين والرواتب",
+    "version": "1.0.0",
+    "contact": { "name": "Sales System Team" }
+  },
+  "servers": [
+    { "url": "/api", "description": "API Base" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token من POST /v1/auth/login"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "error" },
+          "message": { "type": "string" }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "balance": { "type": "number" },
+          "user_id": { "type": "string" },
+          "companyId": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["invoice", "payment", "purchase", "refund", "adjustment", "transfer", "fee", "settlement"] },
+          "direction": { "type": "string", "enum": ["debit", "credit"] },
+          "amount": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "approved", "rejected", "completed", "cancelled", "reconciled", "failed"] },
+          "description": { "type": "string" },
+          "companyId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "username": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string", "enum": ["system_admin", "admin", "manager", "user", "sales", "inventory"] },
+          "status": { "type": "string", "enum": ["active", "inactive", "suspended"] },
+          "companyId": { "type": "string" }
+        }
+      },
+      "Employee": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "employeeNo": { "type": "string" },
+          "name": { "type": "string" },
+          "nameAr": { "type": "string" },
+          "contractType": { "type": "string", "enum": ["full_time", "part_time", "contract", "intern"] },
+          "monthlySalary": { "type": "number" },
+          "hourlyRate": { "type": "number" },
+          "department": { "type": "string" },
+          "position": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "Attendance": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "employeeId": { "type": "string" },
+          "date": { "type": "string" },
+          "checkIn": { "type": "string" },
+          "checkOut": { "type": "string" },
+          "totalHours": { "type": "number" },
+          "status": { "type": "string", "enum": ["present", "absent", "late", "leave", "holiday"] },
+          "isLocked": { "type": "boolean" }
+        }
+      },
+      "Advance": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "employeeId": { "type": "string" },
+          "type": { "type": "string", "enum": ["advance", "loan"] },
+          "amount": { "type": "number" },
+          "remainingBalance": { "type": "number" },
+          "status": { "type": "string", "enum": ["active", "completed"] }
+        }
+      },
+      "Payroll": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "employeeId": { "type": "string" },
+          "period": { "type": "string" },
+          "grossSalary": { "type": "number" },
+          "totalDeductions": { "type": "number" },
+          "netSalary": { "type": "number" },
+          "status": { "type": "string", "enum": ["draft", "approved", "paid"] }
+        }
+      },
+      "CashLedgerEntry": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "type": { "type": "string", "enum": ["in", "out"] },
+          "category": { "type": "string" },
+          "amount": { "type": "number" },
+          "balanceAfter": { "type": "number" },
+          "description": { "type": "string" },
+          "date": { "type": "string" }
+        }
+      },
+      "Performance": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "employeeId": { "type": "string" },
+          "quality": { "type": "number" },
+          "productivity": { "type": "number" },
+          "teamwork": { "type": "number" },
+          "average": { "type": "number" },
+          "grade": { "type": "string" }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "industry": { "type": "string" },
+          "country": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [{ "BearerAuth": [] }],
+  "tags": [
+    { "name": "Auth", "description": "المصادقة وتسجيل الدخول" },
+    { "name": "Accounts", "description": "إدارة الحسابات المالية" },
+    { "name": "Transactions", "description": "إدارة المعاملات المالية" },
+    { "name": "Users", "description": "إدارة المستخدمين" },
+    { "name": "Admin", "description": "لوحة الإدارة" },
+    { "name": "HRM - Employees", "description": "إدارة الموظفين" },
+    { "name": "HRM - Attendance", "description": "الحضور والغياب" },
+    { "name": "HRM - Advances", "description": "السلف والقروض" },
+    { "name": "HRM - Cash Ledger", "description": "سجل الخزينة" },
+    { "name": "HRM - Payroll", "description": "الرواتب" },
+    { "name": "HRM - Performance", "description": "تقييم الأداء" },
+    { "name": "Sync", "description": "المزامنة" },
+    { "name": "Backups", "description": "النسخ الاحتياطي" },
+    { "name": "Company", "description": "بيانات الشركة" },
+    { "name": "System", "description": "معلومات النظام" }
+  ],
+  "paths": {
+    "/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "تسجيل الدخول",
+        "description": "التحقق من بيانات المستخدم وإرجاع JWT token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string", "example": "admin" },
+                  "password": { "type": "string", "example": "1234" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "نجاح — يحتوي على token وبيانات المستخدم" },
+          "401": { "description": "بيانات دخول غير صحيحة" },
+          "403": { "description": "حساب غير نشط" },
+          "429": { "description": "حساب مقفول بسبب محاولات متعددة" }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "تسجيل الخروج",
+        "responses": {
+          "200": { "description": "تم تسجيل الخروج بنجاح" }
+        }
+      }
+    },
+    "/v1/auth/profile": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "عرض الملف الشخصي",
+        "responses": {
+          "200": { "description": "بيانات المستخدم الحالي" }
+        }
+      }
+    },
+    "/v1/auth/create-user": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "إنشاء مستخدم جديد (مدير النظام فقط)",
+        "responses": {
+          "201": { "description": "تم إنشاء المستخدم بنجاح" },
+          "403": { "description": "غير مصرح — مطلوب صلاحيات مدير النظام" }
+        }
+      }
+    },
+    "/v1/accounts": {
+      "get": {
+        "tags": ["Accounts"],
+        "summary": "عرض قائمة الحسابات",
+        "responses": {
+          "200": { "description": "قائمة الحسابات" }
+        }
+      },
+      "post": {
+        "tags": ["Accounts"],
+        "summary": "إنشاء حساب جديد (admin فقط)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "maxLength": 100 },
+                  "balance": { "type": "number", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إنشاء الحساب بنجاح" },
+          "400": { "description": "اسم الحساب مطلوب" }
+        }
+      }
+    },
+    "/v1/accounts/{accountId}": {
+      "patch": {
+        "tags": ["Accounts"],
+        "summary": "تحديث حساب (admin فقط)",
+        "parameters": [
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "maxLength": 100 },
+                  "balance": { "type": "number", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح" },
+          "404": { "description": "الحساب غير موجود" }
+        }
+      },
+      "delete": {
+        "tags": ["Accounts"],
+        "summary": "حذف حساب (admin فقط)",
+        "parameters": [
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تم الحذف بنجاح" },
+          "404": { "description": "الحساب غير موجود" }
+        }
+      }
+    },
+    "/v1/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "عرض قائمة المعاملات",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["invoice", "payment", "purchase", "refund", "adjustment", "transfer", "fee", "settlement"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "direction", "in": "query", "schema": { "type": "string", "enum": ["debit", "credit"] } },
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 25 } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة المعاملات مع pagination" }
+        }
+      },
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "إنشاء معاملة مالية جديدة",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["type", "amount", "direction"],
+                "properties": {
+                  "type": { "type": "string", "enum": ["invoice", "payment", "purchase", "refund", "adjustment", "transfer", "fee", "settlement"] },
+                  "amount": { "type": "number", "minimum": 0 },
+                  "direction": { "type": "string", "enum": ["debit", "credit"] },
+                  "description": { "type": "string" },
+                  "paymentMethod": { "type": "string", "enum": ["cash", "check", "bank_transfer", "card", "online", "invoice", "other"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إنشاء المعاملة بنجاح" },
+          "400": { "description": "بيانات ناقصة أو غير صالحة" }
+        }
+      }
+    },
+    "/v1/transactions/{transactionId}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "عرض تفاصيل معاملة محددة",
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تفاصيل المعاملة" },
+          "404": { "description": "المعاملة غير موجودة" }
+        }
+      },
+      "patch": {
+        "tags": ["Transactions"],
+        "summary": "تحديث حالة المعاملة",
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "enum": ["pending", "completed", "failed", "reconciled"] },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح" },
+          "404": { "description": "المعاملة غير موجودة" }
+        }
+      }
+    },
+    "/v1/transactions/{transactionId}/reconcile": {
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "تسوية معاملة مالية",
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تمت التسوية بنجاح" },
+          "400": { "description": "المعاملة معاد تسويتها بالفعل" },
+          "404": { "description": "المعاملة غير موجودة" }
+        }
+      }
+    },
+    "/v1/transactions/receive": {
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "استلام دفعة مالية (إيداع)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": { "type": "number", "minimum": 0 },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم استلام الدفعة بنجاح" }
+        }
+      }
+    },
+    "/v1/transactions/send": {
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "إرسال دفعة مالية (صرف)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": { "type": "number", "minimum": 0 },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إرسال الدفعة بنجاح" }
+        }
+      }
+    },
+    "/v1/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "عرض قائمة المستخدمين",
+        "parameters": [
+          { "name": "role", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة المستخدمين مع pagination" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "إنشاء مستخدم جديد (admin فقط)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password", "name"],
+                "properties": {
+                  "username": { "type": "string", "maxLength": 50 },
+                  "password": { "type": "string", "minLength": 6, "maxLength": 128 },
+                  "name": { "type": "string", "maxLength": 100 },
+                  "email": { "type": "string", "format": "email" },
+                  "role": { "type": "string", "enum": ["system_admin", "admin", "manager", "user", "sales", "inventory"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إنشاء المستخدم بنجاح" },
+          "409": { "description": "اسم المستخدم موجود بالفعل" }
+        }
+      }
+    },
+    "/v1/users/{userId}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "عرض بيانات مستخدم محدد",
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "بيانات المستخدم" },
+          "404": { "description": "المستخدم غير موجود" }
+        }
+      }
+    },
+    "/v1/users/{userId}/role": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "تغيير دور المستخدم (admin فقط)",
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["roleId"],
+                "properties": {
+                  "roleId": { "type": "string", "description": "معرف الدور الجديد من RBAC" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم تحديث الدور بنجاح" },
+          "404": { "description": "المستخدم أو الدور غير موجود" }
+        }
+      }
+    },
+    "/v1/users/{userId}/status": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "تغيير حالة المستخدم (admin فقط)",
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["active", "inactive", "suspended"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم تحديث الحالة بنجاح" },
+          "400": { "description": "حالة غير صحيحة" }
+        }
+      }
+    },
+    "/v1/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "عرض جميع المستخدمين (admin فقط)",
+        "responses": {
+          "200": { "description": "قائمة المستخدمين" }
+        }
+      }
+    },
+    "/v1/admin/users/{userId}": {
+      "put": {
+        "tags": ["Admin"],
+        "summary": "تحديث مستخدم بالكامل (admin فقط)",
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "maxLength": 100 },
+                  "email": { "type": "string", "format": "email" },
+                  "role": { "type": "string", "enum": ["admin", "manager", "user"] },
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح" },
+          "404": { "description": "المستخدم غير موجود" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "حذف مستخدم (admin فقط)",
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تم الحذف بنجاح" },
+          "400": { "description": "يجب أن يكون هناك مسؤول واحد على الأقل" },
+          "404": { "description": "المستخدم غير موجود" }
+        }
+      }
+    },
+    "/v1/admin/audit-logs": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "عرض سجلات التدقيق (admin فقط)",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "skip", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": { "description": "سجلات التدقيق" }
+        }
+      }
+    },
+    "/hrm/employees": {
+      "get": {
+        "tags": ["HRM - Employees"],
+        "summary": "عرض جميع الموظفين",
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "بحث بالاسم أو رقم الموظف أو الجوال" },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "department", "in": "query", "schema": { "type": "string" } },
+          { "name": "contractType", "in": "query", "schema": { "type": "string", "enum": ["full_time", "part_time", "contract", "intern"] } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة الموظفين" }
+        }
+      },
+      "post": {
+        "tags": ["HRM - Employees"],
+        "summary": "إضافة موظف جديد",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "employeeNo"],
+                "properties": {
+                  "name": { "type": "string", "maxLength": 100 },
+                  "employeeNo": { "type": "string", "maxLength": 50 },
+                  "nameAr": { "type": "string" },
+                  "contractType": { "type": "string", "enum": ["full_time", "part_time", "contract", "intern"], "default": "full_time" },
+                  "monthlySalary": { "type": "number", "minimum": 0 },
+                  "hourlyRate": { "type": "number", "minimum": 0 },
+                  "overtimeRate": { "type": "number", "minimum": 0 },
+                  "department": { "type": "string" },
+                  "position": { "type": "string" },
+                  "phone": { "type": "string", "maxLength": 20 },
+                  "email": { "type": "string", "format": "email" },
+                  "nationalId": { "type": "string", "maxLength": 30 },
+                  "address": { "type": "string", "maxLength": 200 },
+                  "bank": { "type": "string" },
+                  "bankAccount": { "type": "string" },
+                  "startDate": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إضافة الموظف بنجاح" },
+          "409": { "description": "رقم الموظف موجود بالفعل" }
+        }
+      }
+    },
+    "/hrm/employees/{id}": {
+      "get": {
+        "tags": ["HRM - Employees"],
+        "summary": "عرض بيانات موظف محدد",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "بيانات الموظف" },
+          "404": { "description": "الموظف غير موجود" }
+        }
+      },
+      "patch": {
+        "tags": ["HRM - Employees"],
+        "summary": "تحديث بيانات موظف",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "email": { "type": "string" },
+                  "department": { "type": "string" },
+                  "position": { "type": "string" },
+                  "contractType": { "type": "string" },
+                  "monthlySalary": { "type": "number" },
+                  "status": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح" },
+          "404": { "description": "الموظف غير موجود" }
+        }
+      }
+    },
+    "/hrm/attendance": {
+      "get": {
+        "tags": ["HRM - Attendance"],
+        "summary": "عرض سجلات الحضور والغياب",
+        "parameters": [
+          { "name": "employeeId", "in": "query", "schema": { "type": "string" } },
+          { "name": "date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "سجلات الحضور" }
+        }
+      },
+      "post": {
+        "tags": ["HRM - Attendance"],
+        "summary": "تسجيل حضور/غياب لموظف",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employeeId", "date"],
+                "properties": {
+                  "employeeId": { "type": "string" },
+                  "date": { "type": "string", "format": "date" },
+                  "checkIn": { "type": "string", "description": "HH:MM" },
+                  "checkOut": { "type": "string", "description": "HH:MM" },
+                  "totalHours": { "type": "number" },
+                  "overtimeHours": { "type": "number" },
+                  "status": { "type": "string", "enum": ["present", "absent", "late", "leave", "holiday"] },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم تسجيل الحضور" },
+          "200": { "description": "تم تحديث سجل موجود" },
+          "400": { "description": "السجل مقفل" }
+        }
+      }
+    },
+    "/hrm/attendance/bulk": {
+      "post": {
+        "tags": ["HRM - Attendance"],
+        "summary": "تسجيل حضور جماعي (حد أقصى 100 سجل)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["records"],
+                "properties": {
+                  "records": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "required": ["employeeId", "date"],
+                      "properties": {
+                        "employeeId": { "type": "string" },
+                        "date": { "type": "string" },
+                        "checkIn": { "type": "string" },
+                        "checkOut": { "type": "string" },
+                        "status": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التسجيل بنجاح" }
+        }
+      }
+    },
+    "/hrm/attendance/{id}/lock": {
+      "patch": {
+        "tags": ["HRM - Attendance"],
+        "summary": "قفل سجل حضور",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تم القفل بنجاح" },
+          "404": { "description": "السجل غير موجود" }
+        }
+      }
+    },
+    "/hrm/advances": {
+      "get": {
+        "tags": ["HRM - Advances"],
+        "summary": "عرض السلف والقروض",
+        "parameters": [
+          { "name": "employeeId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "completed"] } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["advance", "loan"] } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة السلف والقروض" }
+        }
+      },
+      "post": {
+        "tags": ["HRM - Advances"],
+        "summary": "إصدار سلفة أو قرض لموظف",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employeeId", "type", "amount"],
+                "properties": {
+                  "employeeId": { "type": "string" },
+                  "type": { "type": "string", "enum": ["advance", "loan"] },
+                  "amount": { "type": "number", "minimum": 0 },
+                  "monthlyInstallment": { "type": "number" },
+                  "installmentsTotal": { "type": "integer" },
+                  "purpose": { "type": "string", "maxLength": 500 },
+                  "date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إصدار السلفة بنجاح" },
+          "400": { "description": "رصيد الخزينة غير كافٍ" }
+        }
+      }
+    },
+    "/hrm/advances/{id}/repay": {
+      "post": {
+        "tags": ["HRM - Advances"],
+        "summary": "تسديد قسط من سلفة أو قرض",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": { "type": "number", "minimum": 0, "description": "المبلغ — يسار القسط المتبقي" },
+                  "date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التسديد بنجاح" },
+          "404": { "description": "السلفة غير موجودة أو مسددة" }
+        }
+      }
+    },
+    "/hrm/cash-ledger": {
+      "get": {
+        "tags": ["HRM - Cash Ledger"],
+        "summary": "عرض حركات الخزينة والرصيد الحالي",
+        "parameters": [
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "حركات الخزينة مع الرصيد الحالي" }
+        }
+      }
+    },
+    "/hrm/cash-ledger/adjust": {
+      "post": {
+        "tags": ["HRM - Cash Ledger"],
+        "summary": "تسوية رصيد الخزينة (إيداع/خصم)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount", "reason"],
+                "properties": {
+                  "amount": { "type": "number", "description": "موجب للإيداع، سالب للخصم" },
+                  "reason": { "type": "string", "maxLength": 500 },
+                  "date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تمت التسوية بنجاح" }
+        }
+      }
+    },
+    "/hrm/payroll": {
+      "get": {
+        "tags": ["HRM - Payroll"],
+        "summary": "عرض سجلات الرواتب",
+        "parameters": [
+          { "name": "period", "in": "query", "schema": { "type": "string", "description": "YYYY-MM" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["draft", "approved", "paid"] } }
+        ],
+        "responses": {
+          "200": { "description": "سجلات الرواتب" }
+        }
+      }
+    },
+    "/hrm/payroll/generate": {
+      "post": {
+        "tags": ["HRM - Payroll"],
+        "summary": "توليد رواتب تلقائياً لفترة محددة",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["period"],
+                "properties": {
+                  "period": { "type": "string", "description": "YYYY-MM" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم توليد الرواتب بنجاح" },
+          "400": { "description": "تم اعتماد أو دفع رواتب هذه الفترة بالفعل" }
+        }
+      }
+    },
+    "/hrm/payroll/{id}/approve": {
+      "post": {
+        "tags": ["HRM - Payroll"],
+        "summary": "اعتماد راتب وقفل الحضور",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تم الاعتماد بنجاح" },
+          "400": { "description": "يمكن اعتماد الراتب في وضع المسودة فقط" }
+        }
+      }
+    },
+    "/hrm/payroll/{id}/pay": {
+      "post": {
+        "tags": ["HRM - Payroll"],
+        "summary": "دفع راتب واحد",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم الدفع بنجاح" },
+          "400": { "description": "يجب اعتماد الراتب أولاً / رصيد غير كافٍ" }
+        }
+      }
+    },
+    "/hrm/payroll/bulk-pay": {
+      "post": {
+        "tags": ["HRM - Payroll"],
+        "summary": "الدفع الجماعي لعدة رواتب (حد أقصى 50)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["payrollIds"],
+                "properties": {
+                  "payrollIds": { "type": "array", "maxItems": 50, "items": { "type": "string" } },
+                  "date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم الدفع بنجاح" },
+          "400": { "description": "الرصيد غير كافٍ" }
+        }
+      }
+    },
+    "/hrm/payroll/summary/{period}": {
+      "get": {
+        "tags": ["HRM - Payroll"],
+        "summary": "ملخص الرواتب لفترة محددة",
+        "parameters": [
+          { "name": "period", "in": "path", "required": true, "schema": { "type": "string", "description": "YYYY-MM" } }
+        ],
+        "responses": {
+          "200": { "description": "ملخص الإجماليات والأعداد" }
+        }
+      }
+    },
+    "/hrm/performance": {
+      "get": {
+        "tags": ["HRM - Performance"],
+        "summary": "عرض تقييمات الأداء",
+        "parameters": [
+          { "name": "employeeId", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة التقييمات" }
+        }
+      },
+      "post": {
+        "tags": ["HRM - Performance"],
+        "summary": "إنشاء تقييم أداء جديد",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employeeId"],
+                "properties": {
+                  "employeeId": { "type": "string" },
+                  "date": { "type": "string", "format": "date" },
+                  "quality": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "productivity": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "teamwork": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "attendance": { "type": "number", "minimum": 1, "maximum": 5 },
+                  "grade": { "type": "string" },
+                  "notes": { "type": "string", "maxLength": 500 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إنشاء التقييم بنجاح" }
+        }
+      }
+    },
+    "/v1/sync/push": {
+      "post": {
+        "tags": ["Sync"],
+        "summary": "رفع مجموعة حسابات من العميل للخادم (حد أقصى 200)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "maxItems": 200,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "balance": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تمت المزامنة بنجاح" }
+        }
+      }
+    },
+    "/v1/sync/pull": {
+      "get": {
+        "tags": ["Sync"],
+        "summary": "سحب جميع الحسابات من الخادم",
+        "responses": {
+          "200": { "description": "جميع الحسابات" }
+        }
+      }
+    },
+    "/v1/sync/broadcast": {
+      "post": {
+        "tags": ["Sync"],
+        "summary": "بث إشعار تغيير لجميع العملاء المتصلين (admin فقط)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "section": { "type": "string" },
+                  "data": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم البث بنجاح" }
+        }
+      }
+    },
+    "/v1/backups": {
+      "get": {
+        "tags": ["Backups"],
+        "summary": "عرض النسخ الاحتياطية (آخر 20)",
+        "responses": {
+          "200": { "description": "قائمة النسخ الاحتياطية" }
+        }
+      },
+      "post": {
+        "tags": ["Backups"],
+        "summary": "إنشاء نسخة احتياطية جديدة",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": { "type": "object", "description": "البيانات المطلوب نسخها احتياطياً" },
+                  "label": { "type": "string", "maxLength": 100 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إنشاء النسخة الاحتياطية" }
+        }
+      }
+    },
+    "/v1/backups/{backupId}": {
+      "get": {
+        "tags": ["Backups"],
+        "summary": "عرض تفاصيل نسخة احتياطية",
+        "parameters": [
+          { "name": "backupId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تفاصيل النسخة الاحتياطية" },
+          "404": { "description": "النسخة غير موجودة" }
+        }
+      },
+      "delete": {
+        "tags": ["Backups"],
+        "summary": "حذف نسخة احتياطية",
+        "parameters": [
+          { "name": "backupId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "تم الحذف بنجاح" },
+          "404": { "description": "النسخة غير موجودة" }
+        }
+      }
+    },
+    "/v1/company": {
+      "get": {
+        "tags": ["Company"],
+        "summary": "عرض بيانات الشركة",
+        "responses": {
+          "200": { "description": "بيانات الشركة" }
+        }
+      },
+      "patch": {
+        "tags": ["Company"],
+        "summary": "تحديث إعدادات الشركة (admin فقط)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "industry": { "type": "string" },
+                  "country": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح" }
+        }
+      }
+    },
+    "/v1/status": {
+      "get": {
+        "tags": ["System"],
+        "summary": "عرض حالة النظام",
+        "responses": {
+          "200": { "description": "معلومات النظام (الإصدار، حالة قاعدة البيانات)" }
+        }
+      }
+    }
+  }
+}

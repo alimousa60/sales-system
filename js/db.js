@@ -31,17 +31,21 @@ let editingCompanyId=null;
 let _siL=[],_piL=[],_colPay='cash',_spPay='cash',_reQC='pending';
 
 const G=id=>document.getElementById(id);
-const fmt=(n,d=3)=>parseFloat(n||0).toFixed(d);
+const fmt=(n,d=2)=>parseFloat(n||0).toFixed(d);
 const today=()=>new Date().toISOString().split('T')[0];
 const THEME_KEY='salesSystemTheme';
 let currentSearch='';
 
+function escapeHtml(str){
+  if(!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function normalizeText(value){
   return String(value||'').toLowerCase().trim();
 }
 
 function baseCompany(){
-  return {id:1,name:'المؤسسة التجارية',address:'طرابلس، ليبيا',phone:'',note:'',logo:'',taxNo:'',items:[],custs:[],sups:[],invs:[],purs:[],payments:[],supPayments:[],rets:[],log:[],pendingSync:[],lastSynced:null,cI:1,cP:1,cRet:1,cPay:1,cSpay:1};
+  return {id:1,name:'المؤسسة التجارية',address:'طرابلس، ليبيا',phone:'',note:'',logo:'',taxNo:'',items:[],custs:[],sups:[],invs:[],purs:[],payments:[],supPayments:[],rets:[],log:[],pendingSync:[],lastSynced:null,cI:1,cP:1,cRet:1,cPay:1,cSpay:1,cSettle:1,cSupSettle:1};
 }
 function defaultStore(){
   return {companies:[baseCompany()],companyId:1};
@@ -61,7 +65,7 @@ function normalizeStore(store){
       ...c,
       id:c.id||Date.now(),
       items:c.items||[],custs:c.custs||[],sups:c.sups||[],invs:c.invs||[],purs:c.purs||[],payments:c.payments||[],supPayments:c.supPayments||[],rets:c.rets||[],log:c.log||[],pendingSync:c.pendingSync||[],lastSynced:c.lastSynced||null,
-      cI:c.cI||1,cP:c.cP||1,cRet:c.cRet||1,cPay:c.cPay||1,cSpay:c.cSpay||1
+      cI:c.cI||1,cP:c.cP||1,cRet:c.cRet||1,cPay:c.cPay||1,cSpay:c.cSpay||1,cSettle:c.cSettle||1,cSupSettle:c.cSupSettle||1
     }));
   }
   return normalized;
@@ -72,7 +76,7 @@ function currentCompanyStore(){
 function companyLogoHtml(company,height){
   height=height||50;
   if(!company||!company.logo)return'';
-  return '<img src="'+company.logo+'" style="height:'+height+'px;max-width:'+(height*3)+'px;object-fit:contain;border-radius:6px">';
+  return '<img src="'+escapeHtml(company.logo)+'" style="height:'+height+'px;max-width:'+(height*3)+'px;object-fit:contain;border-radius:6px">';
 }
 function genUniqueBarcode(){
   const used=new Set(DB.items.map(x=>x.barcode).filter(Boolean));
@@ -123,7 +127,7 @@ async function validateToken(){
     return true;
   }catch(e){
     console.warn('validateToken failed',e);
-    return true;
+    return false;
   }
 }
 function loadStore(username){
@@ -133,11 +137,11 @@ function loadStore(username){
   loadCompanyData();
 }
 function loadCloudSnapshot(){
-  if(CLOUD_ENDPOINT) return null;
+  if(!CLOUD_ENDPOINT) return null;
   try{ return JSON.parse(localStorage.getItem(CLOUD_STORAGE_KEY)) || null }catch(e){return null}
 }
 function saveCloudSnapshot(snapshot){
-  if(CLOUD_ENDPOINT) return false;
+  if(!CLOUD_ENDPOINT) return false;
   try{ localStorage.setItem(CLOUD_STORAGE_KEY,JSON.stringify(snapshot)); return true }catch(e){return false}
 }
 function cloudOnline(){
@@ -146,9 +150,9 @@ function cloudOnline(){
 function syncStatusMsg(){
   const status=G('sync-status');
   if(!status) return;
-  if(!cloudOnline()){ status.style.display='inline-block'; status.textContent='غير متصل'; status.style.color='var(--red)'; return; }
+  if(!cloudOnline()){ status.style.display='inline-block'; status.textContent=t('sync_not_connected'); status.style.color='var(--red)'; return; }
   status.style.display='inline-block';
-  status.textContent=DB.lastSynced?`آخر مزامنة ${DB.lastSynced}`:'جاهز للمزامنة';
+  status.textContent=DB.lastSynced?`${t('sync_ready')} ${DB.lastSynced}`:t('sync_ready');
   status.style.color='var(--green)';
 }
 function showSyncButton(){
@@ -190,7 +194,7 @@ async function loadCloudStoreForUser(){
           DB.stores[currentUser.username]=merged;
           DB.lastSynced=merged.lastSynced||DB.lastSynced;
           saveState();
-          toast('تم تحميل البيانات من السحابة','info');
+          toast(t('sync_cloud_loaded'),'info');
         }
       }
     }catch(e){console.warn('loadCloudStoreForUser failed',e);}
@@ -202,15 +206,15 @@ async function loadCloudStoreForUser(){
       DB.stores[currentUser.username]=merged;
       DB.lastSynced=merged.lastSynced||DB.lastSynced;
       saveState();
-      toast('تم تحميل النسخة السحابية المحلية','info');
+      toast(t('sync_cloud_loaded'),'info');
     }
   }
 }
 async function syncCloud(){
-  if(!currentUser){toast('سجل الدخول أولاً للمزامنة','error');return}
-  if(!cloudOnline()){toast('لا يوجد اتصال بالإنترنت حالياً','error');syncStatusMsg();return}
+  if(!currentUser){toast(t('sync_login_first'),'error');return}
+  if(!cloudOnline()){toast(t('sync_no_connection'),'error');syncStatusMsg();return}
   const btn=G('sync-btn'); if(btn) btn.disabled=true;
-  toast('جاري المزامنة مع السحابة...','info',{icon:'ti-refresh',sound:false,duration:2000});
+  toast(t('sync_in_progress'),'info',{icon:'ti-refresh',sound:false,duration:2000});
   let success=false;
   try{
     const snapshot={
@@ -228,25 +232,26 @@ async function syncCloud(){
       DB.lastSynced=new Date().toLocaleString('ar');
       DB.pendingSync=[];
       saveState();
-      toast('تمت المزامنة بنجاح','success',{icon:'ti-cloud-upload'});
+      toast(t('sync_success'),'success',{icon:'ti-cloud-upload'});
     } else {
-      toast('فشل حفظ البيانات السحابية','error');
+      toast(t('sync_cloud_fail'),'error');
     }
   }catch(e){
     console.warn('syncCloud failed',e);
-    toast('فشل المزامنة، سيتم المحاولة لاحقاً','error');
+    toast(t('sync_fail_retry'),'error');
   }
   if(btn) btn.disabled=false;
   updateSyncUI();
 }
-window.addEventListener('online',()=>{toast('الاتصال عاد — جاري المزامنة تلقائياً...','success',{title:'اتصال مُستعاد',icon:'ti-wifi'});syncCloud();});
-window.addEventListener('offline',()=>{toast('تم فقدان الاتصال — سيتم العمل محلياً','warning',{title:'انقطع الاتصال',icon:'ti-wifi-off',duration:5000});updateSyncUI();});
+window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';toast(t('online_restored'),'success',{title:t('sync_restored'),icon:'ti-wifi'});syncCloud();});
+window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';toast(t('offline_lost'),'warning',{title:t('sync_disconnected'),icon:'ti-wifi-off',duration:5000});updateSyncUI();});
 function resetStore(){
   Object.assign(DB,defaultStore());
 }
 
-function emptyRow(c,m='لا توجد بيانات'){
-  return`<tr><td colspan="${c}"><div class="empty-st"><i class="ti ti-inbox"></i><span>${m}</span></div></td></tr>`
+function emptyRow(c,m){
+  const msg=m||(typeof t==='function'?t('lbl_no_data'):'');
+  return`<tr><td colspan="${c}"><div class="empty-st"><i class="ti ti-inbox"></i><span>${escapeHtml(msg)}</span></div></td></tr>`
 }
 function getCurrentPageName(){
   return document.querySelector('.page.on')?.id.replace('p-','') || '';
@@ -256,21 +261,21 @@ function updateSearchHint(){
   if(!input) return;
   const page=getCurrentPageName();
   const placeholders={
-    inventory:'ابحث عن صنف أو كود أو باركود...',
-    sales:'ابحث عن فاتورة أو زبون أو تاريخ...',
-    purchases:'ابحث عن فاتورة أو مورد أو تاريخ...',
-    customers:'ابحث عن زبون أو هاتف...',
-    suppliers:'ابحث عن مورد أو هاتف...',
-    returns:'ابحث عن مرتجع أو فاتورة أو سبب...',
-    users:'ابحث عن مستخدم أو اسم حساب...',
-    suppay:'ابحث عن دفعة أو مورد أو رقم فاتورة...',
-    finance:'ابحث في الحركات المالية...',
-    pl:'ابحث في الأصناف أو الأرباح...',
-    audit:'ابحث في السجلات...',
-    soa:'ابحث في كشف الحساب...',
-    hrm:'ابحث عن موظف...'
+    inventory:'ph_inventory',
+    sales:'ph_sales',
+    purchases:'ph_purchases',
+    customers:'ph_customers',
+    suppliers:'ph_suppliers',
+    returns:'ph_returns',
+    users:'ph_users',
+    suppay:'ph_suppay',
+    finance:'ph_finance',
+    pl:'ph_pl',
+    audit:'ph_audit',
+    soa:'ph_soa',
+    hrm:'ph_hrm'
   };
-  input.placeholder = placeholders[page] || 'بحث سريع في كل الصفحات...';
+  input.placeholder = t(placeholders[page] || 'search_quick');
   input.value = currentSearch;
 }
 function applyQuickSearch(term){
@@ -337,7 +342,7 @@ function setTheme(theme){
   const btn=G('theme-btn');
   if(!btn) return;
   const icon=theme==='light' ? 'ti-sun' : 'ti-moon';
-  const label=theme==='light' ? 'نهاري' : 'ليلي';
+  const label=theme==='light' ? t('theme_light') : t('theme_dark');
   btn.innerHTML=`<i class="ti ${icon}"></i> ${label}`;
 }
 function loadTheme(){
@@ -380,7 +385,7 @@ async function fetchUsersFromApi(){
 async function handleLogin(){
   const username=G('login-user').value.trim();
   const password=G('login-pass').value;
-  if(!username||!password){toast('أدخل اسم المستخدم وكلمة المرور','error');return}
+  if(!username||!password){toast(t('login_err_empty'),'error');return}
   try{
     const resp=await fetch(`${API_BASE_URL}/auth/login`,{
       method:'POST',
@@ -389,7 +394,7 @@ async function handleLogin(){
     });
     const data=await resp.json();
     if(!resp.ok){
-      toast(data?.message||'بيانات الدخول غير صحيحة','error',{title:'فشل تسجيل الدخول'});
+      toast(data?.message||t('login_err_invalid'),'error',{title:t('login_failed')});
       return;
     }
     if(currentUser && currentUser.username!==data.user.username){
@@ -402,10 +407,10 @@ async function handleLogin(){
     saveState();
     renderCurrentUser();
     hideLogin();
-    toast(`مرحباً ${currentUser.name}`,'success',{title:'تم تسجيل الدخول',icon:'ti-user'});
+    toast(t('login_welcome')+' '+currentUser.name,'success',{title:t('login_success'),icon:'ti-user'});
   }catch(e){
     console.warn('login failed',e);
-    toast('فشل الاتصال بخادم المصادقة','error');
+    toast(t('login_err_conn'),'error');
   }
 }
 function logout(){
@@ -420,23 +425,24 @@ function renderCurrentUser(){
   const role=G('user-role');
   const av=G('user-av');
   if(name && role){
-    name.textContent=currentUser?.name||'غير مسجل';
+    name.textContent=currentUser?.name||t('user_not_logged');
     role.textContent=currentUser?.role||'guest';
   }
   if(av){
-    av.textContent=currentUser?.name?.slice(0,1) || 'م';
+    av.textContent=currentUser?.name?.slice(0,1) || t('user_guest_initial');
   }
+  if(typeof updateLangButton==='function') updateLangButton();
   updateSyncUI();
 }
 function requireAuth(){
   if(currentUser) return true;
   showLogin();
-  toast('يجب تسجيل الدخول أولاً','error');
+  toast(t('auth_required'),'error');
   return false;
 }
 function requireAdmin(){
   if(['admin','system_admin'].includes(currentUser?.role))return true;
-  toast('هذه الوظيفة متاحة للمشرف فقط','error');
+  toast(t('auth_admin_only'),'error');
   return false;
 }
 
@@ -495,7 +501,7 @@ function exportLocalBackup(){
   a.href=url;a.download=`sales-backup-${today()}.json`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('تم تصدير النسخة الاحتياطية بنجاح');
+  toast(t('backup_exported'));
 }
 function importLocalBackup(e){
   const file=e.target.files[0];if(!file)return;
@@ -503,28 +509,28 @@ function importLocalBackup(e){
   reader.onload=function(ev){
     try{
       const data=JSON.parse(ev.target.result);
-      if(!data||typeof data!=='object'){toast('ملف غير صالح','error');return}
-      if(!confirm('سيتم استبدال جميع البيانات الحالية. هل أنت متأكد؟'))return;
+      if(!data||typeof data!=='object'){toast(t('backup_invalid_file'),'error');return}
+      if(!confirm(t('backup_confirm_replace')))return;
       const keys=['items','invs','purs','custs','sups','payments','supPayments','rets','log','cI','cP','cRet','cPay','cSpay','companyId','companies'];
       keys.forEach(k=>{if(data[k]!==undefined)DB[k]=data[k]});
       saveState();
-      toast(`تم استيراد البيانات بنجاح — ${(data.items||[]).length} صنف، ${(data.invs||[]).length} فاتورة بيع`);
+      toast(t('backup_imported')+' — '+(data.items||[]).length+' '+t('nav_inventory')+', '+(data.invs||[]).length+' '+t('nav_sales_inv'));
       refreshCurrentPage();
-    }catch(err){toast('خطأ في قراءة الملف: '+err.message,'error')}
+    }catch(err){toast(t('backup_read_error')+': '+err.message,'error')}
   };
   reader.readAsText(file);
   e.target.value='';
 }
 async function saveCloudBackup(){
-  if(!currentUser){toast('سجّل الدخول أولاً','error');return}
+  if(!currentUser){toast(t('sync_login_first'),'error');return}
   const data={...DB};
   try{
     const token=localStorage.getItem(AUTH_TOKEN_KEY);
-    const r=await fetch(API_BASE_URL+'/backups',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({data,label:'نسخة '+new Date().toLocaleDateString('ar')})});
+    const r=await fetch(API_BASE_URL+'/backups',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({data,label:t('backup_label')+' '+new Date().toLocaleDateString(i18nLocale())})});
     const j=await r.json();
-    if(j.status==='success'){toast('تم الحفظ في السحابة بنجاح');loadCloudBackups()}
-    else{toast(j.message||'خطأ في الحفظ','error')}
-  }catch(err){toast('خطأ في الاتصال بالسحابة: '+err.message,'error')}
+    if(j.status==='success'){toast(t('sync_success'));loadCloudBackups()}
+    else{toast(j.message||t('backup_save_error'),'error')}
+  }catch(err){toast(t('backup_save_error')+': '+err.message,'error')}
 }
 async function loadCloudBackups(){
   if(!currentUser)return;
@@ -537,12 +543,12 @@ async function loadCloudBackups(){
       const items=G('backup-items');if(!items)return;
       items.innerHTML=j.backups.map(b=>{
         const sz=b.size?(b.size/1024).toFixed(1)+' KB':'—';
-        const dt=new Date(b.createdAt).toLocaleString('ar');
+        const dt=new Date(b.createdAt).toLocaleString(i18nLocale());
         return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:13px">
-          <div><strong>${b.label||'نسخة'}</strong> <span style="color:var(--muted)">${dt} — ${sz}</span></div>
+          <div><strong>${b.label||t('backup_copy')}</strong> <span style="color:var(--muted)">${dt} — ${sz}</span></div>
           <div style="display:flex;gap:4px">
-            <button class="btn btn-sm btn-icon" onclick="downloadCloudBackup('${b._id}')" title="تحميل"><i class="ti ti-download"></i></button>
-            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCloudBackup('${b._id}')" title="حذف"><i class="ti ti-trash"></i></button>
+            <button class="btn btn-sm btn-icon" onclick="downloadCloudBackup('${b._id}')" title="${t('backup_download')}"><i class="ti ti-download"></i></button>
+            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCloudBackup('${b._id}')" title="${t('backup_del_btn')}"><i class="ti ti-trash"></i></button>
           </div>
         </div>`
       }).join('');
@@ -561,16 +567,16 @@ async function downloadCloudBackup(id){
       a.href=url;a.download=`cloud-backup-${j.backup.label||id}.json`;
       document.body.appendChild(a);a.click();document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast('تم تحميل النسخة الاحتياطية');
+      toast(t('backup_exported'));
     }
-  }catch(err){toast('خطأ في التحميل','error')}
+  }catch(err){toast(t('backup_save_error')+': '+err.message,'error')}
 }
 async function deleteCloudBackup(id){
-  if(!confirm('حذف هذه النسخة الاحتياطية نهائياً؟'))return;
+  if(!confirm(t('confirm_delete')))return;
   try{
     const token=localStorage.getItem(AUTH_TOKEN_KEY);
     await fetch(API_BASE_URL+'/backups/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
-    toast('تم حذف النسخة الاحتياطية');
+    toast(t('backup_exported'));
     loadCloudBackups();
-  }catch(err){toast('خطأ في الحذف','error')}
+  }catch(err){toast(t('backup_save_error')+': '+err.message,'error')}
 }

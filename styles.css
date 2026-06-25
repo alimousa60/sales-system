@@ -41,9 +41,9 @@ body.light-mode .toast.success{background:#dcfce7;color:#166534}
 body.light-mode .toast.error{background:#fecaca;color:#991b1b}
 body.light-mode .toast.info{background:#bfdbfe;color:#1d4ed8}
 body.light-mode .empty-st{color:var(--text-muted);}
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;will-change:auto}
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);background:var(--bg-base);color:var(--text-primary);font-size:13px;line-height:1.6}
+body{font-family:var(--font);background:var(--bg-base);color:var(--text-primary);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
 .shell{display:flex;height:100vh}
 .sidebar{width:var(--sidebar-w);background:var(--bg-surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
@@ -113,7 +113,7 @@ body.light-mode .nav-item.active .nav-icon.teal{background:rgba(15,118,110,.15);
 .topbar-actions{display:flex;gap:6px;margin-right:auto;align-items:center}
 .topbar-time{font-size:11px;color:var(--text-muted);font-family:var(--mono)}
 .content{flex:1;overflow-y:auto;padding:18px}
-.page{display:none;animation:fadeIn .18s ease}.page.on{display:block}
+.page{display:none;animation:fadeIn .18s ease;contain:layout style paint}.page.on{display:block}
 .auth-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
 .auth-backdrop.on{display:flex}
 .auth-card{background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:16px;width:380px;max-width:100%;animation:mIn .18s ease;box-shadow:0 24px 60px rgba(0,0,0,.6)}
@@ -193,10 +193,16 @@ body.light-mode .nav-item.active .nav-icon.teal{background:rgba(15,118,110,.15);
   .inv-status-bar{flex-wrap:wrap;gap:4px}
   .isb-step{min-width:calc(50% - 4px);flex:none}
   .pay-row{flex-wrap:wrap;gap:4px}
-  .flex-gap6{flex-wrap:wrap}
+  .flex-gap6{flex-wrap:wrap;gap:8px}
   .flex-gap6.items-end{align-items:stretch}
-  .flex-gap6 .fg{min-width:calc(50% - 6px);flex:1}
-  .flex-gap6 .fg:first-child{min-width:100%}
+  .flex-gap6 .fg{flex:1 1 calc(50% - 8px);min-width:0}
+  .flex-gap6 .fg-item-search{flex:1 1 100%;min-width:0}
+  .flex-gap6 .fg-item-search input,.flex-gap6 .fg-item-search select{font-size:16px !important;min-height:44px}
+  .flex-gap6 .fg-qty{flex:1 1 calc(33% - 8px);min-width:0}
+  .flex-gap6 .fg-price{flex:1 1 calc(33% - 8px);min-width:0}
+  .flex-gap6 .fg-disc{flex:1 1 calc(33% - 8px);min-width:0}
+  .flex-gap6 .fg-total{flex:1 1 100%;min-width:0}
+  .flex-gap6 .btn-add-line{flex:1 1 100%;min-height:44px;font-size:14px;font-weight:700}
   .dashboard-hero{padding:14px}
   .dashboard-hero h2{font-size:16px}
   .dashboard-hero p{font-size:11px}
@@ -297,6 +303,18 @@ select option{background:var(--bg-elevated)}
 .inv-total-bar{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--rl);padding:11px 14px;margin-top:10px;display:flex;align-items:center;justify-content:space-between}
 .inv-total-lbl{font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px}
 .inv-total-val{font-size:18px;font-weight:700;color:var(--accent);font-family:var(--mono)}
+
+/* Invoice item entry row — desktop */
+.fg-item-search{flex:3;min-width:200px}
+.fg-item-search input,.fg-item-search select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px}
+.fg-item-search input{margin-bottom:4px}
+.fg-item-search select{max-height:200px}
+.fg-item-search .btn{margin-top:4px;white-space:nowrap}
+.fg-qty{flex:1;min-width:60px}
+.fg-price{flex:1.2;min-width:70px}
+.fg-disc{flex:1;min-width:60px}
+.fg-total{flex:1.2;min-width:70px}
+.btn-add-line{flex-shrink:0;align-self:flex-end}
 .inv-tafseet{font-size:10px;color:var(--text-muted);margin-top:2px}
 .accounting-note{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-radius:var(--r);font-size:11px;margin-top:8px}
 .acn-blue{background:var(--accent-dim);border:1px solid rgba(79,142,247,.2);color:var(--accent)}

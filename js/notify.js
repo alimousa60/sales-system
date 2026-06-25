@@ -99,8 +99,8 @@ function toast(msg, type = 'success', opts = {}) {
       <i class="ti ${iconClass}"></i>
     </div>
     <div class="n-content">
-      ${title ? `<div class="n-title">${title}</div>` : ''}
-      <div class="n-msg">${msg}</div>
+      ${title ? `<div class="n-title">${escapeHtml(title)}</div>` : ''}
+      <div class="n-msg">${escapeHtml(msg)}</div>
       ${actionsHtml}
     </div>
     ${closable ? '<button class="n-close"><i class="ti ti-x"></i></button>' : ''}

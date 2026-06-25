@@ -40,14 +40,10 @@ function renderPag(key, total, renderFn) {
 }
 
 /* ═══ TOAST & LOG ═══ */
-function toast(msg,type='success',opts={}){
-  if(typeof type==='object'){opts=type;type='success'}
-  return window.notify ? notify(msg, type, opts) : _legacyToast(msg, type);
-}
 function _legacyToast(msg,type='success'){
   const t=G('toast');if(!t)return;
   const icon=type==='success'?'ti-check':type==='error'?'ti-alert-triangle':'ti-info-circle';
-  t.innerHTML=`<i class="ti ${icon}"></i> ${msg}`;
+  t.innerHTML=`<i class="ti ${icon}"></i> ${escapeHtml(msg)}`;
   t.className=`toast on ${type}`;
   setTimeout(()=>t.classList.remove('on'),3400)
 }
@@ -73,7 +69,7 @@ function selPay(gid,el,m){
   else if(gid==='re-qc') _reQC=m;
 }
 function payLbl(m){
-  const map={cash:'<span class="badge b-green">نقدي</span>',check:'<span class="badge b-blue">صك</span>',credit:'<span class="badge b-amber">آجَل</span>',transfer:'<span class="badge b-cyan">تحويل</span>'};
+  const map={cash:`<span class="badge b-green">${t('pay_cash')}</span>`,check:`<span class="badge b-blue">${t('pay_check')}</span>`,credit:`<span class="badge b-amber">${t('pay_credit')}</span>`,transfer:`<span class="badge b-cyan">${t('pay_transfer')}</span>`};
   return map[m]||`<span class="badge b-gray">${m}</span>`
 }
 function popSel(id,arr,vk,lk,def='-- اختر --'){
@@ -86,7 +82,7 @@ function currentCompany(){return companyById(DB.companyId)}
 function renderCompany(){const co=currentCompany();const el=G('company-name');if(el)el.textContent=co.name}
 function saveCompany(){
   const name=G('co-name').value.trim();
-  if(!name){toast('أدخل اسم الشركة','error');return}
+  if(!name){toast(t('company_name_ph'),'error');return}
   const address=G('co-address').value.trim();
   const phone=G('co-phone').value.trim();
   const note=G('co-note').value.trim();
@@ -113,7 +109,7 @@ function saveCompany(){
   renderCompany();
   renderSettings();
   broadcastChange('company', { name });
-  toast('تم حفظ بيانات الشركة');
+  toast(t('company_saved'));
 }
 
 /* Company Logo helpers */
@@ -121,7 +117,7 @@ let _logoDataUrl='';
 function handleCompanyLogo(input){
   const file=input.files[0];
   if(!file)return;
-  if(file.size>512000){toast('اللوجو كبير جداً — الأقصى 500KB','error');return}
+  if(file.size>512000){toast(t('company_logo_too_big'),'error');return}
   const reader=new FileReader();
   reader.onload=function(e){
     _logoDataUrl=e.target.result;
@@ -147,7 +143,7 @@ function loadCompanyLogo(){
     if(preview) preview.innerHTML='<img src="'+co.logo+'" style="width:100%;height:100%;object-fit:contain">';
   }
 }
-function updateSOASelector(){const type=G('soa-type').value;const label=type==='supplier'?'اختر مورد':'اختر زبون';const placeholder=`-- اختر ${type==='supplier'?'مورد':'زبون'} --`;if(G('soa-cust-label'))G('soa-cust-label').textContent=label;popSel('soa-cust',type==='supplier'?DB.sups:DB.custs,'id','name',placeholder);renderSOA()}
+function updateSOASelector(){const type=G('soa-type').value;const label=type==='supplier'?t('soa_choose_supplier'):t('soa_choose_customer');const placeholder=`-- ${type==='supplier'?t('nav_suppliers'):t('nav_customers')} --`;if(G('soa-cust-label'))G('soa-cust-label').textContent=label;popSel('soa-cust',type==='supplier'?DB.sups:DB.custs,'id','name',placeholder);renderSOA()}
 
 /* Invoice paid amount */
 function invPaid(inv){
@@ -156,12 +152,12 @@ function invPaid(inv){
 function invRemaining(inv){return Math.max(0,inv.total-invPaid(inv))}
 function invPayStatus(inv){
   const paid=invPaid(inv);
-  if(paid<=0)return'<span class="badge b-red">غير مسدَّدة</span>';
-  if(paid>=inv.total-0.001)return'<span class="badge b-green">مسدَّدة كاملاً</span>';
-  return'<span class="badge b-amber">جزئي</span>'
+  if(paid<=0)return`<span class="badge b-red">${t('inv_unpaid')}</span>`;
+  if(paid>=inv.total-0.001)return`<span class="badge b-green">${t('inv_paid_full')}</span>`;
+  return`<span class="badge b-amber">${t('inv_paid_partial')}</span>`
 }
 function invDlvLabel(s){
-  const map={pending:'<span class="badge b-gray">غير مسلَّم</span>',delivered:'<span class="badge b-teal">تم التسليم</span>'};
+  const map={pending:`<span class="badge b-gray">${t('inv_undelivered')}</span>`,delivered:`<span class="badge b-teal">${t('inv_delivered')}</span>`};
   return map[s]||map.pending
 }
 
@@ -170,9 +166,9 @@ function purPaid(pur){return DB.supPayments.filter(p=>p.purId===pur.id).reduce((
 function purRemaining(pur){return Math.max(0,pur.total-purPaid(pur))}
 function purPayStatus(pur){
   const paid=purPaid(pur);
-  if(paid<=0)return'<span class="badge b-red">غير مدفوعة</span>';
-  if(paid>=pur.total-0.001)return'<span class="badge b-green">مدفوعة</span>';
-  return'<span class="badge b-amber">جزئي</span>'
+  if(paid<=0)return`<span class="badge b-red">${t('pur_unpaid')}</span>`;
+  if(paid>=pur.total-0.001)return`<span class="badge b-green">${t('pur_paid')}</span>`;
+  return`<span class="badge b-amber">${t('pur_partial')}</span>`
 }
 
 /* Supplier balance */
@@ -191,21 +187,21 @@ function custReceivable(cust){
 
 /* ═══ NAVIGATION ═══ */
 const PAGE_META={
-  dash:{t:'الرئيسية',i:'ti-layout-dashboard'},
-  inventory:{t:'الأصناف والمخزون',i:'ti-package'},
-  sales:{t:'فواتير البيع',i:'ti-receipt'},
-  returns:{t:'مرتجع المبيعات',i:'ti-receipt-refund'},
-  purchases:{t:'فواتير الشراء',i:'ti-truck'},
-  suppay:{t:'دفعات الموردين',i:'ti-wallet'},
-  customers:{t:'الزبائن',i:'ti-user-circle'},
-  suppliers:{t:'الموردون',i:'ti-users'},
-  soa:{t:'كشف الحساب',i:'ti-file-description'},
-  finance:{t:'الخزينة',i:'ti-cash'},
-  pl:{t:'الأرباح والخسائر',i:'ti-chart-bar'},
-  users:{t:'حسابات المستخدمين',i:'ti-users-pin'},
-  companies:{t:'إدارة الشركات',i:'ti-building'},
-  audit:{t:'سجل التدقيق',i:'ti-shield-check'},
-  hrm:{t:'HRM — إدارة الموظفين',i:'ti-users-group'},
+  dash:{t:()=>t('page_dash'),i:'ti-layout-dashboard'},
+  inventory:{t:()=>t('page_inventory'),i:'ti-package'},
+  sales:{t:()=>t('page_sales'),i:'ti-receipt'},
+  returns:{t:()=>t('page_returns'),i:'ti-receipt-refund'},
+  purchases:{t:()=>t('page_purchases'),i:'ti-truck'},
+  suppay:{t:()=>t('page_suppay'),i:'ti-wallet'},
+  customers:{t:()=>t('page_customers'),i:'ti-user-circle'},
+  suppliers:{t:()=>t('page_suppliers'),i:'ti-users'},
+  soa:{t:()=>t('page_soa'),i:'ti-file-description'},
+  finance:{t:()=>t('page_finance'),i:'ti-cash'},
+  pl:{t:()=>t('page_pl'),i:'ti-chart-bar'},
+  users:{t:()=>t('page_users'),i:'ti-users-pin'},
+  companies:{t:()=>t('page_companies'),i:'ti-building'},
+  audit:{t:()=>t('page_audit'),i:'ti-shield-check'},
+  hrm:{t:()=>t('page_hrm'),i:'ti-users-group'},
   settings:{t:'الإعدادات',i:'ti-settings'}
 };
 
@@ -215,8 +211,8 @@ function showPage(pg){
   const page=G('p-'+pg);
   if(!page) return;
   page.classList.add('on');
-  const m=PAGE_META[pg]||{t:pg,i:'ti-circle'};
-  G('pg-title').innerHTML=`<i class="ti ${m.i}"></i> ${m.t}`;
+  const m=PAGE_META[pg]||{t:()=>pg,i:'ti-circle'};
+  G('pg-title').innerHTML=`<i class="ti ${m.i}"></i> ${typeof m.t==='function'?m.t():m.t}`;
   closeSidebarIfMobile();
   updateSearchHint();
   const pageKeyMap={inventory:'inv-tb',sales:'sal-tb',purchases:'pur-tb',customers:'cust-tb',suppliers:'sup-tb',returns:'ret-tb',users:'user-tb',suppay:'suppay-tb'};
@@ -252,7 +248,7 @@ G('clear-search')?.addEventListener('click', ()=>{
   applyQuickSearch('');
 });
 
-setInterval(()=>G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}),1000);
+setInterval(()=>{const c=G('clock');if(c)c.textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})},1000);
 
 /* ═══ MODALS ═══ */
 /* ═══ MODAL STACK — professional layered modals ═══ */

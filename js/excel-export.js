@@ -27,9 +27,9 @@ function exportItems() {
     const st = x.qty === 0 ? "نفدت" : x.qty <= x.reorder ? "منخفض" : "جيد";
     return [x.code, x.barcode||"", x.name, x.cat, x.buy, x.sell, x.qty, x.reorder, x.unit, st];
   });
-  if (!rows.length) { toast("لا توجد أصناف للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('barcode_no_items'), 'info'); return; }
   _exportTable(h, rows, "الأصناف", "items-export");
-  toast("تم تصدير الأصناف بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportSales() {
@@ -41,9 +41,9 @@ function exportSales() {
     const pay = paid <= 0 ? "غير مسدَّدة" : paid >= inv.total - 0.001 ? "مسددة كاملاً" : "جزئي";
     return [inv.num, inv.custName, inv.date, inv.total, paid, rem, dlv, pay];
   });
-  if (!rows.length) { toast("لا توجد فواتير للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('dash_no_invoices'), 'info'); return; }
   _exportTable(h, rows, "فواتير البيع", "sales-export");
-  toast("تم تصدير فواتير البيع بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportPurchases() {
@@ -54,9 +54,9 @@ function exportPurchases() {
     const status = paid <= 0 ? "غير مدفوعة" : paid >= p.total - 0.001 ? "مدفوعة" : "جزئي";
     return [p.num, p.supName, p.date, p.total, paid, rem, status];
   });
-  if (!rows.length) { toast("لا توجد فواتير شراء للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('pur_no_invoices'), 'info'); return; }
   _exportTable(h, rows, "فواتير الشراء", "purchases-export");
-  toast("تم تصدير فواتير الشراء بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportCustomers() {
@@ -66,9 +66,9 @@ function exportCustomers() {
     const totalSales = DB.invs.filter(i => i.custId === c.id).reduce((s, i) => s + i.total, 0) + (parseFloat(c.openBal) || 0);
     return [c.name, c.phone||"", c.addr||"", c.openBal||0, totalSales, recv];
   });
-  if (!rows.length) { toast("لا يوجد زبائن للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('hrm_no_employees'), 'info'); return; }
   _exportTable(h, rows, "الزبائن", "customers-export");
-  toast("تم تصدير الزبائن بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportSuppliers() {
@@ -78,9 +78,9 @@ function exportSuppliers() {
     const paid = DB.supPayments.filter(p => p.supId === s.id).reduce((sum, p) => sum + p.amount, 0);
     return [s.name, s.phone||"", s.addr||"", totalPur, paid, totalPur - paid];
   });
-  if (!rows.length) { toast("لا يوجد موردون للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('hrm_no_employees'), 'info'); return; }
   _exportTable(h, rows, "الموردون", "suppliers-export");
-  toast("تم تصدير الموردون بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportPayments() {
@@ -89,9 +89,9 @@ function exportPayments() {
     const mode = p.mode === "cash" ? "نقدي" : p.mode === "check" ? "صك" : p.mode === "transfer" ? "تحويل" : p.mode;
     return [p.id, p.custName||"", p.invNum||"", p.amount, mode, p.date, p.notes||""];
   });
-  if (!rows.length) { toast("لا توجد دفعات للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   _exportTable(h, rows, "المحصَّلات", "payments-export");
-  toast("تم تصدير المحصَّلات بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportSupplierPayments() {
@@ -100,9 +100,9 @@ function exportSupplierPayments() {
     const mode = p.mode === "cash" ? "نقدي" : p.mode === "check" ? "صك" : p.mode === "transfer" ? "تحويل" : p.mode;
     return [p.id, p.supName||"", p.purNum||"", p.amount, mode, p.date, p.notes||""];
   });
-  if (!rows.length) { toast("لا توجد دفعات موردين للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   _exportTable(h, rows, "دفعات الموردين", "supplier-payments-export");
-  toast("تم تصدير دفعات الموردين بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportReturns() {
@@ -111,9 +111,9 @@ function exportReturns() {
     const qc = r.qcStatus === "passed" ? "مقبول" : r.qcStatus === "failed" ? "مرفوض" : "قيد المراجعة";
     return [r.num, r.invNum, r.custName, r.amt, r.reason||"", qc, r.date];
   });
-  if (!rows.length) { toast("لا توجد مرتجعات للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   _exportTable(h, rows, "المرتجعات", "returns-export");
-  toast("تم تصدير المرتجعات بنجاح");
+  toast(t('backup_exported'));
 }
 
 function exportUsers() {
@@ -123,9 +123,9 @@ function exportUsers() {
     const status = u.status || (u.isActive === false ? "غير نشط" : "نشط");
     return [u.name, u.username, role, status];
   });
-  if (!rows.length) { toast("لا يوجد مستخدمون للتصدير", "info"); return; }
+  if (!rows.length) { toast(t('users_empty'), 'info'); return; }
   _exportTable(h, rows, "المستخدمون", "users-export");
-  toast("تم تصدير المستخدمين بنجاح");
+  toast(t('backup_exported'));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -315,7 +315,7 @@ function _printGenericPDF(title, headers, rows, opts) {
   </body></html>`;
 
   const win = window.open('', '_blank', 'width=1050,height=850');
-  if (!win) { toast('تعذر فتح نافذة الطباعة — تأكد من السماح النوافذ المنبثقة', 'error'); return; }
+  if (!win) { toast(t('sales_print_err'), 'error'); return; }
   win.document.write(html);
   win.document.close();
   setTimeout(() => { try { win.print(); } catch(e){} }, 600);
@@ -330,7 +330,7 @@ function printItemsPDF() {
     const st = x.qty === 0 ? 'نفدت' : x.qty <= x.reorder ? 'منخفض' : 'جيد';
     return [x.code, x.name, x.cat, fmt(x.buy), fmt(x.sell), x.qty, x.unit, st];
   });
-  if (!rows.length) { toast('لا توجد أصناف', 'info'); return; }
+  if (!rows.length) { toast(t('barcode_no_items'), 'info'); return; }
   _printGenericPDF('قائمة الأصناف', h, rows, { subtitle: 'المخزون والأصناف' });
 }
 
@@ -344,7 +344,7 @@ function printCustomersPDF() {
     const totalSales = DB.invs.filter(i => i.custId === c.id).reduce((s, i) => s + i.total, 0) + (parseFloat(c.openBal) || 0);
     return [c.name, c.phone || '', c.addr || '', fmt(c.openBal || 0), fmt(totalSales), fmt(recv)];
   });
-  if (!rows.length) { toast('لا يوجد زبائن', 'info'); return; }
+  if (!rows.length) { toast(t('hrm_no_employees'), 'info'); return; }
   const totalReceivable = DB.custs.reduce((s, c) => s + custReceivable(c), 0);
   const totalSalesAll = DB.custs.reduce((s, c) => s + DB.invs.filter(i => i.custId === c.id).reduce((si, i) => si + i.total, 0), 0);
   _printGenericPDF('قائمة الزبائن', h, rows, {
@@ -367,7 +367,7 @@ function printSuppliersPDF() {
     const paid = DB.supPayments.filter(p => p.supId === s.id).reduce((sum, p) => sum + p.amount, 0);
     return [s.name, s.phone || '', s.addr || '', fmt(totalPur), fmt(paid), fmt(totalPur - paid)];
   });
-  if (!rows.length) { toast('لا يوجد موردون', 'info'); return; }
+  if (!rows.length) { toast(t('hrm_no_employees'), 'info'); return; }
   const totalPayable = DB.sups.reduce((s, sup) => {
     const totalPur = DB.purs.filter(p => p.supId === sup.id).reduce((sum, p) => sum + p.total, 0);
     const paid = DB.supPayments.filter(p => p.supId === sup.id).reduce((sum, p) => sum + p.amount, 0);
@@ -394,7 +394,7 @@ function printSalesPDF() {
     const pay = paid <= 0 ? 'غير مسدَّدة' : paid >= inv.total - 0.001 ? 'مسددة' : 'جزئي';
     return [inv.num, inv.custName, inv.date, fmt(inv.total), fmt(paid), fmt(rem), pay];
   });
-  if (!rows.length) { toast('لا توجد فواتير', 'info'); return; }
+  if (!rows.length) { toast(t('dash_no_invoices'), 'info'); return; }
   const totalAll = DB.invs.reduce((s, i) => s + i.total, 0);
   const paidAll = DB.invs.reduce((s, i) => s + invPaid(i), 0);
   const remAll = totalAll - paidAll;
@@ -428,7 +428,7 @@ function printPurchasesPDF() {
     const status = paid <= 0 ? 'غير مدفوعة' : paid >= p.total - 0.001 ? 'مدفوعة' : 'جزئي';
     return [p.num, p.supName, p.date, fmt(p.total), fmt(paid), fmt(rem), status];
   });
-  if (!rows.length) { toast('لا توجد فواتير شراء', 'info'); return; }
+  if (!rows.length) { toast(t('pur_no_invoices'), 'info'); return; }
   const totalAll = DB.purs.reduce((s, p) => s + p.total, 0);
   const paidAll = DB.purs.reduce((s, p) => s + purPaid(p), 0);
   const remAll = totalAll - paidAll;
@@ -457,7 +457,7 @@ function printReturnsPDF() {
     const qc = r.qcStatus === 'passed' ? 'مقبول' : r.qcStatus === 'failed' ? 'مرفوض' : 'قيد المراجعة';
     return [r.num, r.invNum, r.custName, fmt(r.amt), r.reason || '', qc, r.date];
   });
-  if (!rows.length) { toast('لا توجد مرتجعات', 'info'); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   const totalAll = DB.rets.reduce((s, r) => s + r.amt, 0);
   const passed = DB.rets.filter(r => r.qcStatus === 'passed').length;
   const failed = DB.rets.filter(r => r.qcStatus === 'failed').length;
@@ -484,7 +484,7 @@ function printSupplierPaymentsPDF() {
     const mode = p.mode === 'cash' ? 'نقدي' : p.mode === 'check' ? 'صك' : p.mode === 'transfer' ? 'تحويل' : p.mode;
     return [p.id, p.supName || '', p.purNum || '', fmt(p.amount), mode, p.date, p.notes || ''];
   });
-  if (!rows.length) { toast('لا توجد دفعات', 'info'); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   const totalAll = DB.supPayments.reduce((s, p) => s + p.amount, 0);
   const cashTotal = DB.supPayments.filter(p => p.mode === 'cash').reduce((s, p) => s + p.amount, 0);
   const checkTotal = DB.supPayments.filter(p => p.mode === 'check').reduce((s, p) => s + p.amount, 0);
@@ -510,7 +510,7 @@ function printUsersPDF() {
     const status = u.status || (u.isActive === false ? 'غير نشط' : 'نشط');
     return [u.name, u.username, role, status];
   });
-  if (!rows.length) { toast('لا يوجد مستخدمون', 'info'); return; }
+  if (!rows.length) { toast(t('users_empty'), 'info'); return; }
   const active = DB.users.filter(u => u.status !== 'غير نشط' && u.isActive !== false).length;
   const inactive = DB.users.length - active;
   _printGenericPDF('قائمة المستخدمين', h, rows, {
@@ -532,7 +532,7 @@ function printPaymentsPDF() {
     const mode = p.mode === 'cash' ? 'نقدي' : p.mode === 'check' ? 'صك' : p.mode === 'transfer' ? 'تحويل' : p.mode;
     return [p.id, p.custName || '', p.invNum || '', fmt(p.amount), mode, p.date, p.notes || ''];
   });
-  if (!rows.length) { toast('لا توجد محصَّلات', 'info'); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   const totalAll = DB.payments.reduce((s, p) => s + p.amount, 0);
   const cashTotal = DB.payments.filter(p => p.mode === 'cash').reduce((s, p) => s + p.amount, 0);
   const checkTotal = DB.payments.filter(p => p.mode === 'check').reduce((s, p) => s + p.amount, 0);
@@ -560,9 +560,9 @@ function exportFinance() {
   DB.supPayments.forEach(p => {
     rows.push(['دفعة', p.date, p.notes || 'دفعة لمورد', p.supName || '', -p.amount, p.mode === 'cash' ? 'نقدي' : p.mode === 'check' ? 'صك' : p.mode === 'transfer' ? 'تحويل' : p.mode]);
   });
-  if (!rows.length) { toast('لا توجد حركات مالية', 'info'); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   _exportTable(h, rows, 'الحركة المالية', 'finance-export');
-  toast('تم تصدير الحركات المالية');
+  toast(t('backup_exported'));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -577,7 +577,7 @@ function printFinancePDF() {
   DB.supPayments.forEach(p => {
     rows.push(['دفعة', p.date, p.notes || 'دفعة', p.supName || '', '-' + fmt(p.amount), p.mode === 'cash' ? 'نقدي' : p.mode === 'check' ? 'صك' : p.mode === 'transfer' ? 'تحويل' : p.mode]);
   });
-  if (!rows.length) { toast('لا توجد حركات مالية', 'info'); return; }
+  if (!rows.length) { toast(t('hrm_no_movements'), 'info'); return; }
   const inflow = DB.payments.reduce((s, p) => s + p.amount, 0);
   const outflow = DB.supPayments.reduce((s, p) => s + p.amount, 0);
   const netFlow = inflow - outflow;
@@ -616,7 +616,7 @@ function exportPL() {
     ['صافي الربح', net]
   ];
   _exportTable(h, rows, 'قائمة الدخل', 'pl-export');
-  toast('تم تصدير قائمة الدخل');
+  toast(t('backup_exported'));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -660,9 +660,9 @@ function printPLPDF() {
 function exportAudit() {
   const h = ['التاريخ','المستخدم','الإجراء','النوع','الرقم','التفاصيل'];
   const rows = DB.log.map(a => [a.date, a.user || '', a.action || '', a.entity || '', a.entityId || '', a.details || '']);
-  if (!rows.length) { toast('لا توجد سجلات', 'info'); return; }
+  if (!rows.length) { toast(t('export_no_records'), 'info'); return; }
   _exportTable(h, rows, 'سجل التدقيق', 'audit-export');
-  toast('تم تصدير سجل التدقيق');
+  toast(t('backup_exported'));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -671,7 +671,7 @@ function exportAudit() {
 function printAuditPDF() {
   const h = ['التاريخ','المستخدم','الإجراء','النوع','الرقم','التفاصيل'];
   const rows = DB.log.map(l => [l.date + ' ' + (l.time||''), l.user || '', l.action || '', l.detail || '', '', '']);
-  if (!rows.length) { toast('لا توجد سجلات', 'info'); return; }
+  if (!rows.length) { toast(t('export_no_records'), 'info'); return; }
   const users = [...new Set(DB.log.map(l => l.user).filter(Boolean))];
   _printGenericPDF('سجل التدقيق', h, rows, {
     subtitle: 'سجل العمليات والتغييرات',

@@ -145,7 +145,7 @@ function checkPermission(resource, action) {
   return (req, res, next) => {
     const context = {
       companyId: req.user?.companyId,
-      ownerId: req.params.userId || req.body.userId,
+      ownerId: req.user?.userId,
       departmentId: req.user?.metadata?.department
     };
 

@@ -15,7 +15,8 @@
     "globalSetup": "./tests/globalSetup.js",
     "globalTeardown": "./tests/globalTeardown.js",
     "testTimeout": 30000,
-    "verbose": true
+    "verbose": true,
+    "testPathIgnorePatterns": ["/node_modules/", "/tests/frontend/"]
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -27,6 +28,8 @@
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^8.0.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0",
     "ws": "^8.21.0",
     "xlsx": "^0.18.5"
@@ -35,6 +38,7 @@
     "node": "^18 || ^20"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "jest": "^30.4.2",
     "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.14",

@@ -109,22 +109,7 @@ function handleRealtimeMessage(msg) {
   });
 }
 
-function refreshCurrentPage() {
-  const pg = document.querySelector('.page.active')?.id?.replace('pg-', '') || 'dash';
-  switch (pg) {
-    case 'dash': updateStats(); renderDash(); break;
-    case 'inventory': renderItems(); break;
-    case 'sales': renderSales(); updateStats(); break;
-    case 'purchases': renderPurs(); updateStats(); break;
-    case 'customers': renderCusts(); break;
-    case 'suppliers': renderSups(); break;
-    case 'payments': renderSales(); updateStats(); renderFin(); break;
-    case 'returns': renderRets(); break;
-    case 'hrm': renderHRM(); break;
-    default: updateStats(); break;
-  }
-}
-
+// refreshCurrentPage() is defined in inventory.js (canonical version)
 // Auto-connect on login
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(connectRealtime, 1000);

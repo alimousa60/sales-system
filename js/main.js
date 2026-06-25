@@ -32,11 +32,11 @@ function updateStats(){
 
   const ad=G('dash-alerts');
   ad.innerHTML=`<div class="insight-grid">
-    <div class="insight-card blue"><span>فواتير معلقة</span><strong>${pendingDeliveries}</strong><small>في انتظار التسليم</small></div>
-    <div class="insight-card amber"><span>ذمم مستحقة</span><strong>${overdueInvoices}</strong><small>فواتير غير مسددة</small></div>
-    <div class="insight-card red"><span>تنبيهات مخزون</span><strong>${alerts.length}</strong><small>أصناف تحتاج تجديد</small></div>
+    <div class="insight-card blue"><span>${t('dash_pending_invoices')}</span><strong>${pendingDeliveries}</strong><small>${t('dash_pending_delivery')}</small></div>
+    <div class="insight-card amber"><span>${t('dash_due_receivables')}</span><strong>${overdueInvoices}</strong><small>${t('dash_unpaid_invoices')}</small></div>
+    <div class="insight-card red"><span>${t('dash_stock_alerts')}</span><strong>${alerts.length}</strong><small>${t('dash_restock_items')}</small></div>
   </div>
-  ${alerts.slice(0,3).map(x=>`<div class="alert-strip"><i class="ti ti-alert-triangle"></i> الصنف "<strong>${x.name}</strong>" — الرصيد: ${x.qty} ${x.unit} (حد الأمان: ${x.reorder})</div>`).join('')}`;
+  ${alerts.slice(0,3).map(x=>`<div class="alert-strip"><i class="ti ti-alert-triangle"></i> ${escapeHtml(x.name)} — ${x.qty} ${escapeHtml(x.unit)} (${x.reorder})</div>`).join('')}`;
   renderDash()
 }
 
@@ -47,11 +47,11 @@ function renderDash(){
 
   /* Table view */
   it.innerHTML=recent.length?recent.map(inv=>`<tr>
-    <td style="color:var(--accent);font-weight:600">${inv.num}</td>
-    <td>${inv.custName}</td>
-    <td class="td-mono" style="font-weight:700">${fmt(inv.total)} د.ل</td>
+    <td style="color:var(--accent);font-weight:600">${escapeHtml(inv.num)}</td>
+    <td>${escapeHtml(inv.custName)}</td>
+    <td class="td-mono" style="font-weight:700">${fmt(inv.total)} ${t('currency_sym')}</td>
     <td>${invPayStatus(inv)}</td>
-  </tr>`).join(''):emptyRow(4,'لا فواتير');
+  </tr>`).join(''):emptyRow(4,t('dash_no_invoices'));
 
   /* Card view — mobile */
   if(cvInv){
@@ -59,15 +59,15 @@ function renderDash(){
       const payLabel=inv.payStatus==='paid'?'cv-green':inv.payStatus==='partial'?'cv-amber':'cv-blue';
       return `<div class="dash-cv-item ${payLabel}">
         <div class="dash-cv-header">
-          <div class="dash-cv-title">${inv.num}</div>
+          <div class="dash-cv-title">${escapeHtml(inv.num)}</div>
           <div class="dash-cv-badge badge badge-${inv.payStatus==='paid'?'green':inv.payStatus==='partial'?'amber':'blue'}">${invPayStatus(inv)}</div>
         </div>
         <div class="dash-cv-body">
-          <div class="dash-cv-field"><div class="dash-cv-field-label">الزبون</div><div class="dash-cv-field-value">${inv.custName}</div></div>
-          <div class="dash-cv-field"><div class="dash-cv-field-label">الإجمالي</div><div class="dash-cv-field-value mono">${fmt(inv.total)} د.ل</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">${t('dash_col_customer')}</div><div class="dash-cv-field-value">${escapeHtml(inv.custName)}</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">${t('dash_col_total')}</div><div class="dash-cv-field-value mono">${fmt(inv.total)} ${t('currency_sym')}</div></div>
         </div>
       </div>`;
-    }).join(''):'<div class="dash-cv-item"><div class="dash-cv-body"><div class="dash-cv-field"><div class="dash-cv-field-value" style="text-align:center;color:var(--text-muted)">لا فواتير</div></div></div></div>';
+    }).join(''):`<div class="dash-cv-item"><div class="dash-cv-body"><div class="dash-cv-field"><div class="dash-cv-field-value" style="text-align:center;color:var(--text-muted)">${t('dash_no_invoices')}</div></div></div></div>`;
   }
 
   const lt=G('d-low-tb');
@@ -79,12 +79,12 @@ function renderDash(){
     const shortage = x.reorder - x.qty;
     const shortageLabel = shortage > 0 ? `<span class="text-red">${fmt(shortage)}</span>` : `<span class="text-green">0</span>`;
     return `<tr>
-      <td>${x.name}</td>
+      <td>${escapeHtml(x.name)}</td>
       <td class="td-mono" style="color:var(--amber);font-weight:700">${x.qty}</td>
       <td class="td-mono">${x.reorder}</td>
       <td class="td-mono">${shortageLabel}</td>
     </tr>`
-  }).join(''):'<tr><td colspan="4"><div class="empty-st" style="padding:18px"><i class="ti ti-check"></i><span>كل الأصناف بمستويات جيدة</span></div></td></tr>';
+  }).join(''):`<tr><td colspan="4"><div class="empty-st" style="padding:18px"><i class="ti ti-check"></i><span>${t('dash_all_stock_ok')}</span></div></td></tr>`;
 
   /* Card view — mobile */
   if(cvLow){
@@ -93,16 +93,16 @@ function renderDash(){
       const colorClass=shortage>0?'cv-red':'cv-green';
       return `<div class="dash-cv-item ${colorClass}">
         <div class="dash-cv-header">
-          <div class="dash-cv-title">${x.name}</div>
-          <div class="dash-cv-badge badge badge-${shortage>0?'red':'green'}">${shortage>0?'نقص':'جيد'}</div>
+          <div class="dash-cv-title">${escapeHtml(x.name)}</div>
+          <div class="dash-cv-badge badge badge-${shortage>0?'red':'green'}">${shortage>0?t('dash_shortage'):t('dash_good')}</div>
         </div>
         <div class="dash-cv-body">
-          <div class="dash-cv-field"><div class="dash-cv-field-label">الرصيد</div><div class="dash-cv-field-value mono" style="color:var(--amber)">${x.qty} ${x.unit}</div></div>
-          <div class="dash-cv-field"><div class="dash-cv-field-label">حد الأمان</div><div class="dash-cv-field-value mono">${x.reorder}</div></div>
-          <div class="dash-cv-field"><div class="dash-cv-field-label">النقص</div><div class="dash-cv-field-value mono" style="color:var(--red)">${shortage>0?shortage:'-'}</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">${t('dash_balance')}</div><div class="dash-cv-field-value mono" style="color:var(--amber)">${x.qty} ${escapeHtml(x.unit)}</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">${t('dash_reorder')}</div><div class="dash-cv-field-value mono">${x.reorder}</div></div>
+          <div class="dash-cv-field"><div class="dash-cv-field-label">${t('dash_shortage_label')}</div><div class="dash-cv-field-value mono" style="color:var(--red)">${shortage>0?shortage:'-'}</div></div>
         </div>
       </div>`;
-    }).join(''):'<div class="dash-cv-item cv-green"><div class="dash-cv-body"><div class="dash-cv-field"><div class="dash-cv-field-value" style="text-align:center;color:var(--green)"><i class="ti ti-check"></i> كل الأصناف بمستويات جيدة</div></div></div></div>';
+    }).join(''):'<div class="dash-cv-item cv-green"><div class="dash-cv-body"><div class="dash-cv-field"><div class="dash-cv-field-value" style="text-align:center;color:var(--green)"><i class="ti ti-check"></i> '+t('dash_all_stock_ok_cv')+'</div></div></div></div>';
   }
 
   renderDashLog();
@@ -154,27 +154,12 @@ function toggleFab(){
         renderDash();
         ptr.classList.remove('loading','on');
         ptr.querySelector('.ti').style.transform='';
-        toast('تم التحديث','success');
+        toast(t('ptr_refreshed'),'success');
       },800);
     }
     pulling=false;canPull=false;
   });
 })();
-  const lt=G('d-low-tb');
-  const low=DB.items.filter(x=>x.qty<=x.reorder);
-  lt.innerHTML=low.length?low.map(x=>{
-    const shortage = x.reorder - x.qty;
-    const shortageLabel = shortage > 0 ? `<span class="text-red">${fmt(shortage)}</span>` : `<span class="text-green">0</span>`;
-    return `<tr>
-      <td>${x.name}</td>
-      <td class="td-mono" style="color:var(--amber);font-weight:700">${x.qty}</td>
-      <td class="td-mono">${x.reorder}</td>
-      <td class="td-mono">${shortageLabel}</td>
-    </tr>`
-  }).join(''):'<tr><td colspan="4"><div class="empty-st" style="padding:18px"><i class="ti ti-check"></i><span>كل الأصناف بمستويات جيدة</span></div></td></tr>';
-  renderDashLog();
-  setTimeout(renderDashCharts,50);
-}
 
 let deferredInstallPrompt=null;
 window.addEventListener('beforeinstallprompt', e=>{
@@ -188,15 +173,15 @@ async function installApp(){
   deferredInstallPrompt.prompt();
   const choice=await deferredInstallPrompt.userChoice;
   if(choice.outcome==='accepted'){
-    toast('تم تثبيت التطبيق','success');
+    toast(t('install_done'),'success');
   } else {
-    toast('تم إلغاء التثبيت','info');
+    toast(t('install_cancelled'),'info');
   }
   deferredInstallPrompt=null;
   const btn=G('install-btn');
   if(btn) btn.style.display='none';
 }
-window.addEventListener('appinstalled', ()=>{toast('تم تثبيت التطبيق بنجاح','success')});
+window.addEventListener('appinstalled', ()=>{toast(t('install_success'),'success')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('service-worker.js')
@@ -235,7 +220,7 @@ async function initApp(){
   } else {
     hideLogin();
   }
-  renderItems();renderSales();renderPurs();renderSups();renderCusts();renderRets();renderAudit();updateStats();renderDash();
+  updateStats();renderDash();
   G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
 }
 initApp();

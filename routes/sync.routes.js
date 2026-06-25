@@ -12,6 +12,9 @@ router.post('/push', async (req, res) => {
     if (!Array.isArray(req.body)) {
       return res.status(400).json({ status: 'error', message: 'متوقع مصفوفة من السجلات' });
     }
+    if (req.body.length > 200) {
+      return res.status(400).json({ status: 'error', message: 'الحد الأقصى 200 سجل في المزامنة الواحدة' });
+    }
 
     const records = req.body.map((incoming) => ({
       id: incoming.id || crypto.randomUUID(),

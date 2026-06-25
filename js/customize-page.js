@@ -232,7 +232,7 @@ function applyPageCustomization(pageId) {
 function openCustomizePanel(pageId) {
   _custPageId = pageId;
   const reg = PAGE_REGISTRY[pageId];
-  if (!reg) { toast('هذه الصفحة لا تدعم التخصيص', 'info'); return; }
+  if (!reg) { toast(t('customize_not_supported'), 'info'); return; }
 
   const saved = loadPageCustomization(pageId);
   let panel = G('cust-panel');
@@ -338,7 +338,7 @@ function resetPageCustomization(pageId) {
   savePageCustomization(pageId, settings);
   applyPageCustomization(pageId);
   openCustomizePanel(pageId);
-  toast('تم إعادة الضبط');
+  toast(t('customize_reset'));
 }
 
 /* ═══════════════════════════════════════════════════════════════

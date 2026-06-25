@@ -1,13 +1,67 @@
 {
-  "name": "Sales System - نظام إدارة المبيعات",
+  "name": "Sales Management System — نظام إدارة المبيعات",
   "short_name": "SalesSystem",
-  "description": "نظام إدارة المبيعات والمخزون والموظفين",
+  "description": "نظام إدارة المبيعات والمخزون والموظفين — Sales, Inventory & HRM Management",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f1225",
   "theme_color": "#4f8ef7",
   "orientation": "any",
+  "scope": "/",
+  "lang": "ar",
+  "dir": "auto",
+  "categories": ["business", "finance", "productivity"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "فواتير البيع",
+      "short_name": "المبيعات",
+      "url": "/#sales",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232dd17e'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white' font-family='sans-serif'>S</text></svg>",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "فواتير الشراء",
+      "short_name": "المشتريات",
+      "url": "/#purchases",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%239b72f7'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white' font-family='sans-serif'>P</text></svg>",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "HRM",
+      "short_name": "HRM",
+      "url": "/#hrm",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2314b8a6'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white' font-family='sans-serif'>H</text></svg>",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
   "icons": [
-    { "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f8ef7'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>SS</text></svg>", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f8ef7'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>SS</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%234f8ef7'/><text x='256' y='320' font-size='250' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>SS</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
   ]
 }

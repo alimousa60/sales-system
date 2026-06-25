@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
   name: { type: String, required: true },
   email: { type: String, unique: true, sparse: true },
-  role: { type: String, enum: ['system_admin', 'admin', 'manager', 'user', 'sales', 'inventory'], default: 'user' },
+  role: { type: String, default: 'user' },
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', sparse: true },
   status: { type: String, enum: ['active', 'inactive', 'suspended'], default: 'active' },

@@ -1,4 +1,4 @@
-/* ═══ SMART ITEM SEARCH (Filter select) ═══ */
+﻿/* ═══ SMART ITEM SEARCH (Filter select) ═══ */
 function filterItemSelect(val,prefix){
   const sel=G(prefix+'-item-sel');
   if(!sel)return;
@@ -39,25 +39,28 @@ function itemSearch(val,prefix){
   }
   const results=_itemSearchResults[prefix];
   if(!results.length){
-    dd.innerHTML=`<div class="item-search-empty">لا توجد نتائج — اضغط Enter لإضافة صنف جديد</div>`;
+    dd.innerHTML=`<div class="item-search-empty">${t('inv_no_results_add')}</div>`;
     dd.classList.add('on');
     return;
   }
   const t=term;
   dd.innerHTML=results.map((x,i)=>{
-    let nameHtml=x.name;
+    let nameHtml=escapeHtml(x.name);
     if(t){
-      const idx=x.name.toLowerCase().indexOf(t);
-      if(idx>=0) nameHtml=x.name.substring(0,idx)+'<mark>'+x.name.substring(idx,idx+t.length)+'</mark>'+x.name.substring(idx+t.length);
+      const safeName=escapeHtml(x.name);
+      const lowerName=safeName.toLowerCase();
+      const lowerTerm=t.toLowerCase();
+      const idx=lowerName.indexOf(lowerTerm);
+      if(idx>=0) nameHtml=safeName.substring(0,idx)+'<mark>'+safeName.substring(idx,idx+lowerTerm.length)+'</mark>'+safeName.substring(idx+lowerTerm.length);
     }
-    const stock=x.qty>0?`<span class="isb-stock">${x.qty} ${x.unit||''}</span>`:`<span class="isb-stock out">نفد</span>`;
+    const stock=x.qty>0?`<span class="isb-stock">${x.qty} ${escapeHtml(x.unit)||''}</span>`:`<span class="isb-stock out">نفد</span>`;
     return`<div class="item-search-row${i===_itemSearchIdx[prefix]?' active':''}" onmousedown="selectItem(${x.id},'${prefix}')" data-idx="${i}">
       <div class="isb-info">
         <div class="isb-name">${nameHtml}</div>
-        <div class="isb-meta">${x.code||''} ${x.barcode?'• '+x.barcode:''} ${x.cat?'• '+x.cat:''}</div>
+        <div class="isb-meta">${escapeHtml(x.code||'')} ${x.barcode?'• '+escapeHtml(x.barcode):''} ${x.cat?'• '+escapeHtml(x.cat):''}</div>
       </div>
       <div class="isb-right">
-        <div class="isb-price">${fmt(x.sell)} د.ل</div>
+        <div class="isb-price">${fmt(x.sell)} ${t('currency_sym')}</div>
         ${stock}
       </div>
     </div>`;
@@ -130,27 +133,70 @@ function closeItemSearch(prefix){
 }
 
 /* ═══ ITEMS ═══ */
+let _editingItemId=null;
+function openNewItem(){
+  _editingItemId=null;
+  G('fi-code').value='';G('fi-barcode').value='';G('fi-name').value='';
+  G('fi-buy').value='';G('fi-sell').value='';G('fi-qty').value='';
+  G('fi-reorder').value='5';G('fi-unit').value='قطعة';G('fi-cat').value='عام';
+  G('m-item-title').textContent=t('inv_new_title');
+  G('m-item-save-btn').innerHTML='<i class="ti ti-device-floppy"></i> '+t('inv_save_item');
+  openModal('m-item');
+}
 function saveItem(){
   const name=G('fi-name').value.trim();
-  if(!name){toast('أدخل اسم الصنف','error');return}
-  const item={
-    id:Date.now(),
-    code:G('fi-code').value||'ITM'+String(DB.items.length+1).padStart(3,'0'),
-    barcode:G('fi-barcode').value.trim(),
-    name,
-    buy:parseFloat(G('fi-buy').value)||0,
-    sell:parseFloat(G('fi-sell').value)||0,
-    qty:parseFloat(G('fi-qty').value)||0,
-    reorder:parseFloat(G('fi-reorder').value)||5,
-    unit:G('fi-unit').value||'قطعة',
-    cat:G('fi-cat').value||'عام'
-  };
-  DB.items.push(item);
-  addLog('إضافة صنف',`"${name}" — سعر البيع: ${fmt(item.sell)} د.ل`,'#2dd17e');
+  if(!name){toast(t('inv_name_ph'),'error');return}
+  if(_editingItemId){
+    const item=DB.items.find(x=>x.id===_editingItemId);
+    if(!item){toast(t('inv_not_found'),'error');return}
+    item.code=G('fi-code').value||item.code;
+    item.barcode=G('fi-barcode').value.trim();
+    item.name=name;
+    item.buy=parseFloat(G('fi-buy').value)||0;
+    item.sell=parseFloat(G('fi-sell').value)||0;
+    item.qty=parseFloat(G('fi-qty').value)||0;
+    item.reorder=parseFloat(G('fi-reorder').value)||5;
+    item.unit=G('fi-unit').value||'قطعة';
+    item.cat=G('fi-cat').value||'عام';
+    addLog(t('inv_edit'),`"${name}" — '+t('inv_sell_price')+': ${fmt(item.sell)}  ${t('currency_sym')}`,'#4f8ef7');
+    toast(t('inv_item_updated')+' "'+name+'"',{icon:'ti-package',title:t('inv_updated_done')});
+  } else {
+    const item={
+      id:Date.now(),
+      code:G('fi-code').value||'ITM'+String(DB.items.length+1).padStart(3,'0'),
+      barcode:G('fi-barcode').value.trim(),
+      name,
+      buy:parseFloat(G('fi-buy').value)||0,
+      sell:parseFloat(G('fi-sell').value)||0,
+      qty:parseFloat(G('fi-qty').value)||0,
+      reorder:parseFloat(G('fi-reorder').value)||5,
+      unit:G('fi-unit').value||'قطعة',
+      cat:G('fi-cat').value||'عام'
+    };
+    DB.items.push(item);
+    addLog(t('inv_add'),`"${name}" — '+t('inv_sell_price')+': ${fmt(item.sell)}  ${t('currency_sym')}`,'#2dd17e');
+    toast(`"${name}" — '+t('inv_sell_price')+': ${fmt(item.sell)}  ${t('currency_sym')}`,{icon:'ti-package',title:t('inv_new_title')})
+  }
+  _editingItemId=null;
   closeModal('m-item');renderItems();
   updateStats();
-  broadcastChange('items', { id: item.id, name });
-  toast(`"${name}" — سعر البيع: ${fmt(item.sell)} د.ل`,{icon:'ti-package',title:'صنف جديد'})
+  broadcastChange('items', { name });
+}
+function editItem(id){
+  const item=DB.items.find(x=>x.id===id);if(!item)return;
+  _editingItemId=id;
+  G('fi-code').value=item.code||'';
+  G('fi-barcode').value=item.barcode||'';
+  G('fi-name').value=item.name||'';
+  G('fi-buy').value=item.buy||'';
+  G('fi-sell').value=item.sell||'';
+  G('fi-qty').value=item.qty||'';
+  G('fi-reorder').value=item.reorder||'';
+  G('fi-unit').value=item.unit||'قطعة';
+  G('fi-cat').value=item.cat||'عام';
+  G('m-item-title').textContent=t('inv_edit');
+  G('m-item-save-btn').innerHTML='<i class="ti ti-device-floppy"></i> '+t('pur_save_edits');
+  openModal('m-item');
 }
 function filterItems(q){renderItems(q)}
 function renderItems(q=''){
@@ -160,7 +206,7 @@ function renderItems(q=''){
   const catSel=G('inv-cat-filter');
   if(catSel&&!catSel._populated){
     const cats=[...new Set(DB.items.map(x=>x.cat).filter(Boolean))].sort();
-    catSel.innerHTML='<option value="">كل الفئات</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    catSel.innerHTML='<option value="">'+t('hrm_all_departments')+'</option>'+cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     catSel._populated=true;
   }
   let full=DB.items;
@@ -171,7 +217,7 @@ function renderItems(q=''){
   else if(stockFilter==='ok'){full=full.filter(x=>x.qty>x.reorder)}
   const {data,pages,page,start}=getPageData('inv-tb', full);
   const tb=G('inv-tb');
-  if(!full.length){tb.innerHTML=emptyRow(10,term?'لا توجد نتائج لهذا البحث':'لا توجد أصناف — أضف صنفاً جديداً.');renderPag('inv-tb',0,renderItems);return}
+  if(!full.length){tb.innerHTML=emptyRow(10,term?t('lbl_search_results'):t('inv_empty'));renderPag('inv-tb',0,renderItems);return}
   tb.innerHTML=data.map(x=>{
     const low=x.qty<=x.reorder;
     const diff=x.qty - x.reorder;
@@ -187,7 +233,7 @@ function renderItems(q=''){
       <td class="td-mono">${diffLabel}</td>
       <td style="color:var(--text-muted)">${x.unit}</td>
       <td>${st}</td>
-      <td><div class="td-actions"><button class="btn btn-sm btn-secondary btn-icon" onclick="printItemLabel(${x.id})" title="طباعة ملصق"><i class="ti ti-barcode"></i></button><button class="btn btn-sm btn-danger btn-icon" onclick="delItem(${x.id})" title="حذف"><i class="ti ti-trash"></i></button></div></td>
+      <td><div class="td-actions"><button class="btn btn-sm btn-icon" onclick="editItem(${x.id})" title="تعديل"><i class="ti ti-pencil"></i></button><button class="btn btn-sm btn-secondary btn-icon" onclick="printItemLabel(${x.id})" title="طباعة ملصق"><i class="ti ti-barcode"></i></button><button class="btn btn-sm btn-danger btn-icon" onclick="delItem(${x.id})" title="حذف"><i class="ti ti-trash"></i></button></div></td>
     </tr>`
   }).join('');
   renderPag('inv-tb',full.length,renderItems)
@@ -195,7 +241,7 @@ function renderItems(q=''){
 function delItem(id){
   const it=DB.items.find(x=>x.id===id);
   if(!confirm(`حذف الصنف "${it?.name}"?`))return;
-  addLog('حذف صنف',`"${it?.name}"`,'#f05454');
+  addLog(t('inv_delete'),`"${it?.name}"`,'#f05454');
   DB.items=DB.items.filter(x=>x.id!==id);
   saveState();
   renderItems();updateStats();
@@ -205,7 +251,7 @@ function delItem(id){
 function renderUsers(search=''){
   const tb=G('user-tb');
   if(!tb)return;
-  if(!requireAdmin()){tb.innerHTML=emptyRow(4,'هذه الصفحة متاحة للمشرف فقط');renderPag('user-tb',0,renderUsers);return}
+  if(!requireAdmin()){tb.innerHTML=emptyRow(4,t('users_admin_only'));renderPag('user-tb',0,renderUsers);return}
   const term=normalizeText(search);
   const roleFilter=G('user-role-filter')?.value||'';
   const statusFilter=G('user-status-filter')?.value||'';
@@ -213,7 +259,7 @@ function renderUsers(search=''){
   if(term){full=full.filter(u=>normalizeText(u.name).includes(term)||normalizeText(u.username).includes(term)||normalizeText(u.role).includes(term))}
   if(roleFilter){full=full.filter(u=>u.role===roleFilter)}
   if(statusFilter){full=full.filter(u=>{const st=u.status||(u.isActive===false?'inactive':'active');return st===statusFilter})}
-  if(!full.length){tb.innerHTML=emptyRow(4,term?'لا توجد نتائج لهذا البحث':'لا توجد حسابات مستخدمين.');renderPag('user-tb',0,renderUsers);return}
+  if(!full.length){tb.innerHTML=emptyRow(4,term?t('lbl_search_results'):t('users_empty'));renderPag('user-tb',0,renderUsers);return}
   const {data}=getPageData('user-tb', full);
   tb.innerHTML=data.map(u=>{
     const status = u.status || (u.isActive === false ? 'inactive' : 'active');
@@ -236,7 +282,7 @@ function renderUsers(search=''){
 function renderSettings(){
   const co=currentCompany();
   const el=G('settings-company-name');
-  if(el) el.textContent = co?.name || 'المؤسسة غير محددة';
+  if(el) el.textContent = co?.name || t('company_default');
   const sel=G('settings-company-select');
   if(sel){
     popSel('settings-company-select',DB.companies,'id','name','-- اختر شركة --');
@@ -249,7 +295,7 @@ function openCompanyModal(id){
   editingCompanyId = id===null ? null : id || DB.companyId;
   const title = G('m-company-title');
   const co = editingCompanyId===null ? {name:'',address:'',phone:'',note:'',logo:'',taxNo:''} : currentCompany();
-  if(title) title.textContent = editingCompanyId===null ? 'شركة جديدة' : 'بيانات المؤسسة';
+  if(title) title.textContent = editingCompanyId===null ? t('company_add') : t('company_update');
   G('co-name').value=co.name||'';
   G('co-address').value=co.address||'';
   G('co-phone').value=co.phone||'';
@@ -301,7 +347,7 @@ async function saveUser(){
   const password=G('uu-pass').value;
   const name=G('uu-name').value.trim();
   const role=G('uu-role').value;
-  if(!username||!password||!name){toast('املأ جميع الحقول المطلوبة','error');return}
+  if(!username||!password||!name){toast(t('inv_fill_required'),'error');return}
   try{
     const resp=await fetch(`${API_BASE_URL}/users`,{
       method:'POST',
@@ -310,7 +356,7 @@ async function saveUser(){
     });
     const payload=await resp.json();
     if(!resp.ok){
-      toast(payload?.message || payload?.status || 'فشل إنشاء المستخدم','error');
+      toast(payload?.message || payload?.status || t('user_create_fail'),'error');
       return;
     }
     const createdUser = payload.user || payload.data || payload;
@@ -325,20 +371,20 @@ async function saveUser(){
     closeModal('m-user');
     renderUsers();
     broadcastChange('users', { name, role });
-    toast(`تم إضافة المستخدم ${name}`)
+    toast(t('user_add')+' '+name)
   }catch(e){
     console.warn('saveUser failed',e);
-    toast('فشل الاتصال بخادم المستخدمين','error');
+    toast(t('user_conn_fail'),'error');
   }
 }
 async function delUser(id){
   if(!requireAdmin())return;
-  if(!id){toast('تعذر تحديد المستخدم','error');return}
+  if(!id){toast(t('user_conn_fail'),'error');return}
   const user=DB.users.find(u=>String(u.id||u._id)===String(id));
   if(!user)return;
-  if(String(user.id||user._id)===String(currentUser?.id || currentUser?._id)){toast('لا يمكن حذف المستخدم الحالي','error');return}
+  if(String(user.id||user._id)===String(currentUser?.id || currentUser?._id)){toast(t('user_cannot_delete_self'),'error');return}
   const admins=DB.users.filter(u=>['admin','system_admin'].includes(String(u.role).toLowerCase()));
-  if(['admin','system_admin'].includes(String(user.role).toLowerCase()) && admins.length===1){toast('يجب أن يبقى مشرف واحد على الأقل','error');return}
+  if(['admin','system_admin'].includes(String(user.role).toLowerCase()) && admins.length===1){toast(t('user_keep_admin'),'error');return}
   if(!confirm(`حذف المستخدم "${user.name}"?`))return;
   try{
     const resp=await fetch(`${API_BASE_URL}/admin/users/${id}`,{
@@ -347,36 +393,36 @@ async function delUser(id){
     });
     const payload=await resp.json();
     if(!resp.ok){
-      toast(payload?.message || 'فشل حذف المستخدم','error');
+      toast(payload?.message || t('user_create_fail'),'error');
       return;
     }
     DB.users=DB.users.filter(u=>String(u.id||u._id)!==String(id));
     addLog('حذف مستخدم',`"${user.name}"`,'#f05454');
     renderUsers();
     broadcastChange('users', { id, deleted: true });
-    toast(`تم حذف المستخدم ${user.name}`)
+    toast(t('user_deleted')+' '+user.name)
   }catch(e){
     console.warn('delUser failed',e);
-    toast('فشل الاتصال بخادم المستخدمين','error');
+    toast(t('user_conn_fail'),'error');
   }
 }
 
 /* ═══ CUSTOMERS ═══ */
 function saveCust(){
-  const name=G('cu-name').value.trim();if(!name){toast('أدخل اسم الزبون','error');return}
+  const name=G('cu-name').value.trim();if(!name){toast(t('cust_name_ph'),'error');return}
   const openBal=parseFloat(G('cu-bal').value)||0;
   const id=Date.now();
   DB.custs.push({id,name,phone:G('cu-phone').value,addr:G('cu-addr').value,openBal});
-  addLog('إضافة زبون',`"${name}" رصيد افتتاحي: ${fmt(openBal)} د.ل`,'#9b72f7');
+  addLog('إضافة زبون',`"${name}" رصيد افتتاحي: ${fmt(openBal)}  ${t('currency_sym')}`,'#9b72f7');
   closeModal('m-cust');renderCusts();
   broadcastChange('customers', { id, name });
-  toast(`"${name}" — رصيد افتتاحي: ${fmt(openBal)} د.ل`,{icon:'ti-user',title:'زبون جديد'})
+  toast(`"${name}" — ${t('col_opening_balance')}: ${fmt(openBal)}  ${t('currency_sym')}`,{icon:'ti-user',title:t('cust_new')})
 }
 function renderCusts(search=''){
   const tb=G('cust-tb');
   const term=normalizeText(search);
   const full=term?DB.custs.filter(c=>normalizeText(c.name).includes(term)||normalizeText(c.phone).includes(term)||normalizeText(c.addr).includes(term)):DB.custs;
-  if(!full.length){tb.innerHTML=emptyRow(6,term?'لا توجد نتائج لهذا البحث':'لا يوجد زبائن.');renderPag('cust-tb',0,renderCusts);return}
+  if(!full.length){tb.innerHTML=emptyRow(6,term?t('lbl_search_results'):t('nav_customers'));renderPag('cust-tb',0,renderCusts);return}
   const {data}=getPageData('cust-tb', full);
   tb.innerHTML=data.map(c=>{
     const recv=custReceivable(c);
@@ -384,8 +430,8 @@ function renderCusts(search=''){
     return`<tr>
       <td class="td-bold">${c.name}</td>
       <td class="td-mono">${c.phone||'—'}</td>
-      <td class="td-mono" style="color:${recv>0?'var(--red)':'var(--green)'};font-weight:700">${fmt(recv)} د.ل</td>
-      <td class="td-mono">${fmt(totalSales)} د.ل</td>
+      <td class="td-mono" style="color:${recv>0?'var(--red)':'var(--green)'};font-weight:700">${fmt(recv)} ${t('currency_sym')}</td>
+      <td class="td-mono">${fmt(totalSales)} ${t('currency_sym')}</td>
       <td><span class="badge b-green">نشط</span></td>
       <td><button class="btn btn-sm" onclick="openSOA(${c.id})"><i class="ti ti-file-description"></i> كشف</button></td>
     </tr>`
@@ -396,18 +442,18 @@ function openSOA(cid){document.querySelector('.nav-item[data-page="soa"]').click
 
 /* ═══ SUPPLIERS ═══ */
 function saveSup(){
-  const name=G('su-name').value.trim();if(!name){toast('أدخل اسم المورد','error');return}
+  const name=G('su-name').value.trim();if(!name){toast(t('sup_name_ph'),'error');return}
   DB.sups.push({id:Date.now(),name,phone:G('su-phone').value,addr:G('su-addr').value});
   addLog('إضافة مورد',`"${name}"`,'#22d3ee');
   closeModal('m-sup');renderSups();
   broadcastChange('suppliers', { name });
-  toast(`"${name}"`,{icon:'ti-truck',title:'مورد جديد'})
+  toast('"'+name+'"',{icon:'ti-truck',title:t('sup_new')})
 }
 function renderSups(search=''){
   const tb=G('sup-tb');
   const term=normalizeText(search);
   const full=term?DB.sups.filter(s=>normalizeText(s.name).includes(term)||normalizeText(s.phone).includes(term)||normalizeText(s.addr).includes(term)):DB.sups;
-  if(!full.length){tb.innerHTML=emptyRow(6,term?'لا توجد نتائج لهذا البحث':'لا يوجد موردون.');renderPag('sup-tb',0,renderSups);return}
+  if(!full.length){tb.innerHTML=emptyRow(6,term?t('lbl_search_results'):t('nav_suppliers'));renderPag('sup-tb',0,renderSups);return}
   const {data}=getPageData('sup-tb', full);
   tb.innerHTML=data.map(s=>{
     const bal=supBalance(s);
@@ -416,10 +462,11 @@ function renderSups(search=''){
       <td class="td-bold">${s.name}</td>
       <td class="td-mono">${s.phone||'—'}</td>
       <td style="color:var(--text-muted)">${s.addr||'—'}</td>
-      <td class="td-mono" style="color:${bal>0?'var(--red)':'var(--green)'};font-weight:700">${fmt(bal)} د.ل</td>
-      <td class="td-mono">${fmt(totalPur)} د.ل</td>
+      <td class="td-mono" style="color:${bal>0?'var(--red)':'var(--green)'};font-weight:700">${fmt(bal)} ${t('currency_sym')}</td>
+      <td class="td-mono">${fmt(totalPur)} ${t('currency_sym')}</td>
       <td><span class="badge b-green">نشط</span></td>
     </tr>`
   }).join('');
   renderPag('sup-tb',full.length,renderSups)
 }
+

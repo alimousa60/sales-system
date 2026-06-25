@@ -7,6 +7,7 @@ const Payroll = require('../models/payroll.model');
 const Performance = require('../models/performance.model');
 const { logAudit } = require('../utils/helpers');
 const logger = require('../utils/logger');
+const { requireFields, maxLength, positiveNumber, validEmail, validEnum, maxArrayLength, VALID_CONTRACT_TYPES, VALID_ATTENDANCE_STATUS } = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -55,11 +56,12 @@ router.get('/employees', hrmGuard('hrm', 'read'), async (req, res) => {
     if (department) filter.department = department;
     if (contractType) filter.contractType = contractType;
     if (search) {
+      const safeSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { nameAr: { $regex: search, $options: 'i' } },
-        { employeeNo: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { nameAr: { $regex: safeSearch, $options: 'i' } },
+        { employeeNo: { $regex: safeSearch, $options: 'i' } },
+        { phone: { $regex: safeSearch, $options: 'i' } }
       ];
     }
     const employees = await Employee.find(filter).sort('-createdAt');
@@ -81,7 +83,22 @@ router.get('/employees/:id', hrmGuard('hrm', 'read'), async (req, res) => {
   }
 });
 
-router.post('/employees', hrmGuard('hrm', 'create'), async (req, res) => {
+router.post('/employees', hrmGuard('hrm', 'create'),
+  requireFields('name', 'employeeNo'),
+  maxLength('name', 100),
+  maxLength('employeeNo', 50),
+  maxLength('phone', 20),
+  maxLength('nationalId', 30),
+  maxLength('address', 200),
+  maxLength('notes', 500),
+  maxLength('position', 100),
+  maxLength('department', 100),
+  maxLength('bank', 100),
+  maxLength('bankAccount', 50),
+  validEmail,
+  validEnum('contractType', VALID_CONTRACT_TYPES),
+  positiveNumber('hourlyRate', 'overtimeRate', 'monthlySalary'),
+  async (req, res) => {
   try {
     const { name, employeeNo, contractType, hourlyRate, overtimeRate, monthlySalary, startDate, position, department, phone, email, nationalId, address, notes, nameAr, bank, bankAccount, workHours } = req.body;
     if (!name || !employeeNo) return res.status(400).json({ status: 'error', message: 'الاسم ورقم الموظف مطلوبان' });
@@ -103,7 +120,20 @@ router.post('/employees', hrmGuard('hrm', 'create'), async (req, res) => {
   }
 });
 
-router.patch('/employees/:id', hrmGuard('hrm', 'update'), async (req, res) => {
+router.patch('/employees/:id', hrmGuard('hrm', 'update'),
+  maxLength('name', 100),
+  maxLength('phone', 20),
+  maxLength('nationalId', 30),
+  maxLength('address', 200),
+  maxLength('notes', 500),
+  maxLength('position', 100),
+  maxLength('department', 100),
+  maxLength('bank', 100),
+  maxLength('bankAccount', 50),
+  validEmail,
+  validEnum('contractType', VALID_CONTRACT_TYPES),
+  positiveNumber('hourlyRate', 'overtimeRate', 'monthlySalary'),
+  async (req, res) => {
   try {
     const allowed = ['name', 'nameAr', 'phone', 'email', 'address', 'position', 'department', 'contractType', 'hourlyRate', 'overtimeRate', 'monthlySalary', 'status', 'notes', 'endDate', 'nationalId', 'bank', 'bankAccount', 'workHours'];
     const updates = {};
@@ -139,7 +169,11 @@ router.get('/attendance', hrmGuard('hrm', 'read'), async (req, res) => {
   }
 });
 
-router.post('/attendance', hrmGuard('hrm', 'create'), async (req, res) => {
+router.post('/attendance', hrmGuard('hrm', 'create'),
+  requireFields('employeeId', 'date'),
+  validEnum('status', VALID_ATTENDANCE_STATUS),
+  maxLength('notes', 500),
+  async (req, res) => {
   try {
     const { employeeId, date, checkIn, checkOut, totalHours, overtimeHours, status, notes } = req.body;
     if (!employeeId || !date) return res.status(400).json({ status: 'error', message: 'الموظف والتاريخ مطلوبان' });
@@ -183,7 +217,9 @@ router.post('/attendance', hrmGuard('hrm', 'create'), async (req, res) => {
   }
 });
 
-router.post('/attendance/bulk', hrmGuard('hrm', 'create'), async (req, res) => {
+router.post('/attendance/bulk', hrmGuard('hrm', 'create'),
+  maxArrayLength('records', 100),
+  async (req, res) => {
   try {
     const { records } = req.body;
     if (!Array.isArray(records) || !records.length) return res.status(400).json({ status: 'error', message: 'لا توجد سجلات' });
@@ -256,7 +292,12 @@ router.get('/advances', hrmGuard('hrm', 'read'), async (req, res) => {
   }
 });
 
-router.post('/advances', hrmGuard('hrm', 'create'), async (req, res) => {
+router.post('/advances', hrmGuard('hrm', 'create'),
+  requireFields('employeeId', 'type', 'amount'),
+  positiveNumber('amount'),
+  validEnum('type', ['advance', 'loan']),
+  maxLength('purpose', 500),
+  async (req, res) => {
   const session = await trySession();
   try {
     const { employeeId, type, amount, monthlyInstallment, installmentsTotal, purpose, date, approvedBy } = req.body;
@@ -314,7 +355,9 @@ router.post('/advances', hrmGuard('hrm', 'create'), async (req, res) => {
   }
 });
 
-router.post('/advances/:id/repay', hrmGuard('hrm', 'update'), async (req, res) => {
+router.post('/advances/:id/repay', hrmGuard('hrm', 'update'),
+  positiveNumber('amount'),
+  async (req, res) => {
   const session = await trySession();
   try {
     const advanceQ = Advance.findOne({ _id: req.params.id, companyId: req.user.companyId, status: 'active' });
@@ -378,7 +421,10 @@ router.get('/cash-ledger', hrmGuard('hrm', 'read'), async (req, res) => {
   }
 });
 
-router.post('/cash-ledger/adjust', hrmGuard('hrm', 'update'), async (req, res) => {
+router.post('/cash-ledger/adjust', hrmGuard('hrm', 'update'),
+  requireFields('amount', 'reason'),
+  maxLength('reason', 500),
+  async (req, res) => {
   try {
     const { amount, reason, date } = req.body;
     if (!amount || !reason) return res.status(400).json({ status: 'error', message: 'المبلغ والسبب مطلوبان' });
@@ -413,7 +459,9 @@ router.get('/payroll', hrmGuard('hrm_payroll', 'read'), async (req, res) => {
   }
 });
 
-router.post('/payroll/generate', hrmGuard('hrm_payroll', 'create'), async (req, res) => {
+router.post('/payroll/generate', hrmGuard('hrm_payroll', 'create'),
+  requireFields('period'),
+  async (req, res) => {
   const session = await trySession();
   try {
     const { period } = req.body;
@@ -565,7 +613,9 @@ router.post('/payroll/:id/pay', hrmGuard('hrm_payroll', 'pay'), async (req, res)
   }
 });
 
-router.post('/payroll/bulk-pay', hrmGuard('hrm_payroll', 'pay'), async (req, res) => {
+router.post('/payroll/bulk-pay', hrmGuard('hrm_payroll', 'pay'),
+  maxArrayLength('payrollIds', 50),
+  async (req, res) => {
   const session = await trySession();
   try {
     const { payrollIds, date } = req.body;
@@ -653,7 +703,11 @@ router.get('/performance', hrmGuard('hrm_performance', 'read'), async (req, res)
   }
 });
 
-router.post('/performance', hrmGuard('hrm_performance', 'create'), async (req, res) => {
+router.post('/performance', hrmGuard('hrm_performance', 'create'),
+  requireFields('employeeId'),
+  positiveNumber('quality', 'productivity', 'teamwork', 'attendance'),
+  maxLength('notes', 500),
+  async (req, res) => {
   try {
     const { employeeId, date, quality, productivity, teamwork, attendance, average, grade, notes } = req.body;
     if (!employeeId) return res.status(400).json({ status: 'error', message: 'الموظف مطلوب' });

@@ -1,4 +1,5 @@
-/* ═══ SALES INVOICE ═══ */
+﻿/* ═══ SALES INVOICE ═══ */
+let _editingInvId=null;
 function onSiItemSelect(){autoSellPrice()}
 function autoSellPrice(){
   const id=parseInt(G('si-item-sel').value);
@@ -12,15 +13,15 @@ function calcSiLine(){
 function addSiLine(){
   const id=parseInt(G('si-item-sel').value);
   const item=DB.items.find(x=>x.id===id);
-  if(!item){toast('اختر صنفاً','error');return}
+  if(!item){toast(t('inv_choose_item'),'error');return}
   const qty=parseFloat(G('si-qty').value)||1;
   const price=parseFloat(G('si-price').value)||item.sell;
   const disc=parseFloat(G('si-disc').value)||0;
-  if(qty<=0){toast('أدخل كمية صحيحة','error');return}
-  if(price<=0){toast('أدخل سعراً صالحاً','error');return}
-  if(disc<0){toast('الخصم لا يمكن أن يكون سالباً','error');return}
-  if(disc>qty*price){toast('الخصم أكبر من قيمة السطر','error');return}
-  if(qty>item.qty){toast('الرصيد الحالي أقل من الكمية المطلوبة. سيتم التحقق عند التسليم.','info')}
+  if(qty<=0){toast(t('inv_enter_qty'),'error');return}
+  if(price<=0){toast(t('inv_enter_price'),'error');return}
+  if(disc<0){toast(t('inv_neg_discount'),'error');return}
+  if(disc>qty*price){toast(t('inv_discount_exceeds'),'error');return}
+  if(qty>item.qty){toast(t('sales_stock_warning'),'info')}
   _siL.push({itemId:id,name:item.name,qty,price,disc,buyPrice:item.buy,total:Math.max(0,qty*price-disc)});
   renderSiL();
   G('si-qty').value='1';G('si-disc').value='0';G('si-price').value='';G('si-ltot').value='';G('si-item-sel').value='';if(G('si-item-search'))G('si-item-search').value='';filterItemSelect('','si');
@@ -28,37 +29,60 @@ function addSiLine(){
 function renderSiL(){
   const tb=G('si-lines-tb');
   tb.innerHTML=_siL.length?_siL.map((l,i)=>`<tr>
-    <td class="td-bold">${l.name}</td>
+    <td class="td-bold">${escapeHtml(l.name)}</td>
     <td class="td-mono">${l.qty}</td>
     <td class="td-mono">${fmt(l.price)}</td>
     <td class="td-mono" style="color:var(--red)">${l.disc>0?fmt(l.disc):'—'}</td>
     <td class="td-mono" style="color:var(--green);font-weight:700">${fmt(l.total)}</td>
     <td><button class="btn btn-sm btn-danger btn-icon" onclick="_siL.splice(${i},1);renderSiL()"><i class="ti ti-x"></i></button></td>
-  </tr>`).join(''):emptyRow(6,'أضف صنفاً');
+  </tr>`).join(''):emptyRow(6,t('inv_add_item'));
   const tot=_siL.reduce((s,l)=>s+l.total,0);
-  G('si-tot').textContent=fmt(tot)+' د.ل';
+  G('si-tot').textContent=fmt(tot)+' '+t('currency_sym');
   G('si-tafseet').textContent=tot>0?numToWords(tot):'—'
 }
 function saveInv(){
-  if(!G('si-cust').value){toast('اختر الزبون','error');return}
-  if(!_siL.length){toast('أضف صنفاً على الأقل','error');return}
+  if(!G('si-cust').value){toast(t('sales_choose_customer'),'error');return}
+  if(!_siL.length){toast(t('inv_add_item'),'error');return}
   const total=_siL.reduce((s,l)=>s+l.total,0);
   const custId=parseInt(G('si-cust').value);
   const cust=DB.custs.find(x=>x.id===custId);
   const num=G('si-num').value,date=G('si-date').value;
-  // SAVE: no cash, no inventory. Just create the invoice (receivable)
-  DB.invs.push({
-    id:DB.cI,num,custId,custName:cust?.name||'—',date,
-    lines:[..._siL],total,
-    dlvStatus:'pending',
-    createdAt:date
-  });
-  DB.cI++;
-  addLog('فاتورة بيع (ذمة مدينة)',`${num} — الزبون "${cust?.name}" — ${fmt(total)} د.ل — لا أثر على الخزينة أو المخزون حتى الآن`,'#4f8ef7');
+  if(_editingInvId){
+    const inv=DB.invs.find(x=>x.id===_editingInvId);
+    if(!inv){toast(t('sales_not_found'),'error');return}
+    inv.custId=custId;inv.custName=cust?.name||'—';inv.date=date;
+    inv.lines=[..._siL];inv.total=total;
+    addLog(t('sales_edit'),`${num} — الزبون "${cust?.name}" — ${fmt(total)} ${t('currency_sym')}`,'#f5a623');
+    toast(t('sales_edited')+' '+num,'success',{title:t('inv_updated_done'),icon:'ti-receipt'});
+    _editingInvId=null;
+  } else {
+    DB.invs.push({
+      id:DB.cI,num,custId,custName:cust?.name||'—',date,
+      lines:[..._siL],total,
+      dlvStatus:'pending',
+      createdAt:date
+    });
+    DB.cI++;
+    addLog(t('sales_created'),`${num} — الزبون "${cust?.name}" — ${fmt(total)} ${t('currency_sym')} — لا أثر على الخزينة أو المخزون حتى الآن`,'#4f8ef7');
+    toast(num,'success',{title:t('sales_new_invoice'),icon:'ti-receipt',duration:4000})
+  }
   saveState();
   closeModal('m-invoice');renderSales();updateStats();
   broadcastChange('sales', { num, custName: cust?.name, total });
-  toast(`فاتورة ${num}`,'success',{title:'فاتورة بيع جديدة',icon:'ti-receipt',duration:4000})
+}
+function editInv(invId){
+  if(!requireAdmin())return;
+  const inv=DB.invs.find(x=>x.id===invId);if(!inv)return;
+  if(inv.dlvStatus==='delivered'){toast(t('sales_no_deliver'),'error');return}
+  _editingInvId=invId;
+  _siL=[...inv.lines];
+  G('si-num').value=inv.num;
+  G('si-cust').value=inv.custId||'';
+  G('si-date').value=inv.date;
+  G('si-inv-title').innerHTML='<i class="ti ti-receipt" style="color:var(--accent)"></i> '+t('sales_edit')+' '+escapeHtml(inv.num);
+  G('si-inv-save-btn').innerHTML='<i class="ti ti-device-floppy"></i> '+t('pur_save_edits');
+  renderSiL();
+  openModal('m-invoice');
 }
 function renderSales(search=''){
   const filter=G('sal-filter')?.value||'';
@@ -75,21 +99,22 @@ function renderSales(search=''){
   if(term){full=full.filter(i=>normalizeText(i.num).includes(term)||normalizeText(i.custName).includes(term)||normalizeText(i.date).includes(term));}
   const {data}=getPageData('sal-tb', full);
   const tb=G('sal-tb');
-  if(!full.length){tb.innerHTML=emptyRow(9,term?'لا توجد نتائج لهذا البحث':'لا توجد فواتير.');renderPag('sal-tb',0,renderSales);return}
+  if(!full.length){tb.innerHTML=emptyRow(9,term?t('lbl_search_results'):t('dash_no_invoices'));renderPag('sal-tb',0,renderSales);return}
   tb.innerHTML=data.map(inv=>{
     const paid=invPaid(inv);
     const rem=invRemaining(inv);
     return`<tr>
-      <td class="td-bold" style="color:var(--accent)">${inv.num}</td>
-      <td>${inv.custName}</td>
+      <td class="td-bold" style="color:var(--accent)">${escapeHtml(inv.num)}</td>
+      <td>${escapeHtml(inv.custName)}</td>
       <td class="td-mono">${inv.date}</td>
-      <td class="td-mono" style="font-weight:700">${fmt(inv.total)} د.ل</td>
-      <td class="td-mono" style="color:var(--green)">${fmt(paid)} د.ل</td>
-      <td class="td-mono" style="color:${rem>0?'var(--red)':'var(--text-muted)'}">${rem>0?fmt(rem)+' د.ل':'✓'}</td>
+      <td class="td-mono" style="font-weight:700">${fmt(inv.total)} ${t('currency_sym')}</td>
+      <td class="td-mono" style="color:var(--green)">${fmt(paid)} ${t('currency_sym')}</td>
+      <td class="td-mono" style="color:${rem>0?'var(--red)':'var(--text-muted)'}">${rem>0?fmt(rem)+' '+t('currency_sym'):'✓'}</td>
       <td>${invDlvLabel(inv.dlvStatus)}</td>
       <td>${invPayStatus(inv)}</td>
       <td><div class="td-actions">
         <button class="btn btn-sm btn-icon" onclick="viewInv(${inv.id})" title="عرض"><i class="ti ti-eye"></i></button>
+        ${['admin','system_admin'].includes(currentUser?.role)&&inv.dlvStatus==='pending'?`<button class="btn btn-sm btn-icon" onclick="editInv(${inv.id})" title="تعديل"><i class="ti ti-pencil"></i></button>`:''}
         ${inv.dlvStatus==='pending'?`<button class="btn btn-sm btn-amber btn-icon" onclick="openDeliver(${inv.id})" title="تسليم"><i class="ti ti-truck-delivery"></i></button>`:''}
         ${rem>0.001?`<button class="btn btn-sm btn-success btn-icon" onclick="openCollect(${inv.id})" title="استلام دفعة"><i class="ti ti-cash"></i></button>`:''}
       </div></td>
@@ -119,16 +144,16 @@ function openCollect(invId){
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
       <div><div style="font-size:11px;color:var(--text-muted)">الفاتورة</div><div style="font-weight:700;color:var(--accent)">${inv.num}</div></div>
       <div><div style="font-size:11px;color:var(--text-muted)">الزبون</div><div style="font-weight:600">${inv.custName}</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">الإجمالي</div><div style="font-weight:700">${fmt(inv.total)} د.ل</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">المحصَّل سابقاً</div><div style="font-weight:700;color:var(--green)">${fmt(paid)} د.ل</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">المتبقي</div><div style="font-weight:700;color:var(--red)">${fmt(rem)} د.ل</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">الإجمالي</div><div style="font-weight:700">${fmt(inv.total)} ${t('currency_sym')}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">المحصَّل سابقاً</div><div style="font-weight:700;color:var(--green)">${fmt(paid)} ${t('currency_sym')}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">المتبقي</div><div style="font-weight:700;color:var(--red)">${fmt(rem)} ${t('currency_sym')}</div></div>
     </div>
     <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${Math.min(100,(paid/inv.total)*100).toFixed(1)}%"></div></div>
     <div style="margin-top:10px;padding:8px 10px;background:var(--bg);border-radius:var(--r);font-size:11px;display:flex;gap:16px;flex-wrap:wrap">
-      <span>إجمالي مبيعات الزبون: <strong>${fmt(custTotalSold)} د.ل</strong></span>
-      <span>رصيد افتتاحي: <strong>${fmt(custOpenBal)} د.ل</strong></span>
-      <span>محصَّل ككل: <strong style="color:var(--green)">${fmt(custTotalPaid)} د.ل</strong></span>
-      <span>الذمة الإجمالية: <strong style="color:${custBalance>0?'var(--red)':'var(--green)'}">${fmt(custBalance)} د.ل</strong></span>
+      <span>إجمالي مبيعات الزبون: <strong>${fmt(custTotalSold)} ${t('currency_sym')}</strong></span>
+      <span>رصيد افتتاحي: <strong>${fmt(custOpenBal)} ${t('currency_sym')}</strong></span>
+      <span>محصَّل ككل: <strong style="color:var(--green)">${fmt(custTotalPaid)} ${t('currency_sym')}</strong></span>
+      <span>الذمة الإجمالية: <strong style="color:${custBalance>0?'var(--red)':'var(--green)'}">${fmt(custBalance)} ${t('currency_sym')}</strong></span>
       ${unpaidInvs>1?`<span style="color:var(--amber)">⚠ ${unpaidInvs} فواتير غير مسددة</span>`:''}
     </div>`;
   openModal('m-collect')
@@ -137,9 +162,9 @@ function savePayment(){
   const invId=parseInt(G('col-inv-id').value);
   const inv=DB.invs.find(x=>x.id===invId);if(!inv)return;
   const amount=parseFloat(G('col-amt').value)||0;
-  if(amount<=0){toast('أدخل مبلغاً صحيحاً','error');return}
+  if(amount<=0){toast(t('pay_enter_amount'),'error');return}
   const rem=invRemaining(inv);
-  if(amount>rem+0.001){toast(`المبلغ (${fmt(amount)}) يتجاوز المتبقي (${fmt(rem)})!`,'error');return}
+  if(amount>rem+0.001){toast(t('pay_enter_amount'),'error');return}
   const date=G('col-date').value;
   const checkNum=_colPay==='check'?G('col-check-num').value:'';
   const pId='PAY-'+String(DB.cPay).padStart(5,'0');
@@ -150,25 +175,24 @@ function savePayment(){
     notes:G('col-notes').value,invNum:inv.num
   });
   const modeLabel=_colPay==='cash'?'نقدي':_colPay==='check'?`صك (${checkNum})`:'آجَل';
-  addLog('استلام دفعة (خزينة+)',`${pId} — ${inv.num} — ${inv.custName} — ${fmt(amount)} د.ل — ${modeLabel}`,'#2dd17e');
+  addLog(t('pay_receive'),`${pId} — ${inv.num} — ${inv.custName} — ${fmt(amount)} ${t('currency_sym')} — ${modeLabel}`,'#2dd17e');
   saveState();
   closeModal('m-collect');renderSales();updateStats();renderFin();
   broadcastChange('payments', { pId, invId, amount });
-  toast(`${fmt(amount)} د.ل — ${inv.custName}`,'success',{title:'تم استلام الدفعة',icon:'ti-cash',duration:4000})
+  toast(`${fmt(amount)} ${t('currency_sym')} — ${inv.custName}`,'success',{title:t('pay_received'),icon:'ti-cash',duration:4000})
 }
 
 function deletePayment(payId){
   const pay=DB.payments.find(p=>p.id===payId);if(!pay)return;
-  if(!confirm(`حذف الدفعة ${payId} — ${fmt(pay.amount)} د.ل؟\nسيتم خصم المبلغ من الخزينة.`))return;
+  if(!confirm(`حذف الدفعة ${payId} — ${fmt(pay.amount)} ${t('currency_sym')}؟\nسيتم خصم المبلغ من الخزينة.`))return;
   DB.payments=DB.payments.filter(p=>p.id!==payId);
-  addLog('حذف دفعة',`${payId} — ${pay.invNum} — ${fmt(pay.amount)} د.ل`,'#f05454');
+  addLog('حذف دفعة',`${payId} — ${pay.invNum} — ${fmt(pay.amount)} ${t('currency_sym')}`,'#f05454');
   saveState();
   renderSales();updateStats();renderFin();
   broadcastChange('payments', { payId, deleted: true });
-  toast(`${payId} — ${fmt(pay.amount)} د.ل`,'warning',{title:'تم حذف الدفعة',icon:'ti-trash'})
+  toast(`${payId} — ${fmt(pay.amount)} ${t('currency_sym')}`,'warning',{title:t('pay_deleted'),icon:'ti-trash'})
   const invId=pay.invId;
   if(invId){const inv=DB.invs.find(x=>x.id===invId);if(inv)viewInv(invId)}
-  toast(`تم حذف الدفعة ${payId}`)
 }
 
 /* ═══ STANDALONE COLLECT PAYMENT (from customer) ═══ */
@@ -206,27 +230,27 @@ function renderCollect2Invs(){
   summaryEl.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
       <div><div style="font-size:11px;color:var(--text-muted)">الزبون</div><div style="font-weight:700;color:var(--accent)">${cust.name}</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">إجمالي المبيعات</div><div style="font-weight:700">${fmt(totalSold)} د.ل</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">الرصيد الافتتاحي</div><div style="font-weight:700">${fmt(openBal)} د.ل</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">محصَّل سابقاً</div><div style="font-weight:700;color:var(--green)">${fmt(totalPaid)} د.ل</div></div>
-      <div><div style="font-size:11px;color:var(--text-muted)">المتبقي</div><div style="font-weight:700;color:${balance>0?'var(--red)':'var(--green)'}">${fmt(balance)} د.ل</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">إجمالي المبيعات</div><div style="font-weight:700">${fmt(totalSold)} ${t('currency_sym')}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">الرصيد الافتتاحي</div><div style="font-weight:700">${fmt(openBal)} ${t('currency_sym')}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">محصَّل سابقاً</div><div style="font-weight:700;color:var(--green)">${fmt(totalPaid)} ${t('currency_sym')}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">المتبقي</div><div style="font-weight:700;color:${balance>0?'var(--red)':'var(--green)'}">${fmt(balance)} ${t('currency_sym')}</div></div>
     </div>`;
 
   if(!unpaidInvs.length){
-    invsEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px"><i class="ti ti-check-circle" style="font-size:24px;display:block;margin-bottom:8px;color:var(--green)"></i>جميع فواتير هذا الزبون مسددة</div>';
+    invsEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px"><i class="ti ti-check-circle" style="font-size:24px;display:block;margin-bottom:8px;color:var(--green)"></i>'+t('col_all_paid')+'</div>';
     G('col2-amt').value='';
     return;
   }
 
   invsEl.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px">
-      <span>فواتير غير مسددة: <strong style="color:var(--red)">${fmt(totalUnpaid)} د.ل</strong></span>
+      <span>فواتير غير مسددة: <strong style="color:var(--red)">${fmt(totalUnpaid)} ${t('currency_sym')}</strong></span>
       <span>${unpaidInvs.length} فاتورة</span>
     </div>
     <div class="tbl-wrap"><table style="width:100%;font-size:12px;border-collapse:collapse">
       <thead><tr style="border-bottom:2px solid var(--line)">
         <th style="text-align:right;padding:6px"><label style="cursor:pointer"><input type="checkbox" class="col2-select-all" onchange="toggleCollect2All(this)" checked> الكل</label></th>
-        <th style="text-align:right;padding:6px">الفاتورة</th><th style="text-align:right;padding:6px">التاريخ</th><th style="text-align:right;padding:6px">الإجمالي</th><th style="text-align:right;padding:6px">المدفوع</th><th style="text-align:right;padding:6px">المتبقي</th>
+        <th style="text-align:right;padding:6px">الفاتورة</th><th style="text-align:right;padding:6px">التاريخ</th><th style="text-align:right;padding:6px">${t('print_net_total')}</th><th style="text-align:right;padding:6px">المدفوع</th><th style="text-align:right;padding:6px">المتبقي</th>
       </tr></thead>
       <tbody>${unpaidInvs.map(inv=>{
         const rem=invRemaining(inv);
@@ -234,15 +258,15 @@ function renderCollect2Invs(){
           <td style="padding:6px"><input type="checkbox" class="col2-inv-cb" data-inv-id="${inv.id}" data-rem="${rem}" onchange="recalcCollect2Preview()" checked></td>
           <td style="padding:6px;font-weight:600;color:var(--accent)">${inv.num}</td>
           <td style="padding:6px" class="td-mono">${inv.date}</td>
-          <td style="padding:6px" class="td-mono">${fmt(inv.total)} د.ل</td>
-          <td style="padding:6px" class="td-mono" style="color:var(--green)">${fmt(invPaid(inv))} د.ل</td>
-          <td style="padding:6px" class="td-mono" style="color:var(--red);font-weight:700">${fmt(rem)} د.ل</td>
+          <td style="padding:6px" class="td-mono">${fmt(inv.total)} ${t('currency_sym')}</td>
+          <td style="padding:6px;color:var(--green)" class="td-mono">${fmt(invPaid(inv))} ${t('currency_sym')}</td>
+          <td style="padding:6px;color:var(--red);font-weight:700" class="td-mono">${fmt(rem)} ${t('currency_sym')}</td>
         </tr>`
       }).join('')}</tbody>
     </table></div>
     <div style="margin-top:6px;padding:6px 10px;background:var(--bg);border-radius:var(--r);font-size:12px;display:flex;justify-content:space-between">
-      <span>إجمالي المتبقي المحدد: <strong style="color:var(--red)" id="col2-total-unpaid">${fmt(totalUnpaid)} د.ل</strong></span>
-      <span>المتبقي بعد الدفع: <strong id="col2-after-pay" style="color:var(--red)">${fmt(totalUnpaid)} د.ل</strong></span>
+      <span>إجمالي المتبقي المحدد: <strong style="color:var(--red)" id="col2-total-unpaid">${fmt(totalUnpaid)} ${t('currency_sym')}</strong></span>
+      <span>المتبقي بعد الدفع: <strong id="col2-after-pay" style="color:var(--red)">${fmt(totalUnpaid)} ${t('currency_sym')}</strong></span>
     </div>`;
 }
 
@@ -255,19 +279,19 @@ function recalcCollect2Preview(){
   const amt=parseFloat(G('col2-amt').value)||0;
   let totalUnpaid=0;
   document.querySelectorAll('.col2-inv-cb:checked').forEach(cb=>{totalUnpaid+=parseFloat(cb.dataset.rem)||0});
-  const el1=G('col2-total-unpaid');if(el1)el1.textContent=fmt(totalUnpaid)+' د.ل';
+  const el1=G('col2-total-unpaid');if(el1)el1.textContent=fmt(totalUnpaid)+' '+t('currency_sym');
   const el2=G('col2-after-pay');if(el2){
     const after=Math.max(0,totalUnpaid-amt);
-    el2.textContent=fmt(after)+' د.ل';
+    el2.textContent=fmt(after)+' '+t('currency_sym');
     el2.style.color=after>0?'var(--red)':'var(--green)';
   }
 }
 
 function saveCollect2(){
   const custId=parseInt(G('col2-cust').value);
-  const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast('اختر زبوناً','error');return}
+  const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast(t('pay_choose_customer'),'error');return}
   const amount=parseFloat(G('col2-amt').value)||0;
-  if(amount<=0){toast('أدخل مبلغاً صحيحاً','error');return}
+  if(amount<=0){toast(t('pay_enter_amount'),'error');return}
   const date=G('col2-date').value;
   const checkNum=_col2Pay==='check'?G('col2-check-num').value:'';
   const notes=G('col2-notes').value;
@@ -306,11 +330,11 @@ function saveCollect2(){
   }
 
   const applied=amount-remaining;
-  addLog('استلام دفعة (زبون)',`"${cust.name}" — ${fmt(applied)} د.ل — ${_col2Pay}${remaining>0.001?` — ${fmt(remaining)} د.ل لم تُربط`:''}`,'#2d9f6d');
+  addLog(t('pay_customer_label'),`"${cust.name}" — ${fmt(applied)} ${t('currency_sym')} — ${_col2Pay}${remaining>0.001?` — ${fmt(remaining)} ${t('currency_sym')} لم تُربط`:''}`,'#2d9f6d');
   saveState();
   closeModal('m-collect2');renderSales();updateStats();renderFin();
   broadcastChange('payments', { custId, amount: applied });
-  toast(`تم استلام ${fmt(applied)} د.ل من ${cust.name} ✓`);
+  toast(t('pay_received')+' '+fmt(applied)+' '+t('currency_sym')+' — '+cust.name);
 }
 
 function openSettleForCustomer(){
@@ -320,13 +344,13 @@ function openSettleForCustomer(){
     const openBal=parseFloat(c.openBal)||0;
     return(totalSold+openBal-totalPaid)>0.001;
   });
-  if(!unpaidCusts.length){toast('لا يوجد زبائن عليهم رصيد غير مسدد','info');return}
+  if(!unpaidCusts.length){toast(t('pay_no_customers'),'info');return}
   const custNames=unpaidCusts.map((c,i)=>{
     const totalSold=DB.invs.filter(inv=>inv.custId===c.id).reduce((s,inv)=>s+inv.total,0);
     const totalPaid=DB.payments.filter(p=>p.custId===c.id).reduce((s,p)=>s+p.amount,0);
     const openBal=parseFloat(c.openBal)||0;
     const bal=totalSold+openBal-totalPaid;
-    return`${i+1}. ${c.name} (${fmt(bal)} د.ل)`;
+    return`${i+1}. ${c.name} (${fmt(bal)} ${t('currency_sym')})`;
   }).join('\n');
   const choice=prompt('اختر زبوناً (أدخل الرقم):\n'+custNames);
   if(!choice)return;
@@ -342,7 +366,7 @@ function openSettlement(custId){
     const invId=G('view-inv-inv-id')?.value;
     if(invId){const inv=DB.invs.find(x=>x.id===parseInt(invId));if(inv)custId=inv.custId}
   }
-  if(!custId){toast('اختر زبوناً أولاً','error');return}
+  if(!custId){toast(t('pay_choose_customer'),'error');return}
   const cust=DB.custs.find(x=>x.id===custId);if(!cust)return;
   _settleMode='auto';
   G('settle-cust-id').value=custId;
@@ -372,14 +396,14 @@ function renderSettleInvs(custId){
     summaryEl.innerHTML=`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
         <div><div style="font-size:11px;color:var(--text-muted)">الزبون</div><div style="font-weight:700;color:var(--accent)">${cust.name}</div></div>
-        <div><div style="font-size:11px;color:var(--text-muted)">الرصيد الافتتاحي</div><div style="font-weight:700">${fmt(openBal)} د.ل</div></div>
-        <div><div style="font-size:11px;color:var(--text-muted)">إجمالي المبيعات</div><div style="font-weight:700">${fmt(totalOriginal)} د.ل</div></div>
-        <div><div style="font-size:11px;color:var(--text-muted)">محصَّل (دفعات)</div><div style="font-weight:700;color:var(--green)">${fmt(totalPaid)} د.ل</div></div>
-        <div><div style="font-size:11px;color:var(--text-muted)">تسويات سابقة</div><div style="font-weight:700;color:var(--amber)">${fmt(totalSettled)} د.ل</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted)">الرصيد الافتتاحي</div><div style="font-weight:700">${fmt(openBal)} ${t('currency_sym')}</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted)">إجمالي المبيعات</div><div style="font-weight:700">${fmt(totalOriginal)} ${t('currency_sym')}</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted)">محصَّل (دفعات)</div><div style="font-weight:700;color:var(--green)">${fmt(totalPaid)} ${t('currency_sym')}</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted)">تسويات سابقة</div><div style="font-weight:700;color:var(--amber)">${fmt(totalSettled)} ${t('currency_sym')}</div></div>
       </div>`;
   }
   if(!unpaidInvs.length){
-    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px"><i class="ti ti-check-circle" style="font-size:24px;display:block;margin-bottom:8px;color:var(--green)"></i>جميع فواتير هذا الزبون مسددة</div>';
+    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px"><i class="ti ti-check-circle" style="font-size:24px;display:block;margin-bottom:8px;color:var(--green)"></i>'+t('col_all_paid')+'</div>';
     return;
   }
   const invRows=unpaidInvs.map(inv=>{
@@ -395,25 +419,25 @@ function renderSettleInvs(custId){
         <span style="font-weight:600;color:var(--accent)">${inv.num}</span>
       </label></td>
       <td class="td-mono">${inv.date}</td>
-      <td class="td-mono">${fmt(inv.total)} د.ل</td>
-      <td class="td-mono" style="color:var(--green)">${fmt(invPaid(inv))} د.ل</td>
-      <td class="td-mono" style="color:var(--red);font-weight:700">${fmt(rem)} د.ل</td>
-      <td class="td-mono settle-applied" data-inv-id="${inv.id}" style="color:var(--amber);font-weight:700">${_settleMode==='auto'?fmt(applied)+' د.ل':'0.000 د.ل'}</td>
+      <td class="td-mono">${fmt(inv.total)} ${t('currency_sym')}</td>
+      <td class="td-mono" style="color:var(--green)">${fmt(invPaid(inv))} ${t('currency_sym')}</td>
+      <td class="td-mono" style="color:var(--red);font-weight:700">${fmt(rem)} ${t('currency_sym')}</td>
+      <td class="td-mono settle-applied" data-inv-id="${inv.id}" style="color:var(--amber);font-weight:700">${_settleMode==='auto'?fmt(applied)+' '+t('currency_sym'):'0.000 '+t('currency_sym')}</td>
       <td>${_settleMode==='manual'?`<input type="number" class="settle-manual-amt" data-inv-id="${inv.id}" data-rem="${rem}" step="0.001" min="0" max="${rem}" value="0" onchange="recalcSettlePreview()" style="width:90px;font-size:12px;padding:4px 6px">`:''}</td>
     </tr>`
   });
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px">
-      <span>إجمالي غير مسدد: <strong style="color:var(--red)">${fmt(totalUnpaid)} د.ل</strong></span>
+      <span>إجمالي غير مسدد: <strong style="color:var(--red)">${fmt(totalUnpaid)} ${t('currency_sym')}</strong></span>
       <span>${unpaidInvs.length} فواتير</span>
     </div>
     <div class="tbl-wrap"><table style="width:100%;font-size:12px;border-collapse:collapse">
-      <thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:right;padding:6px">الفاتورة</th><th style="text-align:right;padding:6px">التاريخ</th><th style="text-align:right;padding:6px">الإجمالي</th><th style="text-align:right;padding:6px">المدفوع</th><th style="text-align:right;padding:6px">المتبقي</th><th style="text-align:right;padding:6px">يُخصَم</th>${_settleMode==='manual'?'<th style="padding:6px">المبلغ</th>':''}</tr></thead>
+      <thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:right;padding:6px">الفاتورة</th><th style="text-align:right;padding:6px">التاريخ</th><th style="text-align:right;padding:6px">${t('print_net_total')}</th><th style="text-align:right;padding:6px">المدفوع</th><th style="text-align:right;padding:6px">المتبقي</th><th style="text-align:right;padding:6px">يُخصَم</th>${_settleMode==='manual'?'<th style="padding:6px">المبلغ</th>':''}</tr></thead>
       <tbody>${invRows.join('')}</tbody>
     </table></div>
     <div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:var(--r);font-size:12px;display:flex;justify-content:space-between">
-      <span>إجمالي الخصم: <strong style="color:var(--amber)" id="settle-total-display">${fmt(amt)} د.ل</strong></span>
-      <span>المتبقي بعد الخصم: <strong id="settle-remaining-display" style="color:${totalUnpaid-amt>0?'var(--red)':'var(--green)'}">${fmt(Math.max(0,totalUnpaid-amt))} د.ل</strong></span>
+      <span>إجمالي الخصم: <strong style="color:var(--amber)" id="settle-total-display">${fmt(amt)} ${t('currency_sym')}</strong></span>
+      <span>المتبقي بعد الخصم: <strong id="settle-remaining-display" style="color:${totalUnpaid-amt>0?'var(--red)':'var(--green)'}">${fmt(Math.max(0,totalUnpaid-amt))} ${t('currency_sym')}</strong></span>
     </div>`;
 }
 
@@ -433,7 +457,7 @@ function recalcSettlePreview(){
       const rem=parseFloat(cb.dataset.rem);
       const applied=totalUnpaid>0?(rem/totalUnpaid)*amt:0;
       const el=document.querySelector(`.settle-applied[data-inv-id="${invId}"]`);
-      if(el)el.textContent=fmt(Math.min(applied,rem))+' د.ل';
+      if(el)el.textContent=fmt(Math.min(applied,rem))+' '+t('currency_sym');
     });
   } else {
     let totalManual=0;
@@ -443,12 +467,12 @@ function recalcSettlePreview(){
       inp.value=val;
       totalManual+=val;
       const el=document.querySelector(`.settle-applied[data-inv-id="${inp.dataset.invId}"]`);
-      if(el)el.textContent=fmt(val)+' د.ل';
+      if(el)el.textContent=fmt(val)+' '+t('currency_sym');
     });
   }
   const displayedTotal=_settleMode==='auto'?amt:calcSettleManualTotal();
-  const el1=G('settle-total-display');if(el1)el1.textContent=fmt(displayedTotal)+' د.ل';
-  const el2=G('settle-remaining-display');if(el2){el2.textContent=fmt(Math.max(0,totalUnpaid-displayedTotal))+' د.ل';el2.style.color=totalUnpaid-displayedTotal>0?'var(--red)':'var(--green)'}
+  const el1=G('settle-total-display');if(el1)el1.textContent=fmt(displayedTotal)+' '+t('currency_sym');
+  const el2=G('settle-remaining-display');if(el2){el2.textContent=fmt(Math.max(0,totalUnpaid-displayedTotal))+' '+t('currency_sym');el2.style.color=totalUnpaid-displayedTotal>0?'var(--red)':'var(--green)'}
 }
 
 function calcSettleTotalUnpaid(){
@@ -465,19 +489,19 @@ function calcSettleManualTotal(){
 
 function saveSettlement(){
   const custId=parseInt(G('settle-cust-id').value);
-  const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast('خطأ في الزبون','error');return}
+  const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast(t('pay_customer_err'),'error');return}
   const amt=parseFloat(G('settle-amt').value)||0;
   const reason=G('settle-reason').value.trim();
   const date=G('settle-date').value;
-  if(amt<=0){toast('أدخل مبلغاً صحيحاً','error');return}
-  if(!reason){toast('أدخل سبب التسوية','error');return}
+  if(amt<=0){toast(t('pay_enter_amount'),'error');return}
+  if(!reason){toast(t('pay_enter_reason'),'error');return}
   const checkedInvs=[];
   document.querySelectorAll('.settle-inv-cb:checked').forEach(cb=>{
     const invId=parseInt(cb.dataset.invId);
     const inv=DB.invs.find(x=>x.id===invId);
     if(inv)checkedInvs.push({inv,rem:invRemaining(inv)});
   });
-  if(!checkedInvs.length){toast('اختر فاتورة واحدة على الأقل','error');return}
+  if(!checkedInvs.length){toast(t('pay_choose_invoice'),'error');return}
   const totalUnpaid=checkedInvs.reduce((s,x)=>s+x.rem,0);
   const applied=[];
   let remaining=amt;
@@ -499,7 +523,7 @@ function saveSettlement(){
       remaining-=share;
     }
   }
-  if(!applied.length){toast('لم يتم تطبيق أي مبلغ','error');return}
+  if(!applied.length){toast(t('pay_no_applied'),'error');return}
   const settlement={
     id:'SETL-'+String(DB.cSettle).padStart(5,'0'),
     custId,custName:cust.name,
@@ -509,11 +533,11 @@ function saveSettlement(){
   };
   DB.cSettle++;
   DB.settlements.push(settlement);
-  addLog('تسوية (خصم)',`${settlement.id} — "${cust.name}" — ${fmt(amt)} د.ل — ${applied.length} فاتورة — ${reason}`,'#f5a623');
+  addLog(t('pay_settle'),`${settlement.id} — "${cust.name}" — ${fmt(amt)} ${t('currency_sym')} — ${applied.length} فاتورة — ${reason}`,'#f5a623');
   saveState();
   closeModal('m-settle');renderSales();updateStats();
   broadcastChange('settlements', { settlementId: settlement.id, custName: cust.name });
-  toast(`${fmt(amt)} د.ل على ${applied.length} فاتورة`,'success',{title:'تم تطبيق التسوية',icon:'ti-discount',duration:4000})
+  toast(fmt(amt)+' '+t('currency_sym')+' — '+applied.length,'success',{title:t('pay_applied'),icon:'ti-discount',duration:4000})
 }
 
 /* ═══ DELIVER ═══ */
@@ -534,14 +558,14 @@ function openDeliver(invId){
       <div><div style="font-size:11px;color:var(--text-muted)">التاريخ</div><div>${inv.date}</div></div>
     </div>
     <table style="width:100%;font-size:12px;border-collapse:collapse">
-      <thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:right;padding:6px">الصنف</th><th style="text-align:center;padding:6px">المطلوب</th><th style="text-align:center;padding:6px">المتوفر</th><th style="text-align:center;padding:6px">الحالة</th></tr></thead>
+      <thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:right;padding:6px">${t('print_item')}</th><th style="text-align:center;padding:6px">المطلوب</th><th style="text-align:center;padding:6px">المتوفر</th><th style="text-align:center;padding:6px">الحالة</th></tr></thead>
       <tbody>${items.join('')}</tbody>
     </table>
     ${!allOk?'<div style="margin-top:8px;padding:8px;background:rgba(240,84,84,.1);border-radius:var(--r);color:var(--red);font-size:12px"><i class="ti ti-alert-triangle"></i> بعض الأصناف غير متوفرة بالكمية المطلوبة</div>':''}`;
   openModal('m-deliver')
 }
 function confirmDeliver(){
-  const recv=G('dlv-recv').value.trim();if(!recv){toast('أدخل اسم المستلم','error');return}
+  const recv=G('dlv-recv').value.trim();if(!recv){toast(t('sales_enter_receiver'),'error');return}
   const invId=parseInt(G('dlv-inv-id').value);
   const inv=DB.invs.find(x=>x.id===invId);if(!inv)return;
   const failed=[];
@@ -551,14 +575,14 @@ function confirmDeliver(){
       if(item.qty<l.qty)failed.push(`${l.name}: المتاح ${item.qty} والمطلوب ${l.qty}`);
     }
   });
-  if(failed.length){toast('نقص في المخزون: '+failed.join(' | '),'error');return}
+  if(failed.length){toast(t('inv_stock_short')+': '+failed.join(' | '),'error');return}
   inv.lines.forEach(l=>{const item=DB.items.find(x=>x.id===l.itemId);if(item)item.qty=Math.max(0,item.qty-l.qty)});
   inv.dlvStatus='delivered';inv.receiver=recv;inv.deliveredAt=today();inv.dlvNotes=G('dlv-notes').value||'';
-  addLog('تسليم البضاعة (مخزون-)',`${inv.num} — المستلم: "${recv}" — المخزون مُحدَّث فقط، لا أثر على الخزينة`,'#14b8a6');
+  addLog(t('sales_deliver_inv'),`${inv.num} — المستلم: "${recv}" — المخزون مُحدَّث فقط، لا أثر على الخزينة`,'#14b8a6');
   saveState();
   closeModal('m-deliver');renderSales();renderItems();updateStats();
   broadcastChange('sales', { invNum: inv.num, delivered: true });
-  toast(`ف. ${inv.num} — المستلم: ${recv}`,'success',{title:'تم التسليم',icon:'ti-truck-delivery',duration:4000})
+  toast(inv.num+' — '+recv,'success',{title:t('sales_delivered'),icon:'ti-truck-delivery',duration:4000})
 }
 
 /* ═══ VIEW INVOICE ═══ */
@@ -566,7 +590,7 @@ function viewInv(invId){
   const inv=DB.invs.find(x=>x.id===invId);if(!inv)return;
   const paid=invPaid(inv),rem=invRemaining(inv);
   const paysForInv=DB.payments.filter(p=>p.invId===invId);
-  G('view-inv-title').innerHTML=`<i class="ti ti-receipt" style="color:var(--accent)"></i> فاتورة ${inv.num}`;
+  G('view-inv-title').innerHTML=`<i class="ti ti-receipt" style="color:var(--accent)"></i> ${t('print_invoice')} ${inv.num}`;
 
   // Status pipeline
   const step1Done=true;
@@ -592,36 +616,37 @@ function viewInv(invId){
       <div class="card" style="margin:0;padding:10px 12px">
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;font-weight:700">معلومات الفاتورة</div>
         <div style="display:flex;flex-direction:column;gap:5px">
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">الزبون</span><strong>${inv.custName}</strong></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">التاريخ</span><span>${inv.date}</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">الإجمالي</span><strong style="color:var(--accent)">${fmt(inv.total)} د.ل</strong></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">المستلم</span><span>${inv.receiver||'—'}</span></div>
-          ${inv.deliveredAt?`<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">تاريخ التسليم</span><span>${inv.deliveredAt}</span></div>`:''}
-          ${inv.dlvNotes?`<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">ملاحظات التسليم</span><span>${inv.dlvNotes}</span></div>`:''}
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">الزبون</span><strong>${escapeHtml(inv.custName)}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">التاريخ</span><span>${escapeHtml(inv.date)}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">الإجمالي</span><strong style="color:var(--accent)">${fmt(inv.total)} ${t('currency_sym')}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">المستلم</span><span>${escapeHtml(inv.receiver||'—')}</span></div>
+          ${inv.deliveredAt?`<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">تاريخ التسليم</span><span>${escapeHtml(inv.deliveredAt)}</span></div>`:''}
+          ${inv.dlvNotes?`<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">ملاحظات التسليم</span><span>${escapeHtml(inv.dlvNotes)}</span></div>`:''}
         </div>
       </div>
       <div class="card" style="margin:0;padding:10px 12px">
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;font-weight:700">حالة السداد</div>
         <div style="display:flex;flex-direction:column;gap:5px">
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">المحصَّل</span><strong style="color:var(--green)">${fmt(paid)} د.ل</strong></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">المتبقي</span><strong style="color:${rem>0?'var(--red)':'var(--green)'}">${rem>0?fmt(rem)+' د.ل':'مسدَّد ✓'}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">المحصَّل</span><strong style="color:var(--green)">${fmt(paid)} ${t('currency_sym')}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">المتبقي</span><strong style="color:${rem>0?'var(--red)':'var(--green)'}">${rem>0?fmt(rem)+' '+t('currency_sym'):'مسدَّد \u2713'}</strong></div>
           <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(paid/inv.total)*100).toFixed(1)}%"></div></div>
         </div>
       </div>
     </div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-hd" style="margin-bottom:8px"><h3><i class="ti ti-list"></i> بنود الفاتورة</h3></div>
-      <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الخصم</th><th>الإجمالي</th></tr></thead>
-      <tbody>${inv.lines.map(l=>`<tr><td class="td-bold">${l.name}</td><td class="td-mono">${l.qty}</td><td class="td-mono">${fmt(l.price)}</td><td class="td-mono">${l.disc>0?fmt(l.disc):'—'}</td><td class="td-mono" style="font-weight:700">${fmt(l.total)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="tbl-wrap"><table><thead><tr><th>${t('print_item')}</th><th>${t('print_qty')}</th><th>${t('print_price')}</th><th>الخصم</th><th>${t('print_net_total')}</th></tr></thead>
+      <tbody>${inv.lines.map(l=>`<tr><td class="td-bold">${escapeHtml(l.name)}</td><td class="td-mono">${l.qty}</td><td class="td-mono">${fmt(l.price)}</td><td class="td-mono">${l.disc>0?fmt(l.disc):'—'}</td><td class="td-mono" style="font-weight:700">${fmt(l.total)}</td></tr>`).join('')}</tbody></table></div>
     </div>
     <div class="card" style="margin:0">
       <div class="card-hd" style="margin-bottom:8px"><h3><i class="ti ti-cash" style="color:var(--green)"></i> سجل الدفعات</h3></div>
-      ${paysForInv.length?`<div class="pay-history">${paysForInv.map(p=>`<div class="pay-row"><div><span style="font-weight:600;color:var(--text-primary)">${p.id}</span> — ${p.mode==='cash'?'نقدي':p.mode==='check'?`صك ${p.checkNum||''}`:p.mode==='transfer'?'تحويل':p.mode}</div><div class="pr-date">${p.date}</div><div class="pr-amt">+${fmt(p.amount)} د.ل</div><div><button class="btn btn-sm btn-danger btn-icon" onclick="event.stopPropagation();deletePayment('${p.id}')" title="حذف الدفعة"><i class="ti ti-trash"></i></button></div></div>`).join('')}</div>`:'<div style="font-size:12px;color:var(--text-muted);padding:8px 0">لا دفعات مسجَّلة بعد.</div>'}
+      ${paysForInv.length?`<div class="pay-history">${paysForInv.map(p=>`<div class="pay-row"><div><span style="font-weight:600;color:var(--text-primary)">${p.id}</span> — ${p.mode==='cash'?'نقدي':p.mode==='check'?`صك ${p.checkNum||''}`:p.mode==='transfer'?'تحويل':p.mode}</div><div class="pr-date">${p.date}</div><div class="pr-amt">+${fmt(p.amount)} ${t('currency_sym')}</div><div><button class="btn btn-sm btn-danger btn-icon" onclick="event.stopPropagation();deletePayment('${p.id}')" title="حذف الدفعة"><i class="ti ti-trash"></i></button></div></div>`).join('')}</div>`:'<div style="font-size:12px;color:var(--text-muted);padding:8px 0">لا دفعات مسجَّلة بعد.</div>'}
     </div>
-    ${inv.discount?`<div style="margin-top:10px;padding:8px 12px;background:rgba(245,166,35,.1);border-radius:var(--r);font-size:12px;color:var(--amber)"><i class="ti ti-discount"></i> خصم ${fmt(inv.discount)} د.ل — ${inv.discountReason||'تسوية'}${(inv.settlements||[]).length>1?` (${inv.settlements.length} تسويات)`:''}</div>`:''}`;
+    ${inv.discount?`<div style="margin-top:10px;padding:8px 12px;background:rgba(245,166,35,.1);border-radius:var(--r);font-size:12px;color:var(--amber)"><i class="ti ti-discount"></i> خصم ${fmt(inv.discount)} ${t('currency_sym')} — ${inv.discountReason||'تسوية'}${(inv.settlements||[]).length>1?` (${inv.settlements.length} تسويات)`:''}</div>`:''}`;
   G('view-inv-footer').innerHTML=`
     <input type="hidden" id="view-inv-inv-id" value="${invId}">
     <button class="btn" onclick="closeModal('m-view-inv')">إغلاق</button>
+    ${['admin','system_admin'].includes(currentUser?.role)&&inv.dlvStatus==='pending'?`<button class="btn" onclick="closeModal('m-view-inv');editInv(${inv.id})"><i class="ti ti-pencil"></i> تعديل</button>`:''}
     <button class="btn btn-secondary" onclick="printInvoice('sale',${inv.id})"><i class="ti ti-printer"></i> تصدير PDF</button>
     ${rem>0.001?`<button class="btn btn-secondary" onclick="closeModal('m-view-inv');openSettlement(${inv.custId})"><i class="ti ti-discount"></i> تسوية / خصم</button>`:''}
     ${inv.dlvStatus==='pending'?`<button class="btn btn-amber" onclick="closeModal('m-view-inv');openDeliver(${inv.id})"><i class="ti ti-truck-delivery"></i> تسليم البضاعة</button>`:''}
@@ -633,9 +658,9 @@ function viewPur(purId){
   const pur=DB.purs.find(x=>x.id===purId);if(!pur)return;
   const paid=purPaid(pur),rem=purRemaining(pur);
   const purBalanceClass=rem>0?'text-red':'text-green';
-  G('view-pur-title').innerHTML=`<i class="ti ti-truck" style="color:var(--amber)"></i> فاتورة ${pur.num}`;
-  G('view-pur-body').innerHTML=`<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)"><div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px"><i class="ti ti-building-store"></i></div><div><div style="font-size:15px;font-weight:700">${currentCompany().name}</div><div style="font-size:11px;color:var(--text-muted)">${currentCompany().address}</div></div><div style="margin-right:auto;text-align:left"><div style="font-size:11px;color:var(--text-muted)">فاتورة شراء</div><div style="font-size:13px;font-weight:700;color:var(--accent)">${pur.supName}</div><div style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">${pur.date}</div></div></div><div class="soa-meta"><div><div class="soa-ml">الهاتف</div><div class="soa-mv">${pur.supName}</div></div><div><div class="soa-ml">الرصيد</div><div class="soa-mv ${purBalanceClass}">${fmt(rem)} د.ل</div></div><div><div class="soa-ml">المستلم</div><div class="soa-mv">${pur.receivedStock?'<span class="badge b-green">تم الاستلام</span>':'<span class="badge b-amber">غير مستلم</span>'}</div></div></div></div><div class="card" style="margin-bottom:12px"><div class="card-hd"><h3><i class="ti ti-list"></i> بنود الفاتورة</h3></div><div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${pur.lines.map(l=>`<tr><td class="td-bold">${l.name}</td><td class="td-mono">${l.qty}</td><td class="td-mono">${fmt(l.price)}</td><td class="td-mono" style="font-weight:700">${fmt(l.total)}</td></tr>`).join('')}</tbody></table></div></div><div class="card"><div class="card-hd" style="margin-bottom:8px"><h3><i class="ti ti-calculator" style="color:var(--accent)"></i> ملخص الفاتورة</h3></div><div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between"><span>الإجمالي</span><strong>${fmt(pur.total)} د.ل</strong></div><div style="display:flex;justify-content:space-between"><span>المدفوع</span><strong style="color:var(--green)">${fmt(paid)} د.ل</strong></div><div style="display:flex;justify-content:space-between"><span>المتبقي</span><strong style="color:${purBalanceClass}">${fmt(rem)} د.ل</strong></div></div></div></div>`;
-  G('view-pur-footer').innerHTML=`<button class="btn" onclick="closeModal('m-view-pur')">إغلاق</button><button class="btn btn-secondary" onclick="printInvoice('purchase',${pur.id})"><i class="ti ti-printer"></i> تصدير PDF</button>`;
+  G('view-pur-title').innerHTML=`<i class="ti ti-truck" style="color:var(--amber)"></i> ${t('print_invoice')} ${escapeHtml(pur.num)}`;
+  G('view-pur-body').innerHTML=`<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)"><div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px"><i class="ti ti-building-store"></i></div><div><div style="font-size:15px;font-weight:700">${currentCompany().name}</div><div style="font-size:11px;color:var(--text-muted)">${currentCompany().address}</div></div><div style="margin-right:auto;text-align:left"><div style="font-size:11px;color:var(--text-muted)">${t('pur_new')}</div><div style="font-size:13px;font-weight:700;color:var(--accent)">${pur.supName}</div><div style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">${pur.date}</div></div></div><div class="soa-meta"><div><div class="soa-ml">${t('print_notes')}</div><div class="soa-mv">${pur.supName}</div></div><div><div class="soa-ml">${t('col_total_due')}</div><div class="soa-mv ${purBalanceClass}">${fmt(rem)} ${t('currency_sym')}</div></div><div><div class="soa-ml">${t('sales_enter_receiver')}</div><div class="soa-mv">${pur.receivedStock?`<span class="badge b-green">${t('sales_delivered')}</span>`:`<span class="badge b-amber">${t('inv_undelivered')}</span>`}</div></div></div></div><div class="card" style="margin-bottom:12px"><div class="card-hd"><h3><i class="ti ti-list"></i> ${t('view_inv_items')}</h3></div><div class="tbl-wrap"><table><thead><tr><th>${t('print_item')}</th><th>${t('print_qty')}</th><th>${t('print_price')}</th><th>${t('print_net_total')}</th></tr></thead><tbody>${pur.lines.map(l=>`<tr><td class="td-bold">${escapeHtml(l.name)}</td><td class="td-mono">${l.qty}</td><td class="td-mono">${fmt(l.price)}</td><td class="td-mono" style="font-weight:700">${fmt(l.total)}</td></tr>`).join('')}</tbody></table></div></div><div class="card"><div class="card-hd" style="margin-bottom:8px"><h3><i class="ti ti-calculator" style="color:var(--accent)"></i> ${t('view_inv_title')}</h3></div><div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between"><span>${t('print_grand_total')}</span><strong>${fmt(pur.total)} ${t('currency_sym')}</strong></div><div style="display:flex;justify-content:space-between"><span>${t('print_amount_paid')}</span><strong style="color:var(--green)">${fmt(paid)} ${t('currency_sym')}</strong></div><div style="display:flex;justify-content:space-between"><span>${t('print_amount_due')}</span><strong style="color:${purBalanceClass}">${fmt(rem)} ${t('currency_sym')}</strong></div></div></div></div>`;
+  G('view-pur-footer').innerHTML=`<button class="btn" onclick="closeModal('m-view-pur')">${t('close')}</button><button class="btn btn-secondary" onclick="printInvoice('purchase',${pur.id})"><i class="ti ti-printer"></i> ${t('export')} PDF</button>`;
   openModal('m-view-pur');
 }
 
@@ -643,14 +668,14 @@ function printInvoice(type,id){
   let title='';let num='';let date='';let name='';let lines=[];let total=0;let paid=0;let rem=0;let notes='';let discount=0;let discountReason='';
   const company=currentCompany();
   if(type==='sale'){
-    const inv=DB.invs.find(x=>x.id===id);if(!inv){toast('الفاتورة غير موجودة','error');return}
-    title='فاتورة بيع';num=inv.num;date=inv.date;name=inv.custName;lines=inv.lines;total=inv.total;paid=invPaid(inv);rem=invRemaining(inv);notes=company.note||'';discount=inv.discount||0;discountReason=inv.discountReason||'';
+    const inv=DB.invs.find(x=>x.id===id);if(!inv){toast(t('sales_not_found'),'error');return}
+    title=t('print_invoice_sale');num=inv.num;date=inv.date;name=inv.custName;lines=inv.lines;total=inv.total;paid=invPaid(inv);rem=invRemaining(inv);notes=company.note||'';discount=inv.discount||0;discountReason=inv.discountReason||'';
   } else {
-    const pur=DB.purs.find(x=>x.id===id);if(!pur){toast('فاتورة الشراء غير موجودة','error');return}
-    title='فاتورة شراء';num=pur.num;date=pur.date;name=pur.supName;lines=pur.lines;total=pur.total;paid=purPaid(pur);rem=purRemaining(pur);notes=company.note||'';
+    const pur=DB.purs.find(x=>x.id===id);if(!pur){toast(t('pur_not_found'),'error');return}
+    title=t('print_invoice_pur');num=pur.num;date=pur.date;name=pur.supName;lines=pur.lines;total=pur.total;paid=purPaid(pur);rem=purRemaining(pur);notes=company.note||'';
   }
   const win=window.open('','_blank','width=960,height=1150');
-  if(!win){toast('تعذر فتح نافذة الطباعة — تأكد من السماح النوافذ المنبثقة','error');return}
+  if(!win){toast(t('sales_print_err'),'error');return}
   const now=new Date();
   const dateStr=now.toLocaleDateString('ar-LY');
   const timeStr=now.toLocaleTimeString('ar-LY',{hour:'2-digit',minute:'2-digit'});
@@ -696,7 +721,7 @@ function printInvoice(type,id){
     const item=DB.items.find(x=>x.id===l.itemId);
     const barcode=item?.barcode||'';
     const code=item?.code||'';
-    const discCell=type==='sale'?`<td>${l.disc>0?fmt(l.disc)+' د.ل':'—'}</td>`:'';
+    const discCell=type==='sale'?`<td>${l.disc>0?fmt(l.disc)+' '+t('currency_sym'):'\u2014'}</td>`:'';
 
     const bcSettings=getBarcodeSettings();
     let barcodeHtml='';
@@ -725,9 +750,9 @@ function printInvoice(type,id){
       <td style="text-align:center;color:#94a3b8;font-size:10px">${i+1}</td>
       ${nameCell}
       <td style="text-align:center">${l.qty}</td>
-      <td style="direction:ltr;text-align:right;font-family:monospace">${fmt(l.price)} د.ل</td>
+      <td style="direction:ltr;text-align:right;font-family:monospace">${fmt(l.price)} ${t('currency_sym')}</td>
       ${discCell}
-      <td style="direction:ltr;text-align:right;font-family:monospace;font-weight:700;color:#1e293b">${fmt(l.total)} د.ل</td>
+      <td style="direction:ltr;text-align:right;font-family:monospace;font-weight:700;color:#1e293b">${fmt(l.total)} ${t('currency_sym')}</td>
       ${bcSettings.position==='separate-col'?`<td style="text-align:center"><svg id="${barcode??code?i:''}" style="max-width:80px;height:auto"></svg></td>`:''}
     </tr>`;
   }).join('');
@@ -856,11 +881,11 @@ function printInvoice(type,id){
     <table class="inv-table">
       <thead><tr>
         <th style="width:30px;text-align:center">#</th>
-        <th>الصنف</th>
-        <th style="text-align:center;width:50px">الكمية</th>
+        <th>${t('print_item')}</th>
+        <th style="text-align:center;width:50px">${t('print_qty')}</th>
         <th style="width:80px">سعر الوحدة</th>
         ${type==='sale'?'<th style="width:70px">الخصم</th>':''}
-        <th style="width:90px">الإجمالي</th>
+        <th style="width:90px">${t('print_net_total')}</th>
       </tr></thead>
       <tbody>${linesHtml}</tbody>
     </table>
@@ -873,10 +898,10 @@ function printInvoice(type,id){
         ${(getBarcodeSettings().show==='item+invoice'||getBarcodeSettings().show==='invoice')?`<div style="margin-top:12px;text-align:center" id="inv-bc-section">${renderInvoiceBarcode(num.replace(/[^a-zA-Z0-9]/g,''),{size:'small'})}</div><div style="font-size:9px;color:#94a3b8;margin-top:4px;font-family:monospace;direction:ltr;letter-spacing:1px">${num}</div>`:''}
       </div>
       <div class="inv-totals">
-        <div class="inv-totals-row"><span>الإجمالي قبل الخصم</span><span>${fmt(total+discount)} د.ل</span></div>
-        ${discount>0?`<div class="inv-totals-row"><span>خصم ${discountReason?'('+discountReason+')':''}</span><span style="color:#d97706">-${fmt(discount)} د.ل</span></div>`:''}
-        <div class="inv-totals-row total-final"><span>الإجمالي النهائي</span><span>${fmt(total)} د.ل</span></div>
-        ${type==='sale'?`<div class="inv-totals-row"><span>المدفوع</span><span class="paid-val">${fmt(paid)} د.ل</span></div><div class="inv-totals-row"><span>المتبقي</span><span class="rem-val">${rem>0.001?fmt(rem)+' د.ل':'مسدّد بالكامل ✓'}</span></div>`:''}
+        <div class="inv-totals-row"><span>الإجمالي قبل الخصم</span><span>${fmt(total+discount)} ${t('currency_sym')}</span></div>
+        ${discount>0?`<div class="inv-totals-row"><span>خصم ${discountReason?'('+discountReason+')':''}</span><span style="color:#d97706">-${fmt(discount)} ${t('currency_sym')}</span></div>`:''}
+        <div class="inv-totals-row total-final"><span>الإجمالي النهائي</span><span>${fmt(total)} ${t('currency_sym')}</span></div>
+        ${type==='sale'?`<div class="inv-totals-row"><span>المدفوع</span><span class="paid-val">${fmt(paid)} ${t('currency_sym')}</span></div><div class="inv-totals-row"><span>المتبقي</span><span class="rem-val">${rem>0.001?fmt(rem)+' '+t('currency_sym'):'مسدّد بالكامل ✓'}</span></div>`:''}
       </div>
     </div>
 
@@ -913,20 +938,24 @@ function printInvoice(type,id){
 /* ═══ RETURNS ═══ */
 function saveRet(){
   const invNum=G('re-inv').value,amt=parseFloat(G('re-amt').value)||0;
-  if(!invNum||amt<=0){toast('تحقق من البيانات','error');return}
+  if(!invNum||amt<=0){toast(t('pay_enter_amount'),'error');return}
   const inv=DB.invs.find(x=>x.num===invNum);
   const num='RET-'+String(DB.cRet).padStart(5,'0'),date=G('re-date').value;
-  // If QC passed: re-add to inventory
-  if(_reQC==='passed'&&inv){
-    inv.lines.forEach(l=>{const item=DB.items.find(x=>x.id===l.itemId);if(item)item.qty+=l.qty})
+  // If QC passed: re-add returned items proportionally to inventory
+  if(_reQC==='passed'&&inv&&inv.total>0){
+    const ratio=Math.min(amt/inv.total,1);
+    inv.lines.forEach(l=>{
+      const item=DB.items.find(x=>x.id===l.itemId);
+      if(item){const retQty=Math.round(l.qty*ratio);if(retQty>0)item.qty+=retQty}
+    })
   }
   DB.rets.push({id:DB.cRet++,num,invNum,custName:inv?.custName||'—',amt,reason:G('re-reason').value,qcStatus:_reQC,date});
-  addLog('مرتجع مبيعات',`${num} — فاتورة ${invNum} — ${fmt(amt)} د.ل — QC: ${_reQC}`,'#f05454');
+  addLog('مرتجع مبيعات',`${num} — فاتورة ${invNum} — ${fmt(amt)} ${t('currency_sym')} — QC: ${_reQC}`,'#f05454');
   saveState();
   closeModal('m-return');renderRets();renderItems();updateStats();
   broadcastChange('returns', { num, invNum });
   const qcMsg=_reQC==='passed'?' وأُعيد للمخزون':_reQC==='failed'?' ولن يُعاد للمخزون':' والجودة قيد المراجعة';
-  toast(`تم تسجيل المرتجع ${num}${qcMsg}`)
+  toast(t('sales_return_logged')+' '+num)
 }
 function renderRets(search=''){
   const tb=G('ret-tb');
@@ -935,14 +964,14 @@ function renderRets(search=''){
   let full=[...DB.rets].reverse();
   if(term){full=full.filter(r=>normalizeText(r.num).includes(term)||normalizeText(r.invNum).includes(term)||normalizeText(r.reason).includes(term));}
   if(qcFilter){full=full.filter(r=>r.qcStatus===qcFilter)}
-  if(!full.length){tb.innerHTML=emptyRow(6,term?'لا توجد نتائج':'لا توجد مرتجعات.');renderPag('ret-tb',0,renderRets);return}
+  if(!full.length){tb.innerHTML=emptyRow(6,term?t('lbl_search_results'):t('ret_empty'));renderPag('ret-tb',0,renderRets);return}
   const {data}=getPageData('ret-tb', full);
   function qcLbl(s){return s==='passed'?'<span class="badge b-green">مقبول</span>':s==='failed'?'<span class="badge b-red">مرفوض</span>':'<span class="badge b-amber">قيد المراجعة</span>'}
   tb.innerHTML=data.map(r=>`<tr>
     <td class="td-bold">${r.num}</td>
     <td class="td-mono">${r.invNum}</td>
     <td>${r.custName}</td>
-    <td class="td-mono" style="color:var(--red);font-weight:700">${fmt(r.amt)} د.ل</td>
+    <td class="td-mono" style="color:var(--red);font-weight:700">${fmt(r.amt)} ${t('currency_sym')}</td>
     <td style="color:var(--text-muted)">${r.reason||'—'}</td>
     <td>${qcLbl(r.qcStatus)}</td>
     <td class="td-mono">${r.date}</td>
@@ -957,7 +986,7 @@ function loadReverseSettlements(){
   const allSettlements=type==='customer'?(DB.settlements||[]):(DB.supSettlements||[]);
   const reversed=allSettlements.slice().reverse();
   if(!reversed.length){
-    el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px"><i class="ti ti-check-circle" style="font-size:28px;display:block;margin-bottom:8px;color:var(--green)"></i>لا توجد تسويات ${type==="customer"?"للزبائن":"للموردين"}</div>';
+    el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px"><i class="ti ti-check-circle" style="font-size:28px;display:block;margin-bottom:8px;color:var(--green)"></i>${t('hrm_no_movements')}</div>`;
     return;
   }
   el.innerHTML=reversed.map(s=>{
@@ -968,7 +997,7 @@ function loadReverseSettlements(){
       <div style="display:flex;gap:12px;align-items:center;flex:1">
         <span style="font-weight:700;color:var(--amber);min-width:90px">${s.id}</span>
         <span style="min-width:100px">${name}</span>
-        <span style="color:var(--red);font-weight:700;min-width:80px">${fmt(s.amount)} د.ل</span>
+        <span style="color:var(--red);font-weight:700;min-width:80px">${fmt(s.amount)} ${t('currency_sym')}</span>
         <span style="color:var(--text-muted);flex-shrink:0">${s.applied.length} فاتورة: ${invoiceInfo}</span>
         <span style="color:var(--text-muted)">${s.date}</span>
       </div>
@@ -981,10 +1010,10 @@ function reverseSettlement(type,settleId){
   const isCust=type==='customer';
   const arr=isCust?DB.settlements:DB.supSettlements;
   const idx=arr.findIndex(s=>s.id===settleId);
-  if(idx===-1){toast('التسوية غير موجودة','error');return}
+  if(idx===-1){toast(t('sales_settle_not_found'),'error');return}
   const s=arr[idx];
   const name=isCust?s.custName:s.supName;
-  if(!confirm(`هل تريد عكس التسوية ${s.id} — ${name} — ${fmt(s.amount)} د.ل؟\nسيُعيد المبلغ المُخصم إلى الفواتير.`))return;
+  if(!confirm(`هل تريد عكس التسوية ${s.id} — ${name} — ${fmt(s.amount)} ${t('currency_sym')}؟\nسيُعيد المبلغ المُخصم إلى الفواتير.`))return;
 
   // Reverse each applied share
   s.applied.forEach(a=>{
@@ -1010,13 +1039,13 @@ function reverseSettlement(type,settleId){
   });
 
   arr.splice(idx,1);
-  addLog(`عكس تسوية ${isCust?'زبون':'مورد'}`,`${s.id} — "${name}" — ${fmt(s.amount)} د.ل — أُعيدت ${s.applied.length} فاتورة`,'#f05454');
+  addLog(`عكس تسوية ${isCust?'زبون':'مورد'}`,`${s.id} — "${name}" — ${fmt(s.amount)} ${t('currency_sym')} — أُعيدت ${s.applied.length} فاتورة`,'#f05454');
   saveState();
   loadReverseSettlements();
   if(isCust){renderSales();}else{renderPurs();renderSups();}
   updateStats();
   broadcastChange('settlements', { settleId, reversed: true });
-  toast(`تم عكس التسوية ${s.id} ✓ — أُعيد ${fmt(s.amount)} د.ل`);
+  toast(t('sales_reverse_done')+' '+fmt(s.amount)+' '+t('currency_sym'));
 }
 
 /* ═══ SETTLEMENTS LOG ═══ */
@@ -1042,7 +1071,7 @@ function renderSettleLog(){
   }
 
   if(!all.length){
-    tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px"><i class="ti ti-folder-open" style="font-size:28px;display:block;margin-bottom:8px"></i>لا توجد تسويات</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px"><i class="ti ti-folder-open" style="font-size:28px;display:block;margin-bottom:8px"></i>${t('hrm_no_movements')}</td></tr>`;
     return;
   }
   tb.innerHTML=all.map(s=>{
@@ -1054,7 +1083,7 @@ function renderSettleLog(){
       <td class="td-bold" style="color:var(--amber)">${s.id}</td>
       <td>${typeBadge}</td>
       <td>${name}</td>
-      <td class="td-mono" style="color:var(--red);font-weight:700">${fmt(s.amount)} د.ل</td>
+      <td class="td-mono" style="color:var(--red);font-weight:700">${fmt(s.amount)} ${t('currency_sym')}</td>
       <td style="color:var(--text-muted);font-size:11px">${invoiceInfo}</td>
       <td style="color:var(--text-muted)">${s.reason||'—'}</td>
       <td class="td-mono">${s.date}</td>
@@ -1062,3 +1091,4 @@ function renderSettleLog(){
     </tr>`
   }).join('');
 }
+

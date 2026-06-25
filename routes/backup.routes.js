@@ -2,6 +2,7 @@ const express = require('express');
 const Backup = require('../models/backup.model');
 const { logAudit } = require('../utils/helpers');
 const logger = require('../utils/logger');
+const { maxLength } = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -18,7 +19,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/',
+  maxLength('label', 100),
+  async (req, res) => {
   try {
     const { data, label } = req.body;
     if (!data || typeof data !== 'object') {
