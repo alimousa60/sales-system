@@ -1,5 +1,5 @@
 /* ═══ CHARTS ═══ */
-let _dashSalesChart=null,_dashPayChart=null,_plChart=null;
+let _dashSalesChart=null,_dashPayChart=null,_dashTrendChart=null,_plChart=null;
 
 function getChartColors(){
   return{
@@ -50,6 +50,24 @@ function renderDashCharts(){
   if(pCtx){
     if(_dashPayChart)_dashPayChart.destroy();
     _dashPayChart=new Chart(pCtx,{type:'doughnut',data:{labels:['نقدي وارد','صكوك واردة','تحويلات واردة','مدفوعات للموردين'],datasets:[{data:[cashTotal,checkTotal,transferTotal,supTotal],backgroundColor:[c.green,c.accent,c.cyan,c.red],borderWidth:3,borderColor:c.accent,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:10,font:{size:11},usePointStyle:true,pointStyle:'circle'}},tooltip:{..._chartTooltip,callbacks:{label:ctx=>ctx.label+': '+fmt(ctx.parsed)+' د.ل'}}}}});
+  }
+  /* Trend Chart — 30-day sales vs purchases */
+  const tCtx=G('dash-trend-chart');
+  if(tCtx){
+    if(_dashTrendChart)_dashTrendChart.destroy();
+    const trendDays=[];
+    for(let i=29;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const key=d.toISOString().slice(0,10);
+      const dayLabel=d.toLocaleDateString('ar',{day:'numeric',month:'short'});
+      const sales=invs.filter(inv=>inv.date===key).reduce((s,inv)=>s+inv.total,0);
+      const purchases=[...DB.purs].filter(p=>p.date===key).reduce((s,p)=>s+p.total,0);
+      trendDays.push({key,label:dayLabel,sales,purchases});
+    }
+    _dashTrendChart=new Chart(tCtx,{type:'line',data:{labels:trendDays.map(d=>d.label),datasets:[
+      {label:'المبيعات',data:trendDays.map(d=>d.sales),borderColor:c.green,backgroundColor:'rgba(45,209,126,.08)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:5,borderWidth:2},
+      {label:'المشتريات',data:trendDays.map(d=>d.purchases),borderColor:c.purple,backgroundColor:'rgba(155,114,247,.08)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:5,borderWidth:2}
+    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:10,font:{size:11},usePointStyle:true,pointStyle:'circle'}},tooltip:{..._chartTooltip,callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)+' د.ل'}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.08)',drawBorder:false},ticks:{callback:v=>fmt(v),font:{size:10}},border:{display:false}},x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{size:9}}}}}});
   }
 }
 

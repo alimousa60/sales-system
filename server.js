@@ -60,13 +60,21 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net/npm/chart.js", "https://cdn.sheetjs.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
       connectSrc: ["'self'", "ws:", "wss:"]
     }
   },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
 }));
 app.use(express.json({ limit: '1mb' }));
+
+// Request ID for tracing
+app.use((req, res, next) => {
+  req.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  res.set('X-Request-Id', req.id);
+  next();
+});
 app.use(cors({
   origin: function(origin, cb) {
     if (!origin) return cb(null, true);

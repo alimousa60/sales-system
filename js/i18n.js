@@ -97,6 +97,7 @@ const I18N = {
     dash_lowstock_min: 'الحد',
     dash_no_invoices: 'لا فواتير',
     dash_all_stock_ok: 'كل الأصناف بمستويات جيدة',
+    dash_trend_title: 'المبيعات والمشتريات — آخر 30 يوم',
     // ─── Common labels ───
     lbl_no_data: 'لا تodata',
     lbl_choose: '-- اختر --',
@@ -557,6 +558,7 @@ const I18N = {
     dash_lowstock_min: 'Min',
     dash_no_invoices: 'No invoices',
     dash_all_stock_ok: 'All items at good levels',
+    dash_trend_title: 'Sales & Purchases — Last 30 Days',
     // ─── Common labels ───
     lbl_no_data: 'No data',
     lbl_choose: '-- Choose --',
