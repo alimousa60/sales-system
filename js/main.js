@@ -222,5 +222,32 @@ async function initApp(){
   }
   updateStats();renderDash();
   G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
+  renderNotifications();
 }
 initApp();
+
+/* ═══ NOTIFICATION CENTER ═══ */
+function renderNotifications(){
+  const alerts=[];
+  DB.items.filter(x=>x.qty<=x.reorder).forEach(x=>{
+    alerts.push({icon:'ti ti-alert-triangle',color:'var(--amber)',text:`${x.name}: رصيد منخفض (${x.qty})`,page:'inventory'});
+  });
+  DB.invs.filter(x=>invRemaining(x)>0.001).slice(0,3).forEach(x=>{
+    alerts.push({icon:'ti ti-clock',color:'var(--red)',text:`فاتورة ${x.num}: متبقي ${fmt(invRemaining(x))}`,page:'sales'});
+  });
+  const badge=G('notif-badge');
+  if(badge){
+    if(alerts.length>0){badge.style.display='flex';badge.textContent=alerts.length}
+    else{badge.style.display='none'}
+  }
+  const panel=G('notif-panel');
+  if(!panel)return;
+  if(!alerts.length){panel.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px"><i class="ti ti-bell" style="font-size:24px;display:block;margin-bottom:6px;color:var(--text-muted)"></i>لا توجد إشعارات</div>';return}
+  panel.innerHTML=`<div style="padding:8px 12px;font-size:11px;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border)">الإشعارات (${alerts.length})</div>`+alerts.map(a=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;display:flex;align-items:center;gap:8px" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background=''" onclick="showPage('${a.page}');toggleNotifPanel()"><i class="${a.icon}" style="color:${a.color};font-size:14px;flex-shrink:0"></i>${a.text}</div>`).join('');
+}
+function toggleNotifPanel(){
+  const panel=G('notif-panel');
+  if(!panel)return;
+  panel.style.display=panel.style.display==='none'?'block':'none';
+  if(panel.style.display==='block')renderNotifications();
+}

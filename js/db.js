@@ -300,6 +300,44 @@ function applyQuickSearch(term){
   else if(page==='soa') renderSOA();
   updateSearchHint();
 }
+
+/* ═══ SEARCH DROPDOWN ═══ */
+function showSearchDropdown(term){
+  const dd=G('search-dropdown');
+  if(!dd||!term||term.length<2){if(dd)dd.style.display='none';return}
+  const t2=normalizeText(term);
+  let html='';
+  const items=DB.items.filter(x=>normalizeText(x.name).includes(t2)||normalizeText(x.barcode).includes(t2)||normalizeText(x.code).includes(t2)).slice(0,5);
+  if(items.length){
+    html+='<div style="padding:4px 8px;font-size:10px;font-weight:700;color:var(--text-muted)">الأصناف</div>';
+    items.forEach(x=>{html+=`<div class="search-dd-item" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px" onmousedown="navigateToPage('inventory')"><i class="ti ti-package" style="color:var(--cyan)"></i>${escapeHtml(x.name)} <span style="color:var(--text-muted);font-family:var(--mono);font-size:10px">${x.code}</span></div>`});
+  }
+  const custs=DB.custs.filter(x=>normalizeText(x.name).includes(t2)).slice(0,3);
+  if(custs.length){
+    html+='<div style="padding:4px 8px;font-size:10px;font-weight:700;color:var(--text-muted);margin-top:4px">الزبائن</div>';
+    custs.forEach(x=>{html+=`<div class="search-dd-item" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px" onmousedown="navigateToPage('customers')"><i class="ti ti-user-circle" style="color:var(--green)"></i>${escapeHtml(x.name)} <span style="color:var(--text-muted);font-family:var(--mono);font-size:10px">${fmt(x.balance)}</span></div>`});
+  }
+  const sups=DB.sups.filter(x=>normalizeText(x.name).includes(t2)).slice(0,3);
+  if(sups.length){
+    html+='<div style="padding:4px 8px;font-size:10px;font-weight:700;color:var(--text-muted);margin-top:4px">الموردون</div>';
+    sups.forEach(x=>{html+=`<div class="search-dd-item" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px" onmousedown="navigateToPage('suppliers')"><i class="ti ti-users" style="color:var(--amber)"></i>${escapeHtml(x.name)} <span style="color:var(--text-muted);font-family:var(--mono);font-size:10px">${fmt(x.balance)}</span></div>`});
+  }
+  const invs=DB.invs.filter(x=>normalizeText(x.num).includes(t2)||normalizeText(x.custName).includes(t2)).slice(0,3);
+  if(invs.length){
+    html+='<div style="padding:4px 8px;font-size:10px;font-weight:700;color:var(--text-muted);margin-top:4px">فواتير البيع</div>';
+    invs.forEach(x=>{html+=`<div class="search-dd-item" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px" onmousedown="navigateToPage('sales')"><i class="ti ti-receipt" style="color:var(--accent)"></i>${escapeHtml(x.num)} — ${escapeHtml(x.custName)} <span style="color:var(--text-muted);font-family:var(--mono);font-size:10px">${fmt(x.total)}</span></div>`});
+  }
+  if(!html){html='<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:12px">لا توجد نتائج</div>'}
+  dd.innerHTML=html;
+  dd.style.display='block';
+  dd.querySelectorAll('.search-dd-item').forEach(el=>{
+    el.addEventListener('mouseenter',()=>el.style.background='var(--bg-hover)');
+    el.addEventListener('mouseleave',()=>el.style.background='');
+  });
+}
+function hideSearchDropdown(){const dd=G('search-dropdown');if(dd)dd.style.display='none'}
+function navigateToPage(pg){hideSearchDropdown();showPage(pg)}
+
 function loadState(){
   try{
     const stored=localStorage.getItem(STORAGE_KEY);

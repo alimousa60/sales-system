@@ -224,6 +224,7 @@ function renderItems(q=''){
     const diffLabel = diff >= 0 ? `<span class="text-green">+${fmt(diff)}</span>` : `<span class="text-red">${fmt(diff)}</span>`;
     const st=x.qty===0?'<span class="badge b-red">نفدت</span>':low?'<span class="badge b-amber">منخفض</span>':'<span class="badge b-green">جيد</span>';
     return`<tr>
+      <td><input type="checkbox" data-id="${x.id}" onchange="toggleBatchItem(this)" ${_batchSelected.has(x.id)?'checked':''}></td>
       <td class="td-mono">${x.code}</td>
       <td class="td-bold">${x.name}</td>
       <td style="color:var(--text-muted)">${x.cat}</td>
@@ -267,11 +268,14 @@ function renderUsers(search=''){
     const roleClass = u.role==='admin'||u.role==='system_admin'?'b-purple':u.role==='sales'?'b-blue':u.role==='inventory'?'b-teal':'b-gray';
     const statusClass = status==='active'?'b-green':status==='suspended'?'b-red':'b-amber';
     const statusLabel = status==='active'?'نشط':status==='suspended'?'موقوف':'غير نشط';
+    const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('ar-LY') : '—';
+    const loginCount = u.loginAttempts?.count || 0;
     return `<tr>
       <td class="td-bold">${u.name || '-'}</td>
       <td class="td-mono">${u.username || '-'}</td>
       <td><span class="badge ${roleClass}">${roleLabel}</span></td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      <td style="font-size:11px;color:var(--text-muted)">${lastLogin}</td>
       <td><div class="td-actions">
         <button class="btn btn-sm btn-danger btn-icon" onclick="delUser('${u.id || ''}')" title="حذف"><i class="ti ti-trash"></i></button>
       </div></td>
@@ -468,5 +472,138 @@ function renderSups(search=''){
     </tr>`
   }).join('');
   renderPag('sup-tb',full.length,renderSups)
+}
+
+/* ═══ BATCH OPERATIONS ═══ */
+const _batchSelected = new Set();
+
+function toggleSelectAll(cb) {
+  const checkboxes = document.querySelectorAll('#inv-tb input[type="checkbox"]');
+  checkboxes.forEach(ch => {
+    ch.checked = cb.checked;
+    const id = parseInt(ch.dataset.id);
+    if (cb.checked) _batchSelected.add(id); else _batchSelected.delete(id);
+  });
+  updateBatchBar();
+}
+
+function toggleBatchItem(cb) {
+  const id = parseInt(cb.dataset.id);
+  if (cb.checked) _batchSelected.add(id); else _batchSelected.delete(id);
+  const allCh = document.querySelectorAll('#inv-tb input[type="checkbox"]');
+  const selAll = G('inv-select-all');
+  if (selAll) selAll.checked = allCh.length > 0 && [...allCh].every(c => c.checked);
+  updateBatchBar();
+}
+
+function updateBatchBar() {
+  const bar = G('batch-bar');
+  const cnt = G('batch-count');
+  if (!bar) return;
+  if (_batchSelected.size > 0) {
+    bar.style.display = 'flex';
+    if (cnt) cnt.textContent = _batchSelected.size + ' محدد';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function clearBatchSelection() {
+  _batchSelected.clear();
+  const checkboxes = document.querySelectorAll('#inv-tb input[type="checkbox"]');
+  checkboxes.forEach(ch => ch.checked = false);
+  const selAll = G('inv-select-all');
+  if (selAll) selAll.checked = false;
+  updateBatchBar();
+}
+
+function batchDeleteItems() {
+  if (_batchSelected.size === 0) return;
+  if (!confirm(`حذف ${_batchSelected.size} صنف؟`)) return;
+  _batchSelected.forEach(id => {
+    const it = DB.items.find(x => x.id === id);
+    if (it) addLog(t('inv_delete'), `"${it.name}"`, '#f05454');
+  });
+  DB.items = DB.items.filter(x => !_batchSelected.has(x.id));
+  clearBatchSelection();
+  saveState();
+  renderItems();
+  updateStats();
+  toast('تم حذف الأصناف المحددة', 'success');
+}
+
+function batchUpdateCategory() {
+  if (_batchSelected.size === 0) return;
+  const newCat = prompt('اسم الفئة الجديدة:');
+  if (!newCat || !newCat.trim()) return;
+  DB.items.forEach(x => { if (_batchSelected.has(x.id)) x.cat = newCat.trim(); });
+  clearBatchSelection();
+  saveState();
+  renderItems();
+  toast('تم تحديث فئة الأصناف المحددة', 'success');
+}
+
+function batchUpdatePrice() {
+  if (_batchSelected.size === 0) return;
+  const factor = prompt('معامل تعديل السعر (مثال: 1.1 لزيادة 10%):');
+  const f = parseFloat(factor);
+  if (isNaN(f) || f <= 0) return;
+  DB.items.forEach(x => { if (_batchSelected.has(x.id)) x.sell = Math.round(x.sell * f * 1000) / 1000; });
+  clearBatchSelection();
+  saveState();
+  renderItems();
+  toast('تم تعديل أسعار الأصناف المحددة', 'success');
+}
+
+/* ═══ DATA IMPORT ═══ */
+function importItemsCSV(){
+  const input=G('import-csv-input');
+  if(input)input.click();
+}
+function handleCSVImport(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const text=e.target.result;
+      const lines=text.split('\n').filter(l=>l.trim());
+      if(lines.length<2){toast('الملف فارغ أو بدون بيانات','error');return}
+      const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
+      const nameIdx=headers.findIndex(h=>h.includes('name')||h.includes('اسم'));
+      const codeIdx=headers.findIndex(h=>h.includes('code')||h.includes('كود'));
+      const catIdx=headers.findIndex(h=>h.includes('cat')||h.includes('فئ'));
+      const buyIdx=headers.findIndex(h=>h.includes('buy')||h.includes('شراء'));
+      const sellIdx=headers.findIndex(h=>h.includes('sell')||h.includes('بيع'));
+      const qtyIdx=headers.findIndex(h=>h.includes('qty')||h.includes('رصيد'));
+      const unitIdx=headers.findIndex(h=>h.includes('unit')||h.includes('وحده'));
+      const reorderIdx=headers.findIndex(h=>h.includes('reorder')||h.includes('حد'));
+      if(nameIdx===-1){toast('العمود "اسم الصنف" مطلوب','error');return}
+      let imported=0;
+      for(let i=1;i<lines.length;i++){
+        const cols=lines[i].split(',').map(c=>c.trim().replace(/"/g,''));
+        const name=cols[nameIdx];
+        if(!name)continue;
+        DB.items.push({
+          id:Date.now()+i,
+          code:cols[codeIdx]||genUniqueItemCode(),
+          name,
+          cat:cols[catIdx]||'',
+          buy:parseFloat(cols[buyIdx])||0,
+          sell:parseFloat(cols[sellIdx])||0,
+          qty:parseFloat(cols[qtyIdx])||0,
+          unit:cols[unitIdx]||'',
+          reorder:parseFloat(cols[reorderIdx])||0,
+          barcode:'',
+          image:''
+        });
+        imported++;
+      }
+      saveState();renderItems();updateStats();
+      toast(`تم استيراد ${imported} صنف بنجاح`,'success');
+    }catch(err){toast('خطأ في قراءة الملف: '+err.message,'error')}
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 

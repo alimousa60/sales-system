@@ -81,6 +81,10 @@
     </div>
     <div class="topbar-actions" id="pg-act">
       <button class="btn btn-sm btn-secondary" id="lang-toggle" onclick="toggleLanguage()" title="Switch Language">EN</button>
+      <div style="position:relative">
+        <button class="btn btn-sm btn-secondary" id="notif-bell" onclick="toggleNotifPanel()" title="الإشعارات"><i class="ti ti-bell"></i><span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:700">0</span></button>
+        <div id="notif-panel" style="display:none;position:absolute;top:100%;left:0;width:320px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);z-index:300;max-height:400px;overflow-y:auto"></div>
+      </div>
       <button class="btn btn-primary btn-sm" id="install-btn" style="display:none" onclick="installApp()" title="تثبيت التطبيق"><i class="ti ti-device-mobile"></i> تثبيت التطبيق</button>
     </div>
     <button class="btn btn-icon btn-sm" onclick="logout()" title="تسجيل خروج"><i class="ti ti-logout"></i></button>
@@ -90,12 +94,13 @@
     <i class="ti ti-wifi-off"></i> <span data-i18n="offline_banner">وضع عدم الاتصال — البيانات محفوظة محلياً</span>
   </div>
   <div class="content">
-    <div class="search-panel" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <div class="search-panel" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;position:relative">
       <div class="search-bar" style="flex:1;margin-bottom:0">
         <i class="ti ti-search"></i>
-        <input id="global-search" type="text" data-i18n-ph="search_quick" placeholder="بحث سريع...">
+        <input id="global-search" type="text" data-i18n-ph="search_quick" placeholder="بحث سريع..." oninput="showSearchDropdown(this.value)" onfocus="showSearchDropdown(this.value)" onblur="setTimeout(()=>hideSearchDropdown(),200)">
       </div>
       <button class="btn btn-sm" id="clear-search" title="مسح البحث"><i class="ti ti-x"></i></button>
+      <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;left:40px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-md);z-index:300;max-height:320px;overflow-y:auto;padding:6px"></div>
     </div>
 
   <!-- DASHBOARD -->
@@ -186,12 +191,21 @@
             <option value="out">نفدت</option>
           </select>
           <button class="btn btn-sm btn-secondary" onclick="exportItems()"><i class="ti ti-file-spreadsheet"></i> تصدير</button>
+          <button class="btn btn-sm btn-secondary" onclick="importItemsCSV()" title="استيراد من CSV"><i class="ti ti-upload"></i> استيراد</button>
+          <input type="file" id="import-csv-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleCSVImport(this)">
           <button class="btn btn-sm" onclick="printItemsPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
           <button class="btn btn-sm btn-secondary" onclick="printAllItemLabels()" title="طباعة ملصقات جميع الأصناف"><i class="ti ti-barcode"></i> ملصقات</button>
           <button class="btn btn-primary" onclick="openNewItem()"><i class="ti ti-plus"></i> صنف جديد</button>
         </div></div>
+      <div id="batch-bar" style="display:none;padding:8px 14px;background:var(--accent-dim);border-bottom:1px solid var(--accent);display:none;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--accent)" id="batch-count">0 محدد</span>
+        <button class="btn btn-sm btn-secondary" onclick="batchUpdateCategory()"><i class="ti ti-tag"></i> تغيير الفئة</button>
+        <button class="btn btn-sm btn-secondary" onclick="batchUpdatePrice()"><i class="ti ti-cash"></i> تعديل السعر</button>
+        <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="batchDeleteItems()"><i class="ti ti-trash"></i> حذف المحدد</button>
+        <button class="btn btn-sm" onclick="clearBatchSelection()" style="margin-right:auto"><i class="ti ti-x"></i> إلغاء التحديد</button>
+      </div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th data-cust-col="col-code">الكود</th><th data-cust-col="col-name">الصنف</th><th data-cust-col="col-cat">الفئة</th><th data-cust-col="col-buy">سعر الشراء</th><th data-cust-col="col-sell">سعر البيع</th><th data-cust-col="col-qty">الرصيد</th><th data-cust-col="col-unit">الوحدة</th><th data-cust-col="col-status">الحالة</th><th></th></tr></thead>
+        <thead><tr><th style="width:30px"><input type="checkbox" id="inv-select-all" onchange="toggleSelectAll(this)"></th><th data-cust-col="col-code">الكود</th><th data-cust-col="col-name">الصنف</th><th data-cust-col="col-cat">الفئة</th><th data-cust-col="col-buy">سعر الشراء</th><th data-cust-col="col-sell">سعر البيع</th><th data-cust-col="col-qty">الرصيد</th><th data-cust-col="col-unit">الوحدة</th><th data-cust-col="col-status">الحالة</th><th></th></tr></thead>
         <tbody id="inv-tb"></tbody></table></div>
       <div class="pagination" id="pag-inv-tb"></div>
     </div>
@@ -329,7 +343,7 @@
           <button class="btn btn-sm" onclick="printUsersPDF()" title="طباعة / PDF"><i class="ti ti-printer"></i></button>
           <button class="btn btn-primary" onclick="openModal('m-user')"><i class="ti ti-plus"></i> مستخدم جديد</button>
         </div></div>
-      <div class="tbl-wrap"><table><thead><tr><th>الاسم</th><th>اسم الحساب</th><th>الصلاحية</th><th>الحالة</th><th></th></tr></thead><tbody id="user-tb"></tbody></table></div>
+      <div class="tbl-wrap"><table><thead><tr><th>الاسم</th><th>اسم الحساب</th><th>الصلاحية</th><th>الحالة</th><th>آخر دخول</th><th></th></tr></thead><tbody id="user-tb"></tbody></table></div>
       <div class="pagination" id="pag-user-tb"></div>
     </div>
   </div>
