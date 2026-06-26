@@ -182,9 +182,9 @@ function savePayment(){
   toast(`${fmt(amount)} ${t('currency_sym')} — ${inv.custName}`,'success',{title:t('pay_received'),icon:'ti-cash',duration:4000})
 }
 
-function deletePayment(payId){
+async function deletePayment(payId){
   const pay=DB.payments.find(p=>p.id===payId);if(!pay)return;
-  if(!confirm(`حذف الدفعة ${payId} — ${fmt(pay.amount)} ${t('currency_sym')}؟\nسيتم خصم المبلغ من الخزينة.`))return;
+  const ok=await confirmDanger(`حذف الدفعة ${payId} — ${fmt(pay.amount)} ${t('currency_sym')}؟`);if(!ok)return;
   DB.payments=DB.payments.filter(p=>p.id!==payId);
   addLog('حذف دفعة',`${payId} — ${pay.invNum} — ${fmt(pay.amount)} ${t('currency_sym')}`,'#f05454');
   saveState();
@@ -1006,14 +1006,14 @@ function loadReverseSettlements(){
   }).join('');
 }
 
-function reverseSettlement(type,settleId){
+async function reverseSettlement(type,settleId){
   const isCust=type==='customer';
   const arr=isCust?DB.settlements:DB.supSettlements;
   const idx=arr.findIndex(s=>s.id===settleId);
   if(idx===-1){toast(t('sales_settle_not_found'),'error');return}
   const s=arr[idx];
   const name=isCust?s.custName:s.supName;
-  if(!confirm(`هل تريد عكس التسوية ${s.id} — ${name} — ${fmt(s.amount)} ${t('currency_sym')}؟\nسيُعيد المبلغ المُخصم إلى الفواتير.`))return;
+  const cf=await confirmDanger(`عكس التسوية ${s.id} — ${name} — ${fmt(s.amount)} ${t('currency_sym')}؟`, 'تأكيد عكس التسوية');if(!cf)return;
 
   // Reverse each applied share
   s.applied.forEach(a=>{

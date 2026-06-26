@@ -100,7 +100,7 @@ async function renderExpenses(){
 }
 
 async function deleteExpense(id){
-  if(!confirm('حذف هذا المصروف؟'))return;
+  const ok=await confirmDanger('حذف هذا المصروف؟');if(!ok)return;
   try{
     await apiFetch('/api/v1/expenses/'+id,{method:'DELETE'});
     renderExpenses();

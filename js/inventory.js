@@ -252,12 +252,14 @@ function renderItems(q=''){
 }
 function delItem(id){
   const it=DB.items.find(x=>x.id===id);
-  if(!confirm(`حذف الصنف "${it?.name}"?`))return;
-  addLog(t('inv_delete'),`"${it?.name}"`,'#f05454');
-  DB.items=DB.items.filter(x=>x.id!==id);
-  saveState();
-  renderItems();updateStats();
-  broadcastChange('items', { id, deleted: true });
+  confirmDanger(`حذف الصنف "${it?.name}"؟`).then(ok=>{
+    if(!ok)return;
+    addLog(t('inv_delete'),`"${it?.name}"`,'#f05454');
+    DB.items=DB.items.filter(x=>x.id!==id);
+    saveState();
+    renderItems();updateStats();
+    broadcastChange('items', { id, deleted: true });
+  });
 }
 
 function renderUsers(search=''){
@@ -401,7 +403,7 @@ async function delUser(id){
   if(String(user.id||user._id)===String(currentUser?.id || currentUser?._id)){toast(t('user_cannot_delete_self'),'error');return}
   const admins=DB.users.filter(u=>['admin','system_admin'].includes(String(u.role).toLowerCase()));
   if(['admin','system_admin'].includes(String(user.role).toLowerCase()) && admins.length===1){toast(t('user_keep_admin'),'error');return}
-  if(!confirm(`حذف المستخدم "${user.name}"?`))return;
+  const confirmed=await confirmDanger(`حذف المستخدم "${user.name}"؟`);if(!confirmed)return;
   try{
     const resp=await fetch(`${API_BASE_URL}/admin/users/${id}`,{
       method:'DELETE',
@@ -529,9 +531,9 @@ function clearBatchSelection() {
   updateBatchBar();
 }
 
-function batchDeleteItems() {
+async function batchDeleteItems() {
   if (_batchSelected.size === 0) return;
-  if (!confirm(`حذف ${_batchSelected.size} صنف؟`)) return;
+  const ok=await confirmDanger(`حذف ${_batchSelected.size} صنف؟`, 'تأكيد الحذف المجمع');if(!ok)return;
   _batchSelected.forEach(id => {
     const it = DB.items.find(x => x.id === id);
     if (it) addLog(t('inv_delete'), `"${it.name}"`, '#f05454');

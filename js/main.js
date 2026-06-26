@@ -1,5 +1,21 @@
 /* ═══ DASHBOARD ═══ */
 
+function showDashSkeleton(){
+  const areas=['stats-grid','insight-grid','dash-charts','#p-dash .card'];
+  areas.forEach(sel=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      el._origHTML=el.innerHTML;
+      el.style.minHeight='100px';
+      el.innerHTML=`<div class="skeleton-card"><div class="skeleton-line w-75 h-lg"></div><div class="skeleton-line w-50 h-xl" style="margin-top:12px"></div><div class="skeleton-line w-25"></div></div>`;
+    });
+  });
+}
+function hideDashSkeleton(){
+  document.querySelectorAll('[style*="min-height"]').forEach(el=>{
+    if(el._origHTML){el.innerHTML=el._origHTML;delete el._origHTML;el.style.minHeight=''}
+  });
+}
+
 function animateCounter(el, target, isFloat){
   const start=parseFloat(el.textContent.replace(/[^0-9.-]/g,''))||0;
   if(start===target){return}

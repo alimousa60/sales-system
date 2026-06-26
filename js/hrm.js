@@ -373,7 +373,7 @@ async function saveEmployeeEdit() {
 }
 
 async function deactivateEmployee(id, name) {
-  if (!confirm(`هل أنت متأكد من إنهاء عقد ${name}؟`)) return;
+  const ok1 = await confirmDanger(`إنهاء عقد ${name}؟`, 'إنهاء عقد'); if (!ok1) return;
   try {
     const res = await authenticatedFetch(`/api/hrm/employees/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -468,7 +468,7 @@ async function saveAttendance() {
 }
 
 async function lockAttendance(id) {
-  if (!confirm('قفل هذا السجل؟ لن يمكن تعديله بعد القفل')) return;
+  const ok2=await confirmDanger('قفل هذا السجل؟ لن يمكن تعديله بعد القفل','تأكيد القفل');if(!ok2)return;
   try {
     const res = await authenticatedFetch(`/api/hrm/attendance/${id}/lock`, { method: 'PATCH' });
     const data = await res.json();
@@ -627,7 +627,7 @@ async function renderHRMPayroll() {
 async function generatePayroll() {
   const period = G('hrm-pay-gen-period')?.value;
   if (!period) { toast(t('hrm_choose_period'), 'error'); return; }
-  if (!confirm(`توليد رواتب لشهر ${period}؟`)) return;
+  const ok3=await confirmWarning(`توليد رواتب لشهر ${period}؟`, 'تأكيد توليد الرواتب');if(!ok3)return;
   try {
     const res = await authenticatedFetch('/api/hrm/payroll/generate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ period })
@@ -643,7 +643,7 @@ async function generatePayroll() {
 }
 
 async function approvePayroll(id) {
-  if (!confirm('اعتماد هذا الراتب؟')) return;
+  const ok4=await confirmWarning('اعتماد هذا الراتب؟','تأكيد الاعتماد');if(!ok4)return;
   try {
     const res = await authenticatedFetch(`/api/hrm/payroll/${id}/approve`, { method: 'POST' });
     const data = await res.json();
@@ -657,7 +657,7 @@ async function approvePayroll(id) {
 }
 
 async function payPayroll(id) {
-  if (!confirm('تأكيد دفع هذا الراتب؟')) return;
+  const ok5=await confirmWarning('تأكيد دفع هذا الراتب؟','تأكيد الدفع');if(!ok5)return;
   try {
     const res = await authenticatedFetch(`/api/hrm/payroll/${id}/pay`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

@@ -22,7 +22,8 @@ const STATIC_ASSETS = [
   '/js/barcode-settings.js',
   '/js/barcode-scanner.js',
   '/js/expenses.js',
-  '/js/customize-page.js'
+  '/js/customize-page.js',
+  '/js/ux.js'
 ];
 
 const CDN_ASSETS = [

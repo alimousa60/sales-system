@@ -1552,3 +1552,160 @@ body.light-mode .rpt-kpi.cyan .rpt-kpi-icon{background:rgba(8,145,178,.08)}
   .sidebar{transition:transform .3s cubic-bezier(.4,0,.2,1)}
   .sidebar.open{transform:translateX(0) !important}
 }
+
+/* ═══════════════════════════════════════════════
+   UX IMPROVEMENTS — تحسينات تجربة المستخدم
+═══════════════════════════════════════════════ */
+
+/* 1. BUTTON LOADING STATES */
+.btn.loading,.btn[disabled]{pointer-events:none;opacity:.7;cursor:not-allowed}
+.btn.loading{position:relative}
+.btn.loading::after{content:'';position:absolute;inset:0;border-radius:inherit;background:inherit;opacity:.15}
+.btn.loading .ti{animation:icon-spin .8s linear infinite}
+.btn.loading .btn-text{opacity:.6}
+
+/* 2. CUSTOM CONFIRM DIALOG */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s ease}
+.confirm-dialog{background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:16px;width:380px;max-width:92vw;overflow:hidden;animation:mIn .18s ease;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.confirm-hd{padding:18px 20px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.confirm-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.confirm-icon.danger{background:var(--red-dim);color:var(--red)}
+.confirm-icon.warning{background:var(--amber-dim);color:var(--amber)}
+.confirm-icon.info{background:var(--accent-dim);color:var(--accent)}
+.confirm-icon.success{background:var(--green-dim);color:var(--green)}
+.confirm-title{font-size:14px;font-weight:700}
+.confirm-body{padding:14px 20px;font-size:12px;color:var(--text-secondary);line-height:1.7}
+.confirm-footer{padding:12px 20px 16px;display:flex;gap:8px;justify-content:flex-end}
+.confirm-footer .btn{min-width:80px}
+
+/* 3. INLINE FORM VALIDATION */
+.fg.field-error label{color:var(--red)}
+.fg.field-error input,.fg.field-error select,.fg.field-error textarea{border-color:var(--red) !important;box-shadow:0 0 0 2px var(--red-dim)}
+.fg.field-error .field-msg{font-size:10px;color:var(--red);margin-top:3px;display:flex;align-items:center;gap:4px}
+.fg.field-error .field-msg .ti{font-size:11px}
+.fg.field-success input,.fg.field-success select{border-color:var(--green) !important;box-shadow:0 0 0 2px var(--green-dim)}
+.fg.field-success label{color:var(--green)}
+.field-msg{font-size:10px;margin-top:3px;display:none;align-items:center;gap:4px}
+.fg.field-error .field-msg{display:flex}
+input.shake{animation:fieldShake .4s ease}
+@keyframes fieldShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+
+/* 4. SKELETON LOADERS */
+.skeleton{position:relative;overflow:hidden;background:var(--bg-elevated);border-radius:var(--r)}
+.skeleton::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);animation:shimmer 1.5s infinite}
+.skeleton-line{height:12px;border-radius:6px;margin-bottom:8px}
+.skeleton-line.w-full{width:100%}
+.skeleton-line.w-75{width:75%}
+.skeleton-line.w-50{width:50%}
+.skeleton-line.w-25{width:25%}
+.skeleton-line.h-lg{height:20px}
+.skeleton-line.h-xl{height:28px}
+.skeleton-circle{border-radius:50%}
+.skeleton-card{padding:20px;border:1px solid var(--border);border-radius:var(--rl)}
+.skeleton-stat{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid var(--border);border-radius:var(--rl);background:var(--bg-surface)}
+.skeleton-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.skeleton-row .skeleton-avatar{width:36px;height:36px;border-radius:8px;flex-shrink:0}
+.skeleton-row .skeleton-content{flex:1;display:flex;flex-direction:column;gap:6px}
+body.light-mode .skeleton::after{background:linear-gradient(90deg,transparent,rgba(0,0,0,.04),transparent)}
+
+/* 5. FOCUS TRAPPING IN MODALS */
+.modal-backdrop:focus{outline:none}
+.modal-backdrop:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.modal [data-focusable]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.modal-backdrop.on{animation:mIn .18s ease}
+
+/* 6. CSS TOOLTIPS */
+[data-tooltip]{position:relative}
+[data-tooltip]::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) scale(.9);padding:5px 10px;background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:8px;font-size:10px;font-weight:500;color:var(--text-primary);white-space:nowrap;pointer-events:none;opacity:0;transition:all .2s cubic-bezier(.4,0,.2,1);z-index:9999;box-shadow:var(--shadow-md)}
+[data-tooltip]:hover::after{opacity:1;transform:translateX(-50%) scale(1)}
+[data-tooltip-dir="left"]::after{bottom:auto;right:calc(100% + 8px);left:auto;transform:translateY(-50%) scale(.9)}
+[data-tooltip-dir="left"]:hover::after{transform:translateY(-50%) scale(1)}
+[data-tooltip-dir="right"]::after{bottom:auto;left:calc(100% + 8px);right:auto;transform:translateY(-50%) scale(.9)}
+[data-tooltip-dir="right"]:hover::after{transform:translateY(-50%) scale(1)}
+[data-tooltip-dir="bottom"]::after{bottom:auto;top:calc(100% + 8px);transform:translateX(-50%) scale(.9)}
+[data-tooltip-dir="bottom"]:hover::after{transform:translateX(-50%) scale(1)}
+[data-tooltip-theme="success"]::after{background:#0d3320;color:#6ee7a0;border-color:rgba(45,209,126,.3)}
+[data-tooltip-theme="danger"]::after{background:#2d0f0f;color:#fca5a5;border-color:rgba(240,84,84,.3)}
+
+/* 7. EMPTY STATE ENHANCEMENTS */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:14px;text-align:center}
+.empty-state-icon{width:80px;height:80px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--bg-elevated);border:1px solid var(--border);margin-bottom:4px}
+.empty-state-icon.green{background:var(--green-dim);color:var(--green);border-color:rgba(45,209,126,.15)}
+.empty-state-icon.blue{background:var(--accent-dim);color:var(--accent);border-color:rgba(79,142,247,.15)}
+.empty-state-icon.amber{background:var(--amber-dim);color:var(--amber);border-color:rgba(245,166,35,.15)}
+.empty-state-icon.red{background:var(--red-dim);color:var(--red);border-color:rgba(240,84,84,.15)}
+.empty-state-title{font-size:14px;font-weight:700;color:var(--text-primary)}
+.empty-state-desc{font-size:12px;color:var(--text-secondary);max-width:300px;line-height:1.6}
+.empty-state .btn{margin-top:4px}
+.empty-state-illustration{width:120px;height:120px;margin-bottom:8px;opacity:.6}
+
+/* 8. DRAG-AND-DROP */
+.drag-handle{cursor:grab;user-select:none;touch-action:none}
+.drag-handle:active{cursor:grabbing}
+.drag-over{border-top:2px solid var(--accent) !important;transition:border-color .15s}
+.dragging{opacity:.5;transform:scale(.98);transition:all .15s}
+
+/* 9. UNDO TOAST */
+.undo-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:12px;z-index:9998;box-shadow:var(--shadow-lg);animation:fadeInUp .25s ease;min-width:280px}
+.undo-toast-msg{flex:1;font-size:12px;font-weight:500}
+.undo-toast .btn-undo{color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap}
+.undo-toast .btn-undo:hover{text-decoration:underline}
+.undo-toast .btn-close-undo{color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px}
+@keyframes undoSlide{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* 10. PROGRESS BAR */
+.progress-bar{height:4px;background:var(--bg-elevated);border-radius:4px;overflow:hidden;margin:8px 0}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s ease;position:relative}
+.progress-bar-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shimmer 1.5s infinite}
+.progress-bar-fill.success{background:var(--green)}
+.progress-bar-fill.error{background:var(--red)}
+.progress-label{font-size:10px;color:var(--text-muted);font-weight:600;text-align:center;margin-top:2px}
+
+/* 11. PAGE TRANSITIONS */
+.page{animation:fadeIn .18s ease both}
+.page.exiting{animation:fadeOut .12s ease both}
+@keyframes fadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-5px)}}
+
+/* 12. TABLE ROW HIGHLIGHT ON KEYBOARD NAV */
+tbody tr.row-focused{background:var(--accent-dim) !important;outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
+tbody tr{transition:background .1s}
+tbody tr:hover{background:var(--bg-hover)}
+
+/* 13. NOTIFICATION READ/UNREAD */
+.notif-item{transition:all .2s}
+.notif-item.unread{border-right:3px solid var(--accent);background:var(--accent-dim)}
+.notif-item.unread:hover{background:rgba(79,142,247,.08)}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:icon-pop .3s ease}
+.notif-dot.read{background:var(--text-muted);opacity:.4}
+
+/* 14. MICRO-INTERACTIONS */
+.btn-success-pop{animation:successPop .4s cubic-bezier(.68,-.55,.27,1.55)}
+@keyframes successPop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+.card-flash{animation:cardFlash .6s ease}
+@keyframes cardFlash{0%{box-shadow:0 0 0 0 var(--accent-glow)}100%{box-shadow:0 0 0 0 transparent}}
+input:focus,select:focus{animation:inputFocus .3s ease}
+@keyframes inputFocus{0%{box-shadow:0 0 0 0 var(--accent-dim)}100%{box-shadow:0 0 0 3px var(--accent-dim)}}
+
+/* 15. BATCH PROGRESS */
+.batch-progress{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-dim);border:1px solid rgba(79,142,247,.2);border-radius:var(--r);margin-bottom:10px}
+.batch-progress-text{font-size:11px;font-weight:600;color:var(--accent)}
+.batch-progress-bar{flex:1;height:4px;background:var(--bg-elevated);border-radius:4px;overflow:hidden}
+.batch-progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.batch-progress-icon{animation:icon-spin .8s linear infinite;color:var(--accent)}
+
+/* ═══ ACCESSIBILITY ═══ */
+@media(prefers-reduced-motion:reduce){
+  .skeleton::after,.progress-bar-fill::after{animation:none !important}
+  .btn.loading::after{animation:none !important}
+  .page,.page.exiting{animation:none !important}
+  .confirm-dialog,.undo-toast{animation:none !important}
+}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+/* ═══ LIGHT MODE ADDITIONS ═══ */
+body.light-mode .skeleton{background:#f1f5f9}
+body.light-mode .skeleton::after{background:linear-gradient(90deg,transparent,rgba(0,0,0,.04),transparent)}
+body.light-mode .confirm-dialog{background:#fff}
+body.light-mode .undo-toast{background:#fff;border-color:#e5e7eb}
+body.light-mode .empty-state-icon{background:#f8fafc;border-color:#e5e7eb}
+body.light-mode .notif-item.unread{background:rgba(37,99,235,.04);border-right-color:#2563eb}

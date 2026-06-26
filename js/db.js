@@ -570,11 +570,11 @@ function exportLocalBackup(){
 function importLocalBackup(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=function(ev){
+  reader.onload=async function(ev){
     try{
       const data=JSON.parse(ev.target.result);
       if(!data||typeof data!=='object'){toast(t('backup_invalid_file'),'error');return}
-      if(!confirm(t('backup_confirm_replace')))return;
+      if(!await confirmWarning(t('backup_confirm_replace'),'تأكيد الاستيراد'))return;
       const keys=['items','invs','purs','custs','sups','payments','supPayments','rets','log','cI','cP','cRet','cPay','cSpay','companyId','companies'];
       keys.forEach(k=>{if(data[k]!==undefined)DB[k]=data[k]});
       saveState();
@@ -636,7 +636,7 @@ async function downloadCloudBackup(id){
   }catch(err){toast(t('backup_save_error')+': '+err.message,'error')}
 }
 async function deleteCloudBackup(id){
-  if(!confirm(t('confirm_delete')))return;
+  if(!await confirmDanger(t('confirm_delete'),'تأكيد الحذف'))return;
   try{
     const token=localStorage.getItem(AUTH_TOKEN_KEY);
     await fetch(API_BASE_URL+'/backups/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
@@ -669,7 +669,7 @@ async function loadSessions(){
   }catch(e){console.error('sessions error:',e)}
 }
 async function terminateSession(sessionId){
-  if(!confirm('إنهاء هذه الجلسة؟'))return;
+  if(!await confirmDanger('إنهاء هذه الجلسة؟','إنهاء الجلسة'))return;
   try{
     await authenticatedFetch('/api/auth/sessions/'+sessionId,{method:'DELETE'});
     toast('تم إنهاء الجلسة','success');
@@ -677,7 +677,7 @@ async function terminateSession(sessionId){
   }catch(e){toast(e.message,'error')}
 }
 async function terminateAllSessions(){
-  if(!confirm('إنهاء جميع الجلسات الأخرى؟'))return;
+  if(!await confirmDanger('إنهاء جميع الجلسات الأخرى؟','إنهاء الكل'))return;
   try{
     await authenticatedFetch('/api/auth/sessions',{method:'DELETE'});
     toast('تم إنهاء جميع الجلسات','success');
