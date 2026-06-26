@@ -113,8 +113,8 @@ function renderSales(search=''){
       <td>${invDlvLabel(inv.dlvStatus)}</td>
       <td>${invPayStatus(inv)}</td>
       <td><div class="td-actions">
-        <button class="btn btn-sm btn-icon" onclick="viewInv(${inv.id})" title="عرض"><i class="ti ti-eye"></i></button>
-        ${['admin','system_admin'].includes(currentUser?.role)&&inv.dlvStatus==='pending'?`<button class="btn btn-sm btn-icon" onclick="editInv(${inv.id})" title="تعديل"><i class="ti ti-pencil"></i></button>`:''}
+        <button class="btn btn-sm btn-icon" data-ctx-view onclick="viewInv(${inv.id})" title="عرض"><i class="ti ti-eye"></i></button>
+        ${['admin','system_admin'].includes(currentUser?.role)&&inv.dlvStatus==='pending'?`<button class="btn btn-sm btn-icon" data-ctx-edit onclick="editInv(${inv.id})" title="تعديل"><i class="ti ti-pencil"></i></button>`:''}
         ${inv.dlvStatus==='pending'?`<button class="btn btn-sm btn-amber btn-icon" onclick="openDeliver(${inv.id})" title="تسليم"><i class="ti ti-truck-delivery"></i></button>`:''}
         ${rem>0.001?`<button class="btn btn-sm btn-success btn-icon" onclick="openCollect(${inv.id})" title="استلام دفعة"><i class="ti ti-cash"></i></button>`:''}
       </div></td>

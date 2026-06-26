@@ -102,8 +102,8 @@ function renderPurs(search=''){
       <td class="td-mono ${rem>0?'text-red':'text-muted'}">${rem>0?fmt(rem)+' '+t('currency_sym'):'✓'}</td>
       <td>${purPayStatus(p)}</td>
       <td><div class="td-actions">
-        <button class="btn btn-sm" onclick="viewPur(${p.id})"><i class="ti ti-eye"></i></button>
-        ${['admin','system_admin'].includes(currentUser?.role)?`<button class="btn btn-sm btn-icon" onclick="editPur(${p.id})" title="تعديل"><i class="ti ti-pencil"></i></button>`:''}
+        <button class="btn btn-sm" data-ctx-view onclick="viewPur(${p.id})"><i class="ti ti-eye"></i></button>
+        ${['admin','system_admin'].includes(currentUser?.role)?`<button class="btn btn-sm btn-icon" data-ctx-edit onclick="editPur(${p.id})" title="تعديل"><i class="ti ti-pencil"></i></button>`:''}
       </div></td>
     </tr>`
   }).join('');

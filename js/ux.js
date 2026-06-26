@@ -346,11 +346,195 @@ if(document.readyState==='loading'){
   }
 })();
 
-/* 15. MONITOR FOR DYNAMIC CONTENT */
-const _origShowPage = window.showPage;
-if(_origShowPage){
-  window.showPage = function(pg){
-    _origShowPage(pg);
-    setTimeout(initTooltips, 100);
-  };
+/* 15. MONITOR FOR DYNAMIC CONTENT — handled by showPage in ui.js */
+
+/* ═══ 16. CONTEXT MENU ON TABLE ROWS ═══ */
+(function initContextMenu(){
+  document.addEventListener('contextmenu', function(e){
+    const row = e.target.closest('tbody tr');
+    if(!row || row.closest('.no-context')) return;
+    const tbl = row.closest('table');
+    if(!tbl) return;
+    e.preventDefault();
+    /* Remove existing menus */
+    document.querySelectorAll('.ctx-menu').forEach(m=>m.remove());
+    /* Build actions from data attributes */
+    const menu = document.createElement('div');
+    menu.className = 'ctx-menu';
+    menu.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;z-index:10000;background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);padding:6px;min-width:180px;animation:fadeIn .12s ease`;
+    const actions = row.getAttribute('data-ctx-actions');
+    if(actions){
+      try{
+        JSON.parse(actions).forEach(a=>{
+          const item = document.createElement('div');
+          item.className = 'ctx-item';
+          item.style.cssText = `display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:12px;cursor:pointer;transition:background .1s;color:${a.color||'var(--text-secondary)'}`;
+          item.innerHTML = `<i class="ti ti-${a.icon||'circle'}" style="font-size:15px;width:20px;text-align:center"></i> ${a.label}`;
+          item.onmouseenter = function(){this.style.background = 'var(--bg-hover)'};
+          item.onmouseleave = function(){this.style.background = 'transparent'};
+          item.onclick = function(){ eval(a.action); menu.remove(); };
+          menu.appendChild(item);
+        });
+      }catch(e){}
+    }
+    /* Default actions */
+    if(!menu.children.length){
+      const editBtn = row.querySelector('[data-ctx-edit]');
+      const delBtn = row.querySelector('[data-ctx-delete]');
+      if(editBtn){
+        const item = document.createElement('div');
+        item.className = 'ctx-item';
+        item.style.cssText = `display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:12px;cursor:pointer;transition:background .1s;color:var(--accent)`;
+        item.innerHTML = '<i class="ti ti-pencil" style="font-size:15px;width:20px;text-align:center"></i> تعديل';
+        item.onmouseenter = function(){this.style.background = 'var(--bg-hover)'};
+        item.onmouseleave = function(){this.style.background = 'transparent'};
+        item.onclick = function(){ editBtn.click(); menu.remove(); };
+        menu.appendChild(item);
+      }
+      if(delBtn){
+        const item = document.createElement('div');
+        item.className = 'ctx-item';
+        item.style.cssText = `display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:12px;cursor:pointer;transition:background .1s;color:var(--red)`;
+        item.innerHTML = '<i class="ti ti-trash" style="font-size:15px;width:20px;text-align:center"></i> حذف';
+        item.onmouseenter = function(){this.style.background = 'var(--bg-hover)'};
+        item.onmouseleave = function(){this.style.background = 'transparent'};
+        item.onclick = function(){ delBtn.click(); menu.remove(); };
+        menu.appendChild(item);
+      }
+      const viewBtn = row.querySelector('[data-ctx-view]');
+      if(viewBtn){
+        const item = document.createElement('div');
+        item.innerHTML = '<i class="ti ti-eye" style="font-size:15px;width:20px;text-align:center"></i> عرض';
+        item.onclick = function(){ viewBtn.click(); menu.remove(); };
+        if(!menu.children.length) menu.prepend(item);
+        else menu.insertBefore(item, menu.children[0]);
+      }
+    }
+    if(menu.children.length){
+      document.body.appendChild(menu);
+      /* Close on click outside */
+      setTimeout(()=>document.addEventListener('click', function handler(e2){
+        if(!menu.contains(e2.target)){ menu.remove(); document.removeEventListener('click', handler); }
+      }), 10);
+    }
+  });
+})();
+
+/* ═══ 17. SWIPE GESTURES FOR MOBILE ═══ */
+(function initSwipe(){
+  let startX=0, startY=0, startTime=0;
+  document.addEventListener('touchstart', function(e){
+    const target = e.target.closest('tr, .dash-cv-item, .card');
+    if(!target) return;
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    startTime = Date.now();
+    target._swipeData = {startX, startY, startTime};
+  }, {passive: true});
+
+  document.addEventListener('touchend', function(e){
+    const target = e.target.closest('tr, .dash-cv-item, .card');
+    if(!target || !target._swipeData) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - target._swipeData.startX;
+    const dy = touch.clientY - target._swipeData.startY;
+    const dt = Date.now() - target._swipeData.startTime;
+    delete target._swipeData;
+    if(dt > 500 || Math.abs(dx) < 60) return;
+    if(Math.abs(dx) < Math.abs(dy) * 0.7) return;
+    /* Swipe right -> edit, Swipe left -> delete */
+    if(dx > 0){
+      const editBtn = target.querySelector('[data-ctx-edit]') || target.querySelector('.btn-icon:first-child');
+      if(editBtn) { editBtn.style.background = 'var(--accent-dim)'; setTimeout(()=>editBtn.style.background='',300); editBtn.click(); }
+    } else {
+      const delBtn = target.querySelector('[data-ctx-delete]') || target.querySelector('.btn-danger');
+      if(delBtn) { delBtn.style.background = 'var(--red-dim)'; setTimeout(()=>delBtn.style.background='',300); delBtn.click(); }
+    }
+    /* Haptic */
+    try{if(navigator.vibrate) navigator.vibrate(30);}catch(ex){}
+  }, {passive: true});
+})();
+
+/* ═══ 18. SOUND EFFECTS ═══ */
+function playSound(type){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.value = 0.08;
+    if(type === 'success'){
+      osc.frequency.setValueAtTime(523, ctx.currentTime);
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    }else if(type === 'error'){
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.setValueAtTime(200, ctx.currentTime + 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    }else if(type === 'delete'){
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.25);
+    }else if(type === 'notify'){
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    }else{
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.1);
+    }
+  }catch(ex){}
 }
+
+/* ═══ 19. WIRE CONFIRM SOUNDS ═══ */
+(function wireSounds(){
+  const _origConfirmDanger = window.confirmDanger;
+  if(_origConfirmDanger){
+    window.confirmDanger = async function(msg,title){
+      playSound('delete');
+      return _origConfirmDanger(msg,title);
+    };
+  }
+})();
+
+/* ═══ 20. FORM VALIDATION WIRING ═══ */
+(function wireFormValidation(){
+  /* Validate name field in item modal on input */
+  const nameInput = G('fi-name');
+  if(nameInput){
+    nameInput.addEventListener('blur', function(){
+      validateField(this, {required: true, requiredMsg: 'اسم الصنف مطلوب'});
+    });
+    nameInput.addEventListener('input', function(){
+      const fg = this.closest('.fg');
+      if(fg) fg.classList.remove('field-error');
+    });
+  }
+  /* Validate amount in expense modal */
+  const amountInput = G('exp-amount');
+  if(amountInput){
+    amountInput.addEventListener('blur', function(){
+      validateField(this, {required: true, min: 0.001, requiredMsg: 'المبلغ مطلوب'});
+    });
+  }
+  /* Validate description in expense modal */
+  const descInput = G('exp-desc');
+  if(descInput){
+    descInput.addEventListener('blur', function(){
+      validateField(this, {required: true, requiredMsg: 'البيان مطلوب'});
+    });
+  }
+})();

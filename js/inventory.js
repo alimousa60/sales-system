@@ -245,7 +245,7 @@ function renderItems(q=''){
       <td class="td-mono">${diffLabel}</td>
       <td style="color:var(--text-muted)">${x.unit}</td>
       <td>${st}</td>
-      <td><div class="td-actions"><button class="btn btn-sm btn-icon" onclick="editItem(${x.id})" title="تعديل"><i class="ti ti-pencil"></i></button><button class="btn btn-sm btn-secondary btn-icon" onclick="printItemLabel(${x.id})" title="طباعة ملصق"><i class="ti ti-barcode"></i></button><button class="btn btn-sm btn-danger btn-icon" onclick="delItem(${x.id})" title="حذف"><i class="ti ti-trash"></i></button></div></td>
+      <td><div class="td-actions"><button class="btn btn-sm btn-icon" data-ctx-edit onclick="editItem(${x.id})" title="تعديل"><i class="ti ti-pencil"></i></button><button class="btn btn-sm btn-secondary btn-icon" onclick="printItemLabel(${x.id})" title="طباعة ملصق"><i class="ti ti-barcode"></i></button><button class="btn btn-sm btn-danger btn-icon" data-ctx-delete onclick="delItem(${x.id})" title="حذف"><i class="ti ti-trash"></i></button></div></td>
     </tr>`
   }).join('');
   renderPag('inv-tb',full.length,renderItems)

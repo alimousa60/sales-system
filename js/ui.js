@@ -207,35 +207,59 @@ const PAGE_META={
 
 function showPage(pg){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===pg));
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('on');p.classList.add('exiting')});
   const page=G('p-'+pg);
   if(!page) return;
+  page.classList.remove('exiting');
   page.classList.add('on');
+  /* Show skeleton while loading */
+  const content=page.querySelector('.card:not(.no-skeleton),.stats-grid:not(.no-skeleton),.tbl-wrap:not(.no-skeleton)');
+  if(content&&!content.classList.contains('no-skeleton')){
+    content._origHTML=content.innerHTML;
+    content.innerHTML='<div class="skeleton-card" style="margin-bottom:12px"><div class="skeleton-line w-75 h-lg"></div><div class="skeleton-line w-50 h-xl" style="margin-top:8px"></div><div class="skeleton-line w-full"></div><div class="skeleton-line w-full"></div><div class="skeleton-line w-75"></div></div>';
+    content.classList.add('skeleton-active');
+  }
   const m=PAGE_META[pg]||{t:()=>pg,i:'ti-circle'};
   G('pg-title').innerHTML=`<i class="ti ${m.i}"></i> ${typeof m.t==='function'?m.t():m.t}`;
   closeSidebarIfMobile();
   updateSearchHint();
   const pageKeyMap={inventory:'inv-tb',sales:'sal-tb',purchases:'pur-tb',customers:'cust-tb',suppliers:'sup-tb',returns:'ret-tb',users:'user-tb',suppay:'suppay-tb'};
   if (pageKeyMap[pg]) _pg[pageKeyMap[pg]] = 1;
-  if(pg==='dash')renderDash();
-  if(pg==='audit')renderAudit();
-  if(pg==='finance')renderFin();
-  if(pg==='pl')renderPL();
-  if(pg==='users')renderUsers(currentSearch);
-  if(pg==='settings')renderSettings();
-  if(pg==='soa'){updateSOASelector();G('soa-out').innerHTML=''}
-  if(pg==='suppay')renderSupPays(currentSearch);
-  if(pg==='suppliers')renderSups(currentSearch);
-  if(pg==='customers')renderCusts(currentSearch);
-  if(pg==='returns')renderRets(currentSearch);
-  if(pg==='sales')renderSales(currentSearch);
-  if(pg==='purchases')renderPurs(currentSearch);
-  if(pg==='inventory')renderItems(currentSearch);
-  if(pg==='hrm'){
-    renderHRM();
-    loadHRMEmployeeDropdown('hrm-att-emp');
-    loadHRMEmployeeDropdown('hrm-adv-emp');
-  }
+  /* Defer render to next frame for skeleton visibility */
+  requestAnimationFrame(()=>{
+    if(pg==='dash')renderDash();
+    if(pg==='audit')renderAudit();
+    if(pg==='finance')renderFin();
+    if(pg==='pl')renderPL();
+    if(pg==='users')renderUsers(currentSearch);
+    if(pg==='settings')renderSettings();
+    if(pg==='soa'){updateSOASelector();G('soa-out').innerHTML=''}
+    if(pg==='suppay')renderSupPays(currentSearch);
+    if(pg==='suppliers')renderSups(currentSearch);
+    if(pg==='customers')renderCusts(currentSearch);
+    if(pg==='returns')renderRets(currentSearch);
+    if(pg==='sales')renderSales(currentSearch);
+    if(pg==='purchases')renderPurs(currentSearch);
+    if(pg==='inventory')renderItems(currentSearch);
+    if(pg==='hrm'){
+      renderHRM();
+      loadHRMEmployeeDropdown('hrm-att-emp');
+      loadHRMEmployeeDropdown('hrm-adv-emp');
+    }
+    /* Restore original content */
+    requestAnimationFrame(()=>{
+      if(content&&content._origHTML){
+        content.innerHTML=content._origHTML;
+        delete content._origHTML;
+        content.classList.remove('skeleton-active');
+      }
+    });
+    /* Wire keyboard nav */
+    const tbls=page.querySelectorAll('table');
+    tbls.forEach(tbl=>{if(!tbl._navWired){tbl.setAttribute('tabindex','0');tbl._navWired=true}});
+    if(typeof initTooltips==='function')initTooltips();
+    page.scrollIntoView({behavior:'smooth',block:'start'});
+  });
 }
 
 document.querySelectorAll('.nav-item').forEach(el=>{
@@ -324,6 +348,8 @@ function openModal(id){
   document.body.appendChild(el);
   el.classList.add('on');
   _modalStack.push(id);
+  /* Focus trap */
+  if(typeof trapFocus==='function')trapFocus(el);
 }
 
 function closeModal(id){
