@@ -160,6 +160,12 @@ const companySchema = new mongoose.Schema({
     website: String,
     phone: String,
     customFields: mongoose.Schema.Types.Mixed
+  },
+
+  // Invoice template settings
+  invoiceTemplate: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   }
 });
 

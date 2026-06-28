@@ -71,8 +71,42 @@ function normalizeText(value){
 }
 
 function baseCompany(){
-  return {id:1,name:'المؤسسة التجارية',address:'طرابلس، ليبيا',phone:'',note:'',logo:'',taxNo:'',items:[],custs:[],sups:[],invs:[],purs:[],payments:[],supPayments:[],rets:[],log:[],pendingSync:[],lastSynced:null,cI:1,cP:1,cRet:1,cPay:1,cSpay:1,cSettle:1,cSupSettle:1};
+  return {id:1,name:'المؤسسة التجارية',address:'طرابلس، ليبيا',phone:'',note:'',logo:'',taxNo:'',items:[],custs:[],sups:[],invs:[],purs:[],payments:[],supPayments:[],rets:[],log:[],pendingSync:[],lastSynced:null,cI:1,cP:1,cRet:1,cPay:1,cSpay:1,cSettle:1,cSupSettle:1,invoiceTemplate:getInvoiceTemplateDefaults()};
 }
+function getInvoiceTemplateDefaults(){
+  return {
+    accentColor:'#4f8ef7',secondaryColor:'#6c5ce7',useGradient:true,
+    paperSize:'portrait',fontSize:12,fontFamily:'Cairo',
+    borderRadius:8,logoHeight:55,
+    tableHeaderStyle:'gradient',tableRowStyle:'alternating',
+    watermarkText:'',watermarkOpacity:3,watermarkRotation:-32,
+    qrSize:100,
+    showLogo:true,showCompanyInfo:true,showTaxNo:true,showBadge:true,
+    showInfoGrid:true,showQrCode:true,showTerms:true,showStamps:true,
+    showWatermark:true,showFooter:true,showNotes:true,showPaymentDetails:true,
+    showItemCode:false,showItemBarcode:false,showUnitPrice:true,showDiscountCol:true,
+    showItemImage:false,
+    sectionOrder:['header','infoGrid','table','summary','terms','stamps','footer'],
+    termsText:['هذه الفاتورة صادرة إلكترونياً ولا تحتاج إلى توقيع أو ختم.','في حالة عدم الدفع خلال المدة المحددة تُضاف فائدة تأخير بنسبة 2% شهرياً.','المرتجعات تخضع لسياسة الشركة المعلنة.','يُرجى الحفاظ على هذه الفاتورة للمراجعة.'],
+    customFooterText:'',customTitle:'',customCss:'',
+    savedTemplates:[],activeTemplate:''
+  };
+}
+const INVOICE_FONTS=[
+  {id:'Cairo',name:'Cairo',import:'Cairo:wght@300;400;500;600;700;800'},
+  {id:'Tajawal',name:'Tajawal',import:'Tajawal:wght@300;400;500;700;800'},
+  {id:'Almarai',name:'Almarai',import:'Almarai:wght@300;400;700;800'},
+  {id:'IBM Plex Arabic',name:'IBM Plex Arabic',import:'IBM+Plex+Sans+Arabic:wght@300;400;500;600;700'},
+  {id:'Noto Kufi Arabic',name:'Noto Kufi Arabic',import:'Noto+Kufi+Arabic:wght@300;400;500;600;700;800'},
+  {id:'Noto Naskh Arabic',name:'Noto Naskh Arabic',import:'Noto+Naskh+Arabic:wght@400;500;600;700'}
+];
+const INVOICE_PRESETS=[
+  {id:'blue',name:'أزرق مهني',accent:'#4f8ef7',secondary:'#6c5ce7',gradient:true},
+  {id:'green',name:'أخضر طبيعي',accent:'#16a34a',secondary:'#059669',gradient:true},
+  {id:'royal',name:'أزرق ملكي',accent:'#1e40af',secondary:'#7c3aed',gradient:true},
+  {id:'dark',name:'داكن',accent:'#1e293b',secondary:'#475569',gradient:true},
+  {id:'amber',name:'كهرماني',accent:'#d97706',secondary:'#ea580c',gradient:true}
+];
 function defaultStore(){
   return {companies:[baseCompany()],companyId:1};
 }
@@ -91,7 +125,8 @@ function normalizeStore(store){
       ...c,
       id:c.id||Date.now(),
       items:c.items||[],custs:c.custs||[],sups:c.sups||[],invs:c.invs||[],purs:c.purs||[],payments:c.payments||[],supPayments:c.supPayments||[],rets:c.rets||[],log:c.log||[],pendingSync:c.pendingSync||[],lastSynced:c.lastSynced||null,
-      cI:c.cI||1,cP:c.cP||1,cRet:c.cRet||1,cPay:c.cPay||1,cSpay:c.cSpay||1,cSettle:c.cSettle||1,cSupSettle:c.cSupSettle||1
+      cI:c.cI||1,cP:c.cP||1,cRet:c.cRet||1,cPay:c.cPay||1,cSpay:c.cSpay||1,cSettle:c.cSettle||1,cSupSettle:c.cSupSettle||1,
+      invoiceTemplate:{...getInvoiceTemplateDefaults(),...(c.invoiceTemplate||{})}
     }));
   }
   return normalized;
@@ -125,7 +160,7 @@ function getAuthHeaders(){
 }
 async function authenticatedFetch(url,options={}){
   const headers={...getAuthHeaders(),'Content-Type':'application/json',...(options.headers||{})};
-  const resp=await fetch(url.startsWith('http')?url:`${API_BASE_URL.replace('/api/v1','')}${url}`,{...options,headers});
+  const resp=await fetch(url.startsWith('http')?url:`${API_BASE_URL.replace('/api/v1','')}${url}`,{...options,signal:options.signal||AbortSignal.timeout(15000),headers});
   if(!resp.ok){const err=await resp.json().catch(()=>({message:resp.statusText}));throw new Error(err.message||resp.statusText);}
   return resp;
 }
@@ -239,38 +274,41 @@ async function loadCloudStoreForUser(){
 async function syncCloud(){
   if(!currentUser){toast(t('sync_login_first'),'error');return}
   if(!cloudOnline()){toast(t('sync_no_connection'),'error');syncStatusMsg();return}
-  const btn=G('sync-btn'); if(btn) btn.disabled=true;
-  toast(t('sync_in_progress'),'info',{icon:'ti-refresh',sound:false,duration:2000});
-  let success=false;
+  const btn=G('sync-btn');if(btn)setBtnLoading(btn,true);
   try{
-    const snapshot={
-      user:currentUser.username,
-      data: DB.stores[currentUser.username],
-      timestamp:new Date().toISOString()
-    };
-    if(CLOUD_ENDPOINT){
-      const resp=await fetch(CLOUD_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshot)});
-      success=resp.ok;
-    } else {
-      success=saveCloudSnapshot(snapshot);
+    toast(t('sync_in_progress'),'info',{icon:'ti-refresh',sound:false,duration:2000});
+    let success=false;
+    try{
+      const snapshot={
+        user:currentUser.username,
+        data: DB.stores[currentUser.username],
+        timestamp:new Date().toISOString()
+      };
+      if(CLOUD_ENDPOINT){
+        const resp=await fetch(CLOUD_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshot)});
+        success=resp.ok;
+      } else {
+        success=saveCloudSnapshot(snapshot);
+      }
+      if(success){
+        DB.lastSynced=new Date().toLocaleString('ar');
+        DB.pendingSync=[];
+        saveState();
+        toast(t('sync_success'),'success',{icon:'ti-cloud-upload'});
+      } else {
+        toast(t('sync_cloud_fail'),'error');
+      }
+    }catch(e){
+      console.warn('syncCloud failed',e);
+      toast(t('sync_fail_retry'),'error');
     }
-    if(success){
-      DB.lastSynced=new Date().toLocaleString('ar');
-      DB.pendingSync=[];
-      saveState();
-      toast(t('sync_success'),'success',{icon:'ti-cloud-upload'});
-    } else {
-      toast(t('sync_cloud_fail'),'error');
-    }
-  }catch(e){
-    console.warn('syncCloud failed',e);
-    toast(t('sync_fail_retry'),'error');
+  }finally{
+    if(btn)setBtnLoading(btn,false);
   }
-  if(btn) btn.disabled=false;
   updateSyncUI();
 }
-window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';toast(t('online_restored'),'success',{title:t('sync_restored'),icon:'ti-wifi'});syncCloud();});
-window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';toast(t('offline_lost'),'warning',{title:t('sync_disconnected'),icon:'ti-wifi-off',duration:5000});updateSyncUI();});
+window.addEventListener('online',()=>{const eb=document.getElementById('offline-banner');if(eb)eb.style.display='none';toast(t('online_restored'),'success',{title:t('sync_restored'),icon:'ti-wifi'});syncCloud();});
+window.addEventListener('offline',()=>{const eb=document.getElementById('offline-banner');if(eb)eb.style.display='block';toast(t('offline_lost'),'warning',{title:t('sync_disconnected'),icon:'ti-wifi-off',duration:5000});updateSyncUI();});
 function resetStore(){
   Object.assign(DB,defaultStore());
 }
@@ -419,7 +457,27 @@ function toggleTheme(){
 }
 
 function showLogin(){
-  G('login-screen').classList.add('on');
+  const screen=G('login-screen');
+  screen.classList.add('on');
+  const u=G('login-user');
+  if(u){setTimeout(()=>u.focus(),100)}
+  /* Enter key submission */
+  const pass=G('login-pass');
+  if(pass&&!pass._keyWired){pass._keyWired=true;pass.addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});u.addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()})}
+  /* Focus trap */
+  if(!screen._focusTrap){
+    screen._focusTrap=true;
+    const trap=e=>{
+      const focusable=screen.querySelectorAll('button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
+      if(!focusable.length)return;
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(e.key==='Tab'){
+        if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+        else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+      }
+    };
+    screen.addEventListener('keydown',trap);
+  }
 }
 function hideLogin(){
   G('login-screen').classList.remove('on');
@@ -444,12 +502,15 @@ async function fetchUsersFromApi(){
     renderUsers();
   }catch(e){
     console.warn('fetchUsersFromApi error',e);
+    toast('تعذر تحميل المستخدمين من الخادم','warning');
   }
 }
 async function handleLogin(){
+  const btn=G('login-btn');
   const username=G('login-user').value.trim();
   const password=G('login-pass').value;
   if(!username||!password){toast(t('login_err_empty'),'error');return}
+  setBtnLoading(btn,true);
   try{
     const resp=await fetch(`${API_BASE_URL}/auth/login`,{
       method:'POST',
@@ -475,6 +536,8 @@ async function handleLogin(){
   }catch(e){
     console.warn('login failed',e);
     toast(t('login_err_conn'),'error');
+  }finally{
+    setBtnLoading(btn,false);
   }
 }
 function logout(){

@@ -47,7 +47,7 @@ function updateStats(){
   if(elA)animateCounter(elA,alerts.length,false);
 
   const ad=G('dash-alerts');
-  ad.innerHTML=`<div class="insight-grid">
+  if(ad) ad.innerHTML=`<div class="insight-grid">
     <div class="insight-card blue"><span>${t('dash_pending_invoices')}</span><strong>${pendingDeliveries}</strong><small>${t('dash_pending_delivery')}</small></div>
     <div class="insight-card amber"><span>${t('dash_due_receivables')}</span><strong>${overdueInvoices}</strong><small>${t('dash_unpaid_invoices')}</small></div>
     <div class="insight-card red"><span>${t('dash_stock_alerts')}</span><strong>${alerts.length}</strong><small>${t('dash_restock_items')}</small></div>
@@ -62,7 +62,7 @@ function renderDash(){
   const recent=[...DB.invs].slice(-5).reverse();
 
   /* Table view */
-  it.innerHTML=recent.length?recent.map(inv=>`<tr>
+  if(it) it.innerHTML=recent.length?recent.map(inv=>`<tr>
     <td style="color:var(--accent);font-weight:600">${escapeHtml(inv.num)}</td>
     <td>${escapeHtml(inv.custName)}</td>
     <td class="td-mono" style="font-weight:700">${fmt(inv.total)} ${t('currency_sym')}</td>
@@ -91,7 +91,7 @@ function renderDash(){
   const low=DB.items.filter(x=>x.qty<=x.reorder);
 
   /* Table view */
-  lt.innerHTML=low.length?low.map(x=>{
+  if(lt) lt.innerHTML=low.length?low.map(x=>{
     const shortage = x.reorder - x.qty;
     const shortageLabel = shortage > 0 ? `<span class="text-red">${fmt(shortage)}</span>` : `<span class="text-green">0</span>`;
     return `<tr>
@@ -146,6 +146,7 @@ function toggleFab(){
 
 /* ═══ PULL TO REFRESH ═══ */
 (function initPTR(){
+  if(!('ontouchstart' in window))return;
   let startY=0,pulling=false,canPull=false;
   const ptr=G('ptr-indicator');
   if(!ptr)return;
@@ -232,24 +233,46 @@ function numToWords(n){
   return'فقط '+res.trim()+' لا غير'
 }
 
+/* ═══ CDN DEPENDENCY CHECK ═══ */
+function checkDependencies(){
+  const missing=[];
+  if(typeof Chart==='undefined')missing.push('Chart.js');
+  if(typeof XLSX==='undefined')missing.push('XLSX');
+  if(typeof JsBarcode==='undefined')missing.push('JsBarcode');
+  if(missing.length){
+    const msg='فشل تحميل: '+missing.join(', ')+'. بعض الوظائف قد لا تعمل.';
+    console.warn(msg);
+    setTimeout(()=>toast(msg,'warning',{duration:8000}),3000);
+  }
+}
+
 /* ═══ INIT ═══ */
 async function initApp(){
-  loadTheme();
-  loadState();
-  if(localStorage.getItem(AUTH_TOKEN_KEY)){
-    await validateToken();
-    await fetchUsersFromApi();
+  try {
+    checkDependencies();
+    loadTheme();
+    loadState();
+    if(localStorage.getItem(AUTH_TOKEN_KEY)){
+      await validateToken();
+      await fetchUsersFromApi();
+    }
+    renderCurrentUser();
+    renderCompany();
+    if(!currentUser){
+      showLogin();
+    } else {
+      hideLogin();
+      updateStats();renderDash();
+    }
+    G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
+    renderNotifications();
+  } catch(e){
+    console.error('initApp error',e);
+    toast('حدث خطأ أثناء تهيئة التطبيق','error');
+  } finally {
+    const splash=G('app-loading');
+    if(splash){splash.style.opacity='0';setTimeout(()=>splash.remove(),350)}
   }
-  renderCurrentUser();
-  renderCompany();
-  if(!currentUser){
-    showLogin();
-  } else {
-    hideLogin();
-  }
-  updateStats();renderDash();
-  G('clock').textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
-  renderNotifications();
 }
 initApp();
 

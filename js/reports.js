@@ -1,10 +1,10 @@
 ﻿/* ═══ SOA ═══ */
 function renderSOA(){
   const type=G('soa-type')?.value||'customer';
-  const id=parseInt(G('soa-cust').value);
+  const id=parseInt(G('soa-cust')?.value);
   const out=G('soa-out');
   const company=currentCompany();
-  const from=G('soa-from').value,to=G('soa-to').value;
+  const from=G('soa-from')?.value,to=G('soa-to')?.value;
   if(type==='supplier'){
     const s=DB.sups.find(x=>x.id===id);
     if(!s){out.innerHTML='<div class="card" style="text-align:center;color:var(--text-muted);padding:40px"><i class="ti ti-users" style="font-size:36px;display:block;margin-bottom:8px;opacity:.3"></i>'+t('soa_choose_supplier')+'</div>';return}
@@ -13,7 +13,7 @@ function renderSOA(){
     DB.supPayments.filter(p=>p.supId===id).forEach(p=>{if(from&&p.date<from)return;if(to&&p.date>to)return;txns.push({date:p.date,desc:`دفعة ${p.id}`,dr:0,cr:p.amount,type:'pay'})});
     txns.sort((a,b)=>a.date.localeCompare(b.date));
     let bal=0;
-    const rows=txns.map(t=>{bal+=t.dr-t.cr;return`<tr><td>${t.date}</td><td>${t.desc}</td><td class="td-mono" style="color:var(--red)">${t.dr?fmt(t.dr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="color:var(--green)">${t.cr?fmt(t.cr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} ${t('currency_sym')}</td></tr>`}).join('');
+    const rows=txns.map(tx=>{bal+=tx.dr-tx.cr;return`<tr><td>${tx.date}</td><td>${tx.desc}</td><td class="td-mono" style="color:var(--red)">${tx.dr?fmt(tx.dr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="color:var(--green)">${tx.cr?fmt(tx.cr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} ${t('currency_sym')}</td></tr>`}).join('');
     out.innerHTML=renderSOATable(company,s.name,rows,bal,txns)
   } else {
     const c=DB.custs.find(x=>x.id===id);
@@ -26,13 +26,13 @@ function renderSOA(){
     DB.rets.filter(r=>{const inv=DB.invs.find(i=>i.num===r.invNum);return inv&&inv.custId===id}).forEach(r=>{if(from&&r.date<from)return;if(to&&r.date>to)return;txns.push({date:r.date,desc:`مرتجع ${r.num}`,dr:-r.amt,cr:r.amt,type:'ret'})});
     txns.sort((a,b)=>a.date.localeCompare(b.date));
     let bal=0;
-    const rows=txns.map(t=>{bal+=t.dr-t.cr;const drAmount=t.dr<0?0:t.dr;return`<tr><td>${t.date}</td><td>${t.desc}</td><td class="td-mono" style="color:var(--red)">${drAmount?fmt(drAmount)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="color:var(--green)">${t.cr?fmt(t.cr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} ${t('currency_sym')}</td></tr>`}).join('');
+    const rows=txns.map(tx=>{bal+=tx.dr-tx.cr;const drAmount=tx.dr<0?0:tx.dr;return`<tr><td>${tx.date}</td><td>${tx.desc}</td><td class="td-mono" style="color:var(--red)">${drAmount?fmt(drAmount)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="color:var(--green)">${tx.cr?fmt(tx.cr)+' '+t('currency_sym'):'\u2014'}</td><td class="td-mono" style="font-weight:700">${fmt(bal)} ${t('currency_sym')}</td></tr>`}).join('');
     out.innerHTML=renderSOATable(company,c.name,rows,bal,txns)
   }
 }
 function renderSOATable(company,name,rows,bal,txns){
-  const totalDr=(txns||[]).reduce((s,t)=>s+(t.dr>0?t.dr:0),0);
-  const totalCr=(txns||[]).reduce((s,t)=>s+(t.cr||0),0);
+  const totalDr=(txns||[]).reduce((s,tx)=>s+(tx.dr>0?tx.dr:0),0);
+  const totalCr=(txns||[]).reduce((s,tx)=>s+(tx.cr||0),0);
   return`<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div><h2 style="font-size:18px;margin:0">${company.name}</h2><div style="font-size:11px;color:var(--text-muted)">${company.address}</div></div><h3 style="color:var(--accent)">${name}</h3></div><div class="tbl-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead><tbody>${rows||'<tr><td colspan="5"><div class="empty-st">لا توجد حركات.</div></td></tr>'}</tbody></table></div><div style="display:flex;gap:30px;margin-top:12px;padding:10px;border-top:1px solid var(--border)"><span><strong>إجمالي المدين:</strong> ${fmt(totalDr)} ${t('currency_sym')}</span><span><strong>إجمالي الدائن:</strong> ${fmt(totalCr)} ${t('currency_sym')}</span><span style="color:${bal>0?'var(--red)':'var(--green)'}"><strong>الرصيد النهائي:</strong> ${fmt(bal)} ${t('currency_sym')}</span></div></div>`;
 }
 
@@ -58,8 +58,8 @@ function printSOA(){
   }
   txns.sort((a,b)=>a.date.localeCompare(b.date));
   let bal=0;txns.forEach(t=>{bal+=t.dr-t.cr});
-  const totalDr=txns.reduce((s,t)=>s+(t.dr>0?t.dr:0),0);
-  const totalCr=txns.reduce((s,t)=>s+(t.cr||0),0);
+  const totalDr=txns.reduce((s,tx)=>s+(tx.dr>0?tx.dr:0),0);
+  const totalCr=txns.reduce((s,tx)=>s+(tx.cr||0),0);
   const win=window.open('','_blank','width=960,height=1150');
   if(!win){toast(t('sales_print_err'),'error');return}
   const now=new Date();
@@ -283,7 +283,7 @@ function renderFin(search){
   } else {
     tabIds.forEach(id=>{const el=G(id);if(el)el.style.display='none'});
     if(tabs[0]) tabs[0].classList.add('on');
-    G('fin-cash').style.display='';
+    const fc=G('fin-cash');if(fc)fc.style.display='';
   }
 }
 
@@ -309,10 +309,10 @@ function renderPL(search){
   });
   const profit=totalRev-totalCost;
   const margin=totalRev>0?((profit/totalRev)*100).toFixed(1):0;
-  G('pl-rev').textContent=fmt(totalRev);
-  G('pl-cogs').textContent=fmt(totalCost);
-  G('pl-gp').textContent=fmt(profit);
-  G('pl-margin').textContent=margin+'%';
+  if(G('pl-rev')) G('pl-rev').textContent=fmt(totalRev);
+  if(G('pl-cogs')) G('pl-cogs').textContent=fmt(totalCost);
+  if(G('pl-gp')) G('pl-gp').textContent=fmt(profit);
+  if(G('pl-margin')) G('pl-margin').textContent=margin+'%';
   const itemPL={};
   invs.forEach(i=>{
     i.lines.forEach(l=>{

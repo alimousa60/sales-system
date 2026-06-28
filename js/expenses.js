@@ -32,26 +32,31 @@ function openExpenseModal(id){
 }
 
 async function saveExpense(){
-  const data={
-    category:G('exp-category').value,
-    amount:parseFloat(G('exp-amount').value),
-    description:G('exp-desc').value.trim(),
-    date:G('exp-date').value,
-    paymentMethod:G('exp-payment').value,
-    notes:G('exp-notes').value.trim()
-  };
-  if(!data.description){toast(t('pay_enter_amount'),'error');return}
-  if(!data.amount||data.amount<=0){toast(t('pay_enter_amount'),'error');return}
+  const btn=G('m-expense')?.querySelector('.btn-primary')||document.querySelector('[onclick*="saveExpense"]')?.closest('.btn-primary');setBtnLoading(btn,true);
   try{
-    if(_expEditingId){
-      await apiFetch('/api/v1/expenses/'+_expEditingId,{method:'PATCH',body:JSON.stringify(data)});
-    }else{
-      await apiFetch('/api/v1/expenses',{method:'POST',body:JSON.stringify(data)});
-    }
-    closeModal('m-expense');
-    renderExpenses();
-    toast(_expEditingId?'تم تحديث المصروف':'تم إضافة المصروف','success');
-  }catch(e){toast(e.message,'error')}
+    const data={
+      category:G('exp-category').value,
+      amount:parseFloat(G('exp-amount').value),
+      description:G('exp-desc').value.trim(),
+      date:G('exp-date').value,
+      paymentMethod:G('exp-payment').value,
+      notes:G('exp-notes').value.trim()
+    };
+    if(!data.description){toast(t('pay_enter_amount'),'error');return}
+    if(!data.amount||data.amount<=0){toast(t('pay_enter_amount'),'error');return}
+    try{
+      if(_expEditingId){
+        await apiFetch('/api/v1/expenses/'+_expEditingId,{method:'PATCH',body:JSON.stringify(data)});
+      }else{
+        await apiFetch('/api/v1/expenses',{method:'POST',body:JSON.stringify(data)});
+      }
+      closeModal('m-expense');
+      renderExpenses();
+      toast(_expEditingId?'تم تحديث المصروف':'تم إضافة المصروف','success');
+    }catch(e){toast(e.message,'error')}
+  }finally{
+    if(btn)setBtnLoading(btn,false);
+  }
 }
 
 function apiFetch(url,opts={}){

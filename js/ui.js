@@ -81,35 +81,40 @@ function companyById(id){return DB.companies?.find(c=>c.id===Number(id))||DB.com
 function currentCompany(){return companyById(DB.companyId)}
 function renderCompany(){const co=currentCompany();const el=G('company-name');if(el)el.textContent=co.name}
 function saveCompany(){
-  const name=G('co-name').value.trim();
-  if(!name){toast(t('company_name_ph'),'error');return}
-  const address=G('co-address').value.trim();
-  const phone=G('co-phone').value.trim();
-  const note=G('co-note').value.trim();
-  const taxNo=G('co-tax-no')?.value?.trim()||'';
-  const logo=window._pendingLogo||'';
-  if(editingCompanyId===null){
-    const id=Date.now();
-    const company={...baseCompany(),id,name,address,phone,note,taxNo,logo};
-    DB.companies.push(company);
-    DB.companyId=id;
-    addLog('إضافة شركة',`"${name}"`,'#2dd17e');
-    loadCompanyData();
-  } else {
-    const company=companyById(editingCompanyId);
-    if(company){
-      Object.assign(company,{name,address,phone,note,taxNo,logo});
-      addLog('تحديث بيانات الشركة',`"${name}"`,'#9b72f7');
-      if(company.id===DB.companyId) loadCompanyData();
+  const btn=G('m-company')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try{
+    const name=G('co-name').value.trim();
+    if(!name){toast(t('company_name_ph'),'error');return}
+    const address=G('co-address').value.trim();
+    const phone=G('co-phone').value.trim();
+    const note=G('co-note').value.trim();
+    const taxNo=G('co-tax-no')?.value?.trim()||'';
+    const logo=window._pendingLogo||'';
+    if(editingCompanyId===null){
+      const id=Date.now();
+      const company={...baseCompany(),id,name,address,phone,note,taxNo,logo};
+      DB.companies.push(company);
+      DB.companyId=id;
+      addLog('إضافة شركة',`"${name}"`,'#2dd17e');
+      loadCompanyData();
+    } else {
+      const company=companyById(editingCompanyId);
+      if(company){
+        Object.assign(company,{name,address,phone,note,taxNo,logo});
+        addLog('تحديث بيانات الشركة',`"${name}"`,'#9b72f7');
+        if(company.id===DB.companyId) loadCompanyData();
+      }
     }
+    window._pendingLogo=null;
+    saveState();
+    closeModal('m-company');
+    renderCompany();
+    renderSettings();
+    broadcastChange('company', { name });
+    toast(t('company_saved'));
+  }finally{
+    if(btn)setBtnLoading(btn,false);
   }
-  window._pendingLogo=null;
-  saveState();
-  closeModal('m-company');
-  renderCompany();
-  renderSettings();
-  broadcastChange('company', { name });
-  toast(t('company_saved'));
 }
 
 /* Company Logo helpers */
@@ -212,49 +217,41 @@ function showPage(pg){
   if(!page) return;
   page.classList.remove('exiting');
   page.classList.add('on');
-  /* Show skeleton while loading */
-  const content=page.querySelector('.card:not(.no-skeleton),.stats-grid:not(.no-skeleton),.tbl-wrap:not(.no-skeleton)');
-  if(content&&!content.classList.contains('no-skeleton')){
-    content._origHTML=content.innerHTML;
-    content.innerHTML='<div class="skeleton-card" style="margin-bottom:12px"><div class="skeleton-line w-75 h-lg"></div><div class="skeleton-line w-50 h-xl" style="margin-top:8px"></div><div class="skeleton-line w-full"></div><div class="skeleton-line w-full"></div><div class="skeleton-line w-75"></div></div>';
-    content.classList.add('skeleton-active');
-  }
+  /* No skeleton — pages render directly */
   const m=PAGE_META[pg]||{t:()=>pg,i:'ti-circle'};
   G('pg-title').innerHTML=`<i class="ti ${m.i}"></i> ${typeof m.t==='function'?m.t():m.t}`;
   closeSidebarIfMobile();
   updateSearchHint();
   const pageKeyMap={inventory:'inv-tb',sales:'sal-tb',purchases:'pur-tb',customers:'cust-tb',suppliers:'sup-tb',returns:'ret-tb',users:'user-tb',suppay:'suppay-tb'};
-  if (pageKeyMap[pg]) _pg[pageKeyMap[pg]] = 1;
-  /* Defer render to next frame for skeleton visibility */
+  if (!_pg[pageKeyMap[pg]]) _pg[pageKeyMap[pg]] = 1;
   requestAnimationFrame(()=>{
-    if(pg==='dash')renderDash();
-    if(pg==='audit')renderAudit();
-    if(pg==='finance')renderFin();
-    if(pg==='pl')renderPL();
-    if(pg==='users')renderUsers(currentSearch);
-    if(pg==='settings')renderSettings();
-    if(pg==='soa'){updateSOASelector();G('soa-out').innerHTML=''}
-    if(pg==='suppay')renderSupPays(currentSearch);
-    if(pg==='suppliers')renderSups(currentSearch);
-    if(pg==='customers')renderCusts(currentSearch);
-    if(pg==='returns')renderRets(currentSearch);
-    if(pg==='sales')renderSales(currentSearch);
-    if(pg==='purchases')renderPurs(currentSearch);
-    if(pg==='inventory')renderItems(currentSearch);
-    if(pg==='hrm'){
-      renderHRM();
-      loadHRMEmployeeDropdown('hrm-att-emp');
-      loadHRMEmployeeDropdown('hrm-adv-emp');
-    }
-    /* Restore original content */
-    requestAnimationFrame(()=>{
-      if(content&&content._origHTML){
-        content.innerHTML=content._origHTML;
-        delete content._origHTML;
-        content.classList.remove('skeleton-active');
+    try{
+      if(pg==='dash')renderDash();
+      if(pg==='audit')renderAudit();
+      if(pg==='finance')renderFin();
+      if(pg==='pl')renderPL();
+      if(pg==='users')renderUsers(currentSearch);
+      if(pg==='settings')renderSettings();
+      if(pg==='soa'){updateSOASelector();G('soa-out').innerHTML=''}
+      if(pg==='suppay')renderSupPays(currentSearch);
+      if(pg==='suppliers')renderSups(currentSearch);
+      if(pg==='customers')renderCusts(currentSearch);
+      if(pg==='returns')renderRets(currentSearch);
+      if(pg==='sales')renderSales(currentSearch);
+      if(pg==='purchases')renderPurs(currentSearch);
+      if(pg==='inventory')renderItems(currentSearch);
+      if(pg==='hrm'){
+        renderHRM();
+        loadHRMEmployeeDropdown('hrm-att-emp');
+        loadHRMEmployeeDropdown('hrm-adv-emp');
       }
-    });
-    /* Wire keyboard nav */
+      if(pg==='expenses')renderExpenses();
+    }catch(e){
+      console.error('showPage render error',e,pg);
+      toast('حدث خطأ أثناء عرض الصفحة','error');
+    }finally{
+      /* skeleton removed */
+    }
     const tbls=page.querySelectorAll('table');
     tbls.forEach(tbl=>{if(!tbl._navWired){tbl.setAttribute('tabindex','0');tbl._navWired=true}});
     if(typeof initTooltips==='function')initTooltips();
@@ -272,7 +269,12 @@ G('clear-search')?.addEventListener('click', ()=>{
   applyQuickSearch('');
 });
 
-setInterval(()=>{const c=G('clock');if(c)c.textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})},1000);
+function updateClock(){const c=G('clock');if(c)c.textContent=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})}
+let _clockInterval=setInterval(updateClock,1000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){clearInterval(_clockInterval);_clockInterval=null}
+  else if(!_clockInterval){updateClock();_clockInterval=setInterval(updateClock,1000)}
+});
 
 /* ═══ MODALS ═══ */
 /* ═══ MODAL STACK — professional layered modals ═══ */

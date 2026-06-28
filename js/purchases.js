@@ -23,6 +23,7 @@ function addPiLine(){
 }
 function renderPiL(){
   const tb=G('pi-lines-tb');
+  if(!tb) return;
   tb.innerHTML=_piL.length?_piL.map((l,i)=>`<tr>
     <td class="td-bold">${escapeHtml(l.name)}</td>
     <td class="td-mono">${l.qty}</td>
@@ -35,33 +36,38 @@ function renderPiL(){
 /* ═══ PURCHASE INVOICE ═══ */
 let _editingPurId=null;
 function savePur(){
-  if(!_piL.length){toast(t('inv_add_item'),'error');return}
-  if(!G('pi-sup').value){toast(t('pur_choose_supplier'),'error');return}
-  const supId=parseInt(G('pi-sup').value);
-  const sup=DB.sups.find(x=>x.id===supId);
-  const num=G('pi-num').value,date=G('pi-date').value;
-  const total=_piL.reduce((s,l)=>s+l.total,0);
-  const receiveNow=G('pi-recv').checked;
-  if(_editingPurId){
-    const pur=DB.purs.find(x=>x.id===_editingPurId);
-    if(!pur){toast(t('pur_not_found'),'error');return}
-    pur.supId=supId;pur.supName=sup?.name||'مورد';pur.date=date;
-    pur.lines=[..._piL];pur.total=total;
-    addLog(t('pur_edit'),`${num} — "${sup?.name}" — ${fmt(total)} ${t('currency_sym')}`,'#f5a623');
-    toast(t('pur_edited')+' '+num,'success',{title:t('pur_updated'),icon:'ti-truck'});
-    _editingPurId=null;
-  } else {
-    _piL.forEach(l=>{const item=DB.items.find(x=>x.id===l.itemId);if(item)item.buy=l.price});
-    if(receiveNow){_piL.forEach(l=>{const item=DB.items.find(x=>x.id===l.itemId);if(item)item.qty+=l.qty})}
-    DB.purs.push({id:DB.cP,num,supId,supName:sup?.name||'مورد',date,lines:[..._piL],total,receivedStock:receiveNow});
-    DB.cP++;
-    const note=receiveNow?'مع استلام فوري للمخزون':'ذمة دائنة فقط — المخزون لم يُستلَم بعد';
-    addLog(t('pur_created'),`${num} — "${sup?.name}" — ${fmt(total)} ${t('currency_sym')} — ${note}`,'#f5a623');
-    toast(`${num} — ${sup?.name} — ${fmt(total)} ${t('currency_sym')}`,{icon:'ti-shopping-cart',title:t('pur_new'),duration:4000})
+  const btn=G('pur-save-btn');setBtnLoading(btn,true);
+  try {
+    if(!_piL.length){toast(t('inv_add_item'),'error');return}
+    if(!G('pi-sup').value){toast(t('pur_choose_supplier'),'error');return}
+    const supId=parseInt(G('pi-sup').value);
+    const sup=DB.sups.find(x=>x.id===supId);
+    const num=G('pi-num').value,date=G('pi-date').value;
+    const total=_piL.reduce((s,l)=>s+l.total,0);
+    const receiveNow=G('pi-recv').checked;
+    if(_editingPurId){
+      const pur=DB.purs.find(x=>x.id===_editingPurId);
+      if(!pur){toast(t('pur_not_found'),'error');return}
+      pur.supId=supId;pur.supName=sup?.name||'مورد';pur.date=date;
+      pur.lines=[..._piL];pur.total=total;
+      addLog(t('pur_edit'),`${num} — "${sup?.name}" — ${fmt(total)} ${t('currency_sym')}`,'#f5a623');
+      toast(t('pur_edited')+' '+num,'success',{title:t('pur_updated'),icon:'ti-truck'});
+      _editingPurId=null;
+    } else {
+      _piL.forEach(l=>{const item=DB.items.find(x=>x.id===l.itemId);if(item)item.buy=l.price});
+      if(receiveNow){_piL.forEach(l=>{const item=DB.items.find(x=>x.id===l.itemId);if(item)item.qty+=l.qty})}
+      DB.purs.push({id:DB.cP,num,supId,supName:sup?.name||'مورد',date,lines:[..._piL],total,receivedStock:receiveNow});
+      DB.cP++;
+      const note=receiveNow?'مع استلام فوري للمخزون':'ذمة دائنة فقط — المخزون لم يُستلَم بعد';
+      addLog(t('pur_created'),`${num} — "${sup?.name}" — ${fmt(total)} ${t('currency_sym')} — ${note}`,'#f5a623');
+      toast(`${num} — ${sup?.name} — ${fmt(total)} ${t('currency_sym')}`,{icon:'ti-shopping-cart',title:t('pur_new'),duration:4000})
+    }
+    saveState();
+    closeModal('m-pur');renderPurs();renderItems();updateStats();
+    broadcastChange('purchases', { num, supName: sup?.name, total });
+  } finally {
+    setBtnLoading(btn,false);
   }
-  saveState();
-  closeModal('m-pur');renderPurs();renderItems();updateStats();
-  broadcastChange('purchases', { num, supName: sup?.name, total });
 }
 function editPur(purId){
   if(!requireAdmin())return;
@@ -112,53 +118,58 @@ function renderPurs(search=''){
 
 /* ═══ SUPPLIER PAYMENTS ═══ */
 function saveSupPay(){
-  const supId=parseInt(G('sp-sup').value);
-  if(!supId){toast(t('pur_choose_supplier'),'error');return}
-  const amount=parseFloat(G('sp-amt').value)||0;
-  if(amount<=0){toast(t('pay_enter_amount'),'error');return}
-  const sup=DB.sups.find(x=>x.id===supId);
-  const date=G('sp-date').value;
-  const checkNum=_spPay==='check'?G('sp-check-num')?.value:'';
-  const notes=G('sp-notes')?.value||'';
+  const btn=G('m-suppay')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try {
+    const supId=parseInt(G('sp-sup').value);
+    if(!supId){toast(t('pur_choose_supplier'),'error');return}
+    const amount=parseFloat(G('sp-amt').value)||0;
+    if(amount<=0){toast(t('pay_enter_amount'),'error');return}
+    const sup=DB.sups.find(x=>x.id===supId);
+    const date=G('sp-date').value;
+    const checkNum=_spPay==='check'?G('sp-check-num')?.value:'';
+    const notes=G('sp-notes')?.value||'';
 
-  const checkedPurs=[];
-  document.querySelectorAll('.sp-pur-cb:checked').forEach(cb=>{
-    const purId=parseInt(cb.dataset.purId);
-    const pur=DB.purs.find(x=>x.id===purId);
-    if(pur)checkedPurs.push({pur,rem:purRemaining(pur)});
-  });
+    const checkedPurs=[];
+    document.querySelectorAll('.sp-pur-cb:checked').forEach(cb=>{
+      const purId=parseInt(cb.dataset.purId);
+      const pur=DB.purs.find(x=>x.id===purId);
+      if(pur)checkedPurs.push({pur,rem:purRemaining(pur)});
+    });
 
-  let remaining=amount;
-  for(const x of checkedPurs){
-    if(remaining<=0)break;
-    const share=Math.min(remaining,x.rem);
-    if(share>0.001){
+    let remaining=amount;
+    for(const x of checkedPurs){
+      if(remaining<=0)break;
+      const share=Math.min(remaining,x.rem);
+      if(share>0.001){
+        const pid='SPAY-'+String(DB.cSpay).padStart(5,'0');DB.cSpay++;
+        DB.supPayments.push({
+          id:pid,supId,supName:sup?.name||'—',
+          purId:x.pur.id,purNum:x.pur.num,
+          amount:share,date,mode:_spPay,checkNum,notes
+        });
+        remaining-=share;
+      }
+    }
+
+    // Leftover → general payment
+    if(remaining>0.001){
       const pid='SPAY-'+String(DB.cSpay).padStart(5,'0');DB.cSpay++;
       DB.supPayments.push({
         id:pid,supId,supName:sup?.name||'—',
-        purId:x.pur.id,purNum:x.pur.num,
-        amount:share,date,mode:_spPay,checkNum,notes
+        purId:null,purNum:'عام',
+        amount:remaining,date,mode:_spPay,checkNum,notes
       });
-      remaining-=share;
     }
-  }
 
-  // Leftover → general payment
-  if(remaining>0.001){
-    const pid='SPAY-'+String(DB.cSpay).padStart(5,'0');DB.cSpay++;
-    DB.supPayments.push({
-      id:pid,supId,supName:sup?.name||'—',
-      purId:null,purNum:'عام',
-      amount:remaining,date,mode:_spPay,checkNum,notes
-    });
+    const applied=amount-remaining;
+    addLog(t('pur_payment'),`"${sup?.name}" — ${fmt(applied)} ${t('currency_sym')} — ${_spPay}${remaining>0.001?` — ${fmt(remaining)} ${t('currency_sym')} لم تُربط`:''}`,'#f05454');
+    saveState();
+    closeModal('m-suppay');renderSupPays();renderPurs();renderSups();updateStats();renderFin();
+    broadcastChange('payments', { supId, amount: applied });
+    toast(t('pay_received')+' '+fmt(applied)+' '+t('currency_sym')+' — '+sup?.name)
+  } finally {
+    setBtnLoading(btn,false);
   }
-
-  const applied=amount-remaining;
-  addLog(t('pur_payment'),`"${sup?.name}" — ${fmt(applied)} ${t('currency_sym')} — ${_spPay}${remaining>0.001?` — ${fmt(remaining)} ${t('currency_sym')} لم تُربط`:''}`,'#f05454');
-  saveState();
-  closeModal('m-suppay');renderSupPays();renderPurs();renderSups();updateStats();renderFin();
-  broadcastChange('payments', { supId, amount: applied });
-  toast(t('pay_received')+' '+fmt(applied)+' '+t('currency_sym')+' — '+sup?.name)
 }
 
 function renderSupPays(search=''){
@@ -389,56 +400,61 @@ function calcSupSettleManualTotal(){
 }
 
 function saveSupSettlement(){
-  const supId=parseInt(G('sup-settle-sup').value);
-  const sup=DB.sups.find(x=>x.id===supId);if(!sup){toast(t('pay_customer_err'),'error');return}
-  const amt=parseFloat(G('sup-settle-amt').value)||0;
-  const reason=G('sup-settle-reason').value.trim();
-  const date=G('sup-settle-date').value;
-  if(amt<=0){toast(t('pay_enter_amount'),'error');return}
-  if(!reason){toast(t('pay_enter_reason'),'error');return}
-  const checkedPurs=[];
-  document.querySelectorAll('.sup-settle-pur-cb:checked').forEach(cb=>{
-    const purId=parseInt(cb.dataset.purId);
-    const pur=DB.purs.find(x=>x.id===purId);
-    if(pur)checkedPurs.push({pur,rem:purRemaining(pur)});
-  });
-  if(!checkedPurs.length){toast(t('pay_choose_invoice'),'error');return}
-  const totalUnpaid=checkedPurs.reduce((s,x)=>s+x.rem,0);
-  const applied=[];
-  let remaining=amt;
-  for(const x of checkedPurs){
-    let share=0;
-    if(_supSettleMode==='auto'){
-      share=totalUnpaid>0?(x.rem/totalUnpaid)*amt:0;
-      share=Math.min(share,x.rem,remaining);
-    } else {
-      const inp=document.querySelector(`.sup-settle-manual-amt[data-pur-id="${x.pur.id}"]`);
-      share=Math.min(parseFloat(inp?.value)||0,x.rem,remaining);
+  const btn=G('m-sup-settle')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try {
+    const supId=parseInt(G('sup-settle-sup').value);
+    const sup=DB.sups.find(x=>x.id===supId);if(!sup){toast(t('pay_customer_err'),'error');return}
+    const amt=parseFloat(G('sup-settle-amt').value)||0;
+    const reason=G('sup-settle-reason').value.trim();
+    const date=G('sup-settle-date').value;
+    if(amt<=0){toast(t('pay_enter_amount'),'error');return}
+    if(!reason){toast(t('pay_enter_reason'),'error');return}
+    const checkedPurs=[];
+    document.querySelectorAll('.sup-settle-pur-cb:checked').forEach(cb=>{
+      const purId=parseInt(cb.dataset.purId);
+      const pur=DB.purs.find(x=>x.id===purId);
+      if(pur)checkedPurs.push({pur,rem:purRemaining(pur)});
+    });
+    if(!checkedPurs.length){toast(t('pay_choose_invoice'),'error');return}
+    const totalUnpaid=checkedPurs.reduce((s,x)=>s+x.rem,0);
+    const applied=[];
+    let remaining=amt;
+    for(const x of checkedPurs){
+      let share=0;
+      if(_supSettleMode==='auto'){
+        share=totalUnpaid>0?(x.rem/totalUnpaid)*amt:0;
+        share=Math.min(share,x.rem,remaining);
+      } else {
+        const inp=document.querySelector(`.sup-settle-manual-amt[data-pur-id="${x.pur.id}"]`);
+        share=Math.min(parseFloat(inp?.value)||0,x.rem,remaining);
+      }
+      if(share>0.001){
+        applied.push({purId:x.pur.id,purNum:x.pur.num,amount:share});
+        x.pur.discount=(x.pur.discount||0)+share;
+        x.pur.total=Math.max(0,x.pur.total-share);
+        if(!x.pur.settlements)x.pur.settlements=[];
+        x.pur.settlements.push({amount:share,reason,date});
+        remaining-=share;
+      }
     }
-    if(share>0.001){
-      applied.push({purId:x.pur.id,purNum:x.pur.num,amount:share});
-      x.pur.discount=(x.pur.discount||0)+share;
-      x.pur.total=Math.max(0,x.pur.total-share);
-      if(!x.pur.settlements)x.pur.settlements=[];
-      x.pur.settlements.push({amount:share,reason,date});
-      remaining-=share;
-    }
+    if(!applied.length){toast(t('pay_no_applied'),'error');return}
+    const settlement={
+      id:'SSETL-'+String(DB.cSupSettle).padStart(5,'0'),
+      supId,supName:sup.name,
+      amount:amt,actualApplied:amt-remaining,remaining,
+      reason,date,applied,
+      mode:_supSettleMode
+    };
+    DB.cSupSettle++;
+    if(!DB.supSettlements)DB.supSettlements=[];
+    DB.supSettlements.push(settlement);
+    addLog(t('pur_settle'),`${settlement.id} — "${sup.name}" — ${fmt(amt)} ${t('currency_sym')} — ${applied.length} فاتورة — ${reason}`,'#f5a623');
+    saveState();
+    closeModal('m-sup-settle');renderPurs();renderSups();updateStats();
+    broadcastChange('settlements', { settlementId: settlement.id, supName: sup.name });
+    toast(t('pay_applied')+' '+fmt(amt)+' '+t('currency_sym'))
+  } finally {
+    setBtnLoading(btn,false);
   }
-  if(!applied.length){toast(t('pay_no_applied'),'error');return}
-  const settlement={
-    id:'SSETL-'+String(DB.cSupSettle).padStart(5,'0'),
-    supId,supName:sup.name,
-    amount:amt,actualApplied:amt-remaining,remaining,
-    reason,date,applied,
-    mode:_supSettleMode
-  };
-  DB.cSupSettle++;
-  if(!DB.supSettlements)DB.supSettlements=[];
-  DB.supSettlements.push(settlement);
-  addLog(t('pur_settle'),`${settlement.id} — "${sup.name}" — ${fmt(amt)} ${t('currency_sym')} — ${applied.length} فاتورة — ${reason}`,'#f5a623');
-  saveState();
-  closeModal('m-sup-settle');renderPurs();renderSups();updateStats();
-  broadcastChange('settlements', { settlementId: settlement.id, supName: sup.name });
-  toast(t('pay_applied')+' '+fmt(amt)+' '+t('currency_sym'))
 }
 

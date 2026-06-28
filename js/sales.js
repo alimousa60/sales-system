@@ -28,6 +28,7 @@ function addSiLine(){
 }
 function renderSiL(){
   const tb=G('si-lines-tb');
+  if(!tb) return;
   tb.innerHTML=_siL.length?_siL.map((l,i)=>`<tr>
     <td class="td-bold">${escapeHtml(l.name)}</td>
     <td class="td-mono">${l.qty}</td>
@@ -41,34 +42,39 @@ function renderSiL(){
   G('si-tafseet').textContent=tot>0?numToWords(tot):'—'
 }
 function saveInv(){
-  if(!G('si-cust').value){toast(t('sales_choose_customer'),'error');return}
-  if(!_siL.length){toast(t('inv_add_item'),'error');return}
-  const total=_siL.reduce((s,l)=>s+l.total,0);
-  const custId=parseInt(G('si-cust').value);
-  const cust=DB.custs.find(x=>x.id===custId);
-  const num=G('si-num').value,date=G('si-date').value;
-  if(_editingInvId){
-    const inv=DB.invs.find(x=>x.id===_editingInvId);
-    if(!inv){toast(t('sales_not_found'),'error');return}
-    inv.custId=custId;inv.custName=cust?.name||'—';inv.date=date;
-    inv.lines=[..._siL];inv.total=total;
-    addLog(t('sales_edit'),`${num} — الزبون "${cust?.name}" — ${fmt(total)} ${t('currency_sym')}`,'#f5a623');
-    toast(t('sales_edited')+' '+num,'success',{title:t('inv_updated_done'),icon:'ti-receipt'});
-    _editingInvId=null;
-  } else {
-    DB.invs.push({
-      id:DB.cI,num,custId,custName:cust?.name||'—',date,
-      lines:[..._siL],total,
-      dlvStatus:'pending',
-      createdAt:date
-    });
-    DB.cI++;
-    addLog(t('sales_created'),`${num} — الزبون "${cust?.name}" — ${fmt(total)} ${t('currency_sym')} — لا أثر على الخزينة أو المخزون حتى الآن`,'#4f8ef7');
-    toast(num,'success',{title:t('sales_new_invoice'),icon:'ti-receipt',duration:4000})
+  const btn=G('si-inv-save-btn');setBtnLoading(btn,true);
+  try {
+    if(!G('si-cust').value){toast(t('sales_choose_customer'),'error');return}
+    if(!_siL.length){toast(t('inv_add_item'),'error');return}
+    const total=_siL.reduce((s,l)=>s+l.total,0);
+    const custId=parseInt(G('si-cust').value);
+    const cust=DB.custs.find(x=>x.id===custId);
+    const num=G('si-num').value,date=G('si-date').value;
+    if(_editingInvId){
+      const inv=DB.invs.find(x=>x.id===_editingInvId);
+      if(!inv){toast(t('sales_not_found'),'error');return}
+      inv.custId=custId;inv.custName=cust?.name||'—';inv.date=date;
+      inv.lines=[..._siL];inv.total=total;
+      addLog(t('sales_edit'),`${num} — الزبون "${cust?.name}" — ${fmt(total)} ${t('currency_sym')}`,'#f5a623');
+      toast(t('sales_edited')+' '+num,'success',{title:t('inv_updated_done'),icon:'ti-receipt'});
+      _editingInvId=null;
+    } else {
+      DB.invs.push({
+        id:DB.cI,num,custId,custName:cust?.name||'—',date,
+        lines:[..._siL],total,
+        dlvStatus:'pending',
+        createdAt:date
+      });
+      DB.cI++;
+      addLog(t('sales_created'),`${num} — الزبون "${cust?.name}" — ${fmt(total)} ${t('currency_sym')} — لا أثر على الخزينة أو المخزون حتى الآن`,'#4f8ef7');
+      toast(num,'success',{title:t('sales_new_invoice'),icon:'ti-receipt',duration:4000})
+    }
+    saveState();
+    closeModal('m-invoice');renderSales();updateStats();
+    broadcastChange('sales', { num, custName: cust?.name, total });
+  } finally {
+    setBtnLoading(btn,false);
   }
-  saveState();
-  closeModal('m-invoice');renderSales();updateStats();
-  broadcastChange('sales', { num, custName: cust?.name, total });
 }
 function editInv(invId){
   if(!requireAdmin())return;
@@ -159,27 +165,32 @@ function openCollect(invId){
   openModal('m-collect')
 }
 function savePayment(){
-  const invId=parseInt(G('col-inv-id').value);
-  const inv=DB.invs.find(x=>x.id===invId);if(!inv)return;
-  const amount=parseFloat(G('col-amt').value)||0;
-  if(amount<=0){toast(t('pay_enter_amount'),'error');return}
-  const rem=invRemaining(inv);
-  if(amount>rem+0.001){toast(t('pay_enter_amount'),'error');return}
-  const date=G('col-date').value;
-  const checkNum=_colPay==='check'?G('col-check-num').value:'';
-  const pId='PAY-'+String(DB.cPay).padStart(5,'0');
-  DB.cPay++;
-  DB.payments.push({
-    id:pId,invId,custId:inv.custId,custName:inv.custName,
-    amount,date,mode:_colPay,checkNum,
-    notes:G('col-notes').value,invNum:inv.num
-  });
-  const modeLabel=_colPay==='cash'?'نقدي':_colPay==='check'?`صك (${checkNum})`:'آجَل';
-  addLog(t('pay_receive'),`${pId} — ${inv.num} — ${inv.custName} — ${fmt(amount)} ${t('currency_sym')} — ${modeLabel}`,'#2dd17e');
-  saveState();
-  closeModal('m-collect');renderSales();updateStats();renderFin();
-  broadcastChange('payments', { pId, invId, amount });
-  toast(`${fmt(amount)} ${t('currency_sym')} — ${inv.custName}`,'success',{title:t('pay_received'),icon:'ti-cash',duration:4000})
+  const btn=G('m-collect')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try {
+    const invId=parseInt(G('col-inv-id').value);
+    const inv=DB.invs.find(x=>x.id===invId);if(!inv)return;
+    const amount=parseFloat(G('col-amt').value)||0;
+    if(amount<=0){toast(t('pay_enter_amount'),'error');return}
+    const rem=invRemaining(inv);
+    if(amount>rem+0.001){toast(t('pay_enter_amount'),'error');return}
+    const date=G('col-date').value;
+    const checkNum=_colPay==='check'?G('col-check-num').value:'';
+    const pId='PAY-'+String(DB.cPay).padStart(5,'0');
+    DB.cPay++;
+    DB.payments.push({
+      id:pId,invId,custId:inv.custId,custName:inv.custName,
+      amount,date,mode:_colPay,checkNum,
+      notes:G('col-notes').value,invNum:inv.num
+    });
+    const modeLabel=_colPay==='cash'?'نقدي':_colPay==='check'?`صك (${checkNum})`:'آجَل';
+    addLog(t('pay_receive'),`${pId} — ${inv.num} — ${inv.custName} — ${fmt(amount)} ${t('currency_sym')} — ${modeLabel}`,'#2dd17e');
+    saveState();
+    closeModal('m-collect');renderSales();updateStats();renderFin();
+    broadcastChange('payments', { pId, invId, amount });
+    toast(`${fmt(amount)} ${t('currency_sym')} — ${inv.custName}`,'success',{title:t('pay_received'),icon:'ti-cash',duration:4000})
+  } finally {
+    setBtnLoading(btn,false);
+  }
 }
 
 async function deletePayment(payId){
@@ -288,53 +299,58 @@ function recalcCollect2Preview(){
 }
 
 function saveCollect2(){
-  const custId=parseInt(G('col2-cust').value);
-  const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast(t('pay_choose_customer'),'error');return}
-  const amount=parseFloat(G('col2-amt').value)||0;
-  if(amount<=0){toast(t('pay_enter_amount'),'error');return}
-  const date=G('col2-date').value;
-  const checkNum=_col2Pay==='check'?G('col2-check-num').value:'';
-  const notes=G('col2-notes').value;
+  const btn=G('m-collect2')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try {
+    const custId=parseInt(G('col2-cust').value);
+    const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast(t('pay_choose_customer'),'error');return}
+    const amount=parseFloat(G('col2-amt').value)||0;
+    if(amount<=0){toast(t('pay_enter_amount'),'error');return}
+    const date=G('col2-date').value;
+    const checkNum=_col2Pay==='check'?G('col2-check-num').value:'';
+    const notes=G('col2-notes').value;
 
-  const checkedInvs=[];
-  document.querySelectorAll('.col2-inv-cb:checked').forEach(cb=>{
-    const invId=parseInt(cb.dataset.invId);
-    const inv=DB.invs.find(x=>x.id===invId);
-    if(inv)checkedInvs.push({inv,rem:invRemaining(inv)});
-  });
+    const checkedInvs=[];
+    document.querySelectorAll('.col2-inv-cb:checked').forEach(cb=>{
+      const invId=parseInt(cb.dataset.invId);
+      const inv=DB.invs.find(x=>x.id===invId);
+      if(inv)checkedInvs.push({inv,rem:invRemaining(inv)});
+    });
 
-  // Distribute payment across checked invoices (oldest first)
-  let remaining=amount;
-  for(const x of checkedInvs){
-    if(remaining<=0)break;
-    const share=Math.min(remaining,x.rem);
-    if(share>0.001){
+    // Distribute payment across checked invoices (oldest first)
+    let remaining=amount;
+    for(const x of checkedInvs){
+      if(remaining<=0)break;
+      const share=Math.min(remaining,x.rem);
+      if(share>0.001){
+        const pId='PAY-'+String(DB.cPay).padStart(5,'0');DB.cPay++;
+        DB.payments.push({
+          id:pId,invId:x.inv.id,invNum:x.inv.num,
+          custId,custName:cust.name,
+          amount:share,date,mode:_col2Pay,checkNum,notes
+        });
+        remaining-=share;
+      }
+    }
+
+    // If no invoices checked or leftover, record as general payment (linked to cust only)
+    if(remaining>0.001){
       const pId='PAY-'+String(DB.cPay).padStart(5,'0');DB.cPay++;
       DB.payments.push({
-        id:pId,invId:x.inv.id,invNum:x.inv.num,
+        id:pId,invId:null,invNum:'عام',
         custId,custName:cust.name,
-        amount:share,date,mode:_col2Pay,checkNum,notes
+        amount:remaining,date,mode:_col2Pay,checkNum,notes
       });
-      remaining-=share;
     }
-  }
 
-  // If no invoices checked or leftover, record as general payment (linked to cust only)
-  if(remaining>0.001){
-    const pId='PAY-'+String(DB.cPay).padStart(5,'0');DB.cPay++;
-    DB.payments.push({
-      id:pId,invId:null,invNum:'عام',
-      custId,custName:cust.name,
-      amount:remaining,date,mode:_col2Pay,checkNum,notes
-    });
+    const applied=amount-remaining;
+    addLog(t('pay_customer_label'),`"${cust.name}" — ${fmt(applied)} ${t('currency_sym')} — ${_col2Pay}${remaining>0.001?` — ${fmt(remaining)} ${t('currency_sym')} لم تُربط`:''}`,'#2d9f6d');
+    saveState();
+    closeModal('m-collect2');renderSales();updateStats();renderFin();
+    broadcastChange('payments', { custId, amount: applied });
+    toast(t('pay_received')+' '+fmt(applied)+' '+t('currency_sym')+' — '+cust.name);
+  } finally {
+    setBtnLoading(btn,false);
   }
-
-  const applied=amount-remaining;
-  addLog(t('pay_customer_label'),`"${cust.name}" — ${fmt(applied)} ${t('currency_sym')} — ${_col2Pay}${remaining>0.001?` — ${fmt(remaining)} ${t('currency_sym')} لم تُربط`:''}`,'#2d9f6d');
-  saveState();
-  closeModal('m-collect2');renderSales();updateStats();renderFin();
-  broadcastChange('payments', { custId, amount: applied });
-  toast(t('pay_received')+' '+fmt(applied)+' '+t('currency_sym')+' — '+cust.name);
 }
 
 function openSettleForCustomer(){
@@ -488,56 +504,61 @@ function calcSettleManualTotal(){
 }
 
 function saveSettlement(){
-  const custId=parseInt(G('settle-cust-id').value);
-  const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast(t('pay_customer_err'),'error');return}
-  const amt=parseFloat(G('settle-amt').value)||0;
-  const reason=G('settle-reason').value.trim();
-  const date=G('settle-date').value;
-  if(amt<=0){toast(t('pay_enter_amount'),'error');return}
-  if(!reason){toast(t('pay_enter_reason'),'error');return}
-  const checkedInvs=[];
-  document.querySelectorAll('.settle-inv-cb:checked').forEach(cb=>{
-    const invId=parseInt(cb.dataset.invId);
-    const inv=DB.invs.find(x=>x.id===invId);
-    if(inv)checkedInvs.push({inv,rem:invRemaining(inv)});
-  });
-  if(!checkedInvs.length){toast(t('pay_choose_invoice'),'error');return}
-  const totalUnpaid=checkedInvs.reduce((s,x)=>s+x.rem,0);
-  const applied=[];
-  let remaining=amt;
-  for(const x of checkedInvs){
-    let share=0;
-    if(_settleMode==='auto'){
-      share=totalUnpaid>0?(x.rem/totalUnpaid)*amt:0;
-      share=Math.min(share,x.rem,remaining);
-    } else {
-      const inp=document.querySelector(`.settle-manual-amt[data-inv-id="${x.inv.id}"]`);
-      share=Math.min(parseFloat(inp?.value)||0,x.rem,remaining);
+  const btn=G('m-settle')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try {
+    const custId=parseInt(G('settle-cust-id').value);
+    const cust=DB.custs.find(x=>x.id===custId);if(!cust){toast(t('pay_customer_err'),'error');return}
+    const amt=parseFloat(G('settle-amt').value)||0;
+    const reason=G('settle-reason').value.trim();
+    const date=G('settle-date').value;
+    if(amt<=0){toast(t('pay_enter_amount'),'error');return}
+    if(!reason){toast(t('pay_enter_reason'),'error');return}
+    const checkedInvs=[];
+    document.querySelectorAll('.settle-inv-cb:checked').forEach(cb=>{
+      const invId=parseInt(cb.dataset.invId);
+      const inv=DB.invs.find(x=>x.id===invId);
+      if(inv)checkedInvs.push({inv,rem:invRemaining(inv)});
+    });
+    if(!checkedInvs.length){toast(t('pay_choose_invoice'),'error');return}
+    const totalUnpaid=checkedInvs.reduce((s,x)=>s+x.rem,0);
+    const applied=[];
+    let remaining=amt;
+    for(const x of checkedInvs){
+      let share=0;
+      if(_settleMode==='auto'){
+        share=totalUnpaid>0?(x.rem/totalUnpaid)*amt:0;
+        share=Math.min(share,x.rem,remaining);
+      } else {
+        const inp=document.querySelector(`.settle-manual-amt[data-inv-id="${x.inv.id}"]`);
+        share=Math.min(parseFloat(inp?.value)||0,x.rem,remaining);
+      }
+      if(share>0.001){
+        applied.push({invId:x.inv.id,invNum:x.inv.num,amount:share});
+        x.inv.discount=(x.inv.discount||0)+share;
+        x.inv.total=Math.max(0,x.inv.total-share);
+        if(!x.inv.settlements)x.inv.settlements=[];
+        x.inv.settlements.push({amount:share,reason,date});
+        remaining-=share;
+      }
     }
-    if(share>0.001){
-      applied.push({invId:x.inv.id,invNum:x.inv.num,amount:share});
-      x.inv.discount=(x.inv.discount||0)+share;
-      x.inv.total=Math.max(0,x.inv.total-share);
-      if(!x.inv.settlements)x.inv.settlements=[];
-      x.inv.settlements.push({amount:share,reason,date});
-      remaining-=share;
-    }
+    if(!applied.length){toast(t('pay_no_applied'),'error');return}
+    const settlement={
+      id:'SETL-'+String(DB.cSettle).padStart(5,'0'),
+      custId,custName:cust.name,
+      amount:amt,actualApplied:amt-remaining,remaining,
+      reason,date,applied,
+      mode:_settleMode
+    };
+    DB.cSettle++;
+    DB.settlements.push(settlement);
+    addLog(t('pay_settle'),`${settlement.id} — "${cust.name}" — ${fmt(amt)} ${t('currency_sym')} — ${applied.length} فاتورة — ${reason}`,'#f5a623');
+    saveState();
+    closeModal('m-settle');renderSales();updateStats();
+    broadcastChange('settlements', { settlementId: settlement.id, custName: cust.name });
+    toast(fmt(amt)+' '+t('currency_sym')+' — '+applied.length,'success',{title:t('pay_applied'),icon:'ti-discount',duration:4000})
+  } finally {
+    setBtnLoading(btn,false);
   }
-  if(!applied.length){toast(t('pay_no_applied'),'error');return}
-  const settlement={
-    id:'SETL-'+String(DB.cSettle).padStart(5,'0'),
-    custId,custName:cust.name,
-    amount:amt,actualApplied:amt-remaining,remaining,
-    reason,date,applied,
-    mode:_settleMode
-  };
-  DB.cSettle++;
-  DB.settlements.push(settlement);
-  addLog(t('pay_settle'),`${settlement.id} — "${cust.name}" — ${fmt(amt)} ${t('currency_sym')} — ${applied.length} فاتورة — ${reason}`,'#f5a623');
-  saveState();
-  closeModal('m-settle');renderSales();updateStats();
-  broadcastChange('settlements', { settlementId: settlement.id, custName: cust.name });
-  toast(fmt(amt)+' '+t('currency_sym')+' — '+applied.length,'success',{title:t('pay_applied'),icon:'ti-discount',duration:4000})
 }
 
 /* ═══ DELIVER ═══ */
@@ -667,6 +688,7 @@ function viewPur(purId){
 function printInvoice(type,id){
   let title='';let num='';let date='';let name='';let lines=[];let total=0;let paid=0;let rem=0;let notes='';let discount=0;let discountReason='';
   const company=currentCompany();
+  const tpl=getInvoiceTemplate();
   if(type==='sale'){
     const inv=DB.invs.find(x=>x.id===id);if(!inv){toast(t('sales_not_found'),'error');return}
     title=t('print_invoice_sale');num=inv.num;date=inv.date;name=inv.custName;lines=inv.lines;total=inv.total;paid=invPaid(inv);rem=invRemaining(inv);notes=company.note||'';discount=inv.discount||0;discountReason=inv.discountReason||'';
@@ -674,6 +696,7 @@ function printInvoice(type,id){
     const pur=DB.purs.find(x=>x.id===id);if(!pur){toast(t('pur_not_found'),'error');return}
     title=t('print_invoice_pur');num=pur.num;date=pur.date;name=pur.supName;lines=pur.lines;total=pur.total;paid=purPaid(pur);rem=purRemaining(pur);notes=company.note||'';
   }
+  if(tpl.customTitle) title=tpl.customTitle;
   const win=window.open('','_blank','width=960,height=1150');
   if(!win){toast(t('sales_print_err'),'error');return}
   const now=new Date();
@@ -683,6 +706,24 @@ function printInvoice(type,id){
   const payColor=rem<=0.001?'#16a34a':paid>0?'#d97706':'#dc2626';
   const payBg=rem<=0.001?'#f0fdf4':paid>0?'#fffbeb':'#fef2f2';
   const payBorder=rem<=0.001?'#bbf7d0':paid>0?'#fde68a':'#fecaca';
+  const accent=tpl.accentColor||'#4f8ef7';
+  const secondary=tpl.secondaryColor||'#6c5ce7';
+  const accentBg=tpl.useGradient?`linear-gradient(135deg,${accent} 0%,${secondary} 50%,${accent}88 100%)`:accent;
+  const accentBgH=tpl.useGradient?`linear-gradient(135deg,${accent},${secondary})`:accent;
+  const tableHdBg=tpl.tableHeaderStyle==='solid'?accent:tpl.tableHeaderStyle==='outline'?'transparent':tpl.tableHeaderStyle==='clean'?'transparent':`linear-gradient(135deg,${accent},${accent}cc)`;
+  const tableHdColor=tpl.tableHeaderStyle==='outline'?accent:tpl.tableHeaderStyle==='clean'?'#1e293b':'#fff';
+  const tableHdBd=tpl.tableHeaderStyle==='outline'?`2px solid ${accent}`:'none';
+  const rowStyle=tpl.tableRowStyle||'alternating';
+  const paperSize=tpl.paperSize==='landscape'?'A4 landscape':'A4 portrait';
+  const fSize=tpl.fontSize||12;
+  const fontFam=tpl.fontFamily||'Cairo';
+  const fontImport=INVOICE_FONTS.find(f=>f.id===fontFam)?.import||'Cairo:wght@300;400;500;600;700;800';
+  const br=tpl.borderRadius??8;
+  const logoH=tpl.logoHeight||55;
+  const qrSz=tpl.qrSize||100;
+  const wmText=tpl.watermarkText||title;
+  const wmOpacity=(tpl.watermarkOpacity??3)/100;
+  const wmRotation=tpl.watermarkRotation??-32;
 
   const qrSvg=`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <rect width="100" height="100" fill="#fff"/>
@@ -717,13 +758,11 @@ function printInvoice(type,id){
     <rect x="18" y="55" width="6" height="6" fill="#1e293b" opacity=".6"/>
   </svg>`;
 
+  const bcSettings=getBarcodeSettings();
   const linesHtml=lines.map((l,i)=>{
     const item=DB.items.find(x=>x.id===l.itemId);
     const barcode=item?.barcode||'';
     const code=item?.code||'';
-    const discCell=type==='sale'?`<td>${l.disc>0?fmt(l.disc)+' '+t('currency_sym'):'\u2014'}</td>`:'';
-
-    const bcSettings=getBarcodeSettings();
     let barcodeHtml='';
     if(bcSettings.show!=='none'&&bcSettings.show!=='invoice'&&(barcode||code)){
       const bcValue=barcode||code;
@@ -732,103 +771,95 @@ function printInvoice(type,id){
       const barWidth=BC_WIDTHS[bcSettings.width]||1.5;
       setTimeout(()=>{
         const svgEl=document.getElementById(bcId);
-        if(svgEl){try{JsBarcode(svgEl,bcValue,{format:bcSettings.type,width:barWidth,height:sizeConfig.height*0.6,margin:1,displayValue:bcSettings.text==='yes',font:'monospace',fontSize:9,textMargin:1,background:'transparent',lineColor:'#475569'})}catch(e){svgEl.innerHTML='<text x="2" y="12" fill="#94a3b8" font-size="9" font-family="monospace">'+bcValue+'</text>'}}}
+        if(svgEl){try{JsBarcode(svgEl,bcValue,{format:bcSettings.type,width:barWidth,height:sizeConfig.height*0.6,margin:1,displayValue:bcSettings.text==='yes',font:'monospace',fontSize:9,textMargin:1,background:'transparent',lineColor:'#475569'})}catch(e){svgEl.innerHTML='<text x="2" y="12" fill="#94a3b8" font-size="9" font-family:monospace">'+bcValue+'</text>'}}
       },0);
-
-      if(bcSettings.position==='under-name'){
-        barcodeHtml=`<div style="margin-top:3px"><svg id="${bcId}" style="max-width:120px;height:auto"></svg></div>`;
-      } else if(bcSettings.position==='separate-col'){
-        barcodeHtml='';
-      }
+      if(bcSettings.position==='under-name') barcodeHtml=`<div style="margin-top:3px"><svg id="${bcId}" style="max-width:120px;height:auto"></svg></div>`;
     }
-
-    const nameCell=bcSettings.position==='under-name'
-      ?`<td style="font-weight:600;color:#1e293b"><div>${l.name}</div>${barcodeHtml}</td>`
-      :`<td style="font-weight:600;color:#1e293b">${l.name}</td>`;
-
+    const nameCell=bcSettings.position==='under-name'?`<td style="font-weight:600;color:#1e293b"><div>${l.name}</div>${barcodeHtml}</td>`:`<td style="font-weight:600;color:#1e293b">${l.name}</td>`;
+    const codeCell=tpl.showItemCode?`<td style="text-align:center;color:#64748b;font-size:10px">${code||'\u2014'}</td>`:'';
+    const bcCell=tpl.showItemBarcode&&barcode?`<td style="text-align:center;font-size:9px;font-family:monospace;color:#64748b">${barcode}</td>`:'';
+    const priceCell=tpl.showUnitPrice?`<td style="direction:ltr;text-align:right;font-family:monospace">${fmt(l.price)} ${t('currency_sym')}</td>`:'';
+    const discCell=(type==='sale'&&tpl.showDiscountCol)?`<td>${l.disc>0?fmt(l.disc)+' '+t('currency_sym'):'\u2014'}</td>`:'';
     return`<tr>
       <td style="text-align:center;color:#94a3b8;font-size:10px">${i+1}</td>
-      ${nameCell}
+      ${codeCell}${nameCell}${bcCell}
       <td style="text-align:center">${l.qty}</td>
-      <td style="direction:ltr;text-align:right;font-family:monospace">${fmt(l.price)} ${t('currency_sym')}</td>
-      ${discCell}
+      ${priceCell}${discCell}
       <td style="direction:ltr;text-align:right;font-family:monospace;font-weight:700;color:#1e293b">${fmt(l.total)} ${t('currency_sym')}</td>
       ${bcSettings.position==='separate-col'?`<td style="text-align:center"><svg id="${barcode??code?i:''}" style="max-width:80px;height:auto"></svg></td>`:''}
     </tr>`;
   }).join('');
 
   const html=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title} ${num}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=${fontImport.replace(/ /g,'+')}&display=swap" rel="stylesheet">
   <style>
-  @page{size:A4 portrait;margin:14mm 18mm 16mm}
+  @page{size:${paperSize};margin:14mm 18mm 16mm}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Cairo',Helvetica,Arial,sans-serif;direction:rtl;color:#1e293b;padding:0;font-size:12px;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-
+  body{font-family:'${fontFam}',Helvetica,Arial,sans-serif;direction:rtl;color:#1e293b;padding:0;font-size:${fSize}px;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .inv{position:relative;padding:24px 28px 70px;min-height:100vh}
-
-  .inv-accent{position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(135deg,#4f8ef7 0%,#6c5ce7 50%,#a855f7 100%)}
-  .inv-side{position:absolute;top:0;right:0;width:4px;height:100%;background:linear-gradient(180deg,#4f8ef7,#6c5ce7,#a855f7);opacity:.25}
-  .inv-watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-32deg);font-size:56px;font-weight:900;color:rgba(79,142,247,.03);pointer-events:none;z-index:0;white-space:nowrap;letter-spacing:6px}
+  .inv-accent{position:absolute;top:0;left:0;right:0;height:5px;background:${accentBg}}
+  .inv-side{position:absolute;top:0;right:0;width:4px;height:100%;background:linear-gradient(180deg,${accent},${secondary});opacity:.25}
+  .inv-watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(${wmRotation}deg);font-size:56px;font-weight:900;color:${accent};opacity:${wmOpacity};pointer-events:none;z-index:0;white-space:nowrap;letter-spacing:6px}
 
   /* Header */
   .inv-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-top:12px;gap:20px}
   .inv-company{flex:1}
-  .inv-company-name{font-size:24px;font-weight:800;color:#4f8ef7;margin-bottom:3px;letter-spacing:-.3px}
+  .inv-company-name{font-size:24px;font-weight:800;color:${accent};margin-bottom:3px;letter-spacing:-.3px}
   .inv-company-sub{font-size:11px;color:#64748b;line-height:1.6}
   .inv-company-sub span{display:inline-block;margin-left:12px}
   .inv-title-box{text-align:left;min-width:220px}
   .inv-type{font-size:28px;font-weight:800;color:#1e293b;margin-bottom:4px;letter-spacing:-.5px}
-  .inv-type-badge{display:inline-block;width:100%;height:4px;background:linear-gradient(90deg,#4f8ef7,#6c5ce7);border-radius:2px;margin-top:4px}
+  .inv-type-badge{display:inline-block;width:100%;height:4px;background:${accentBgH};border-radius:2px;margin-top:4px}
   .inv-meta{font-size:11px;color:#64748b;line-height:1.8;margin-top:10px}
   .inv-meta strong{color:#1e293b;font-weight:600}
   .inv-status{display:inline-flex;align-items:center;gap:5px;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;color:${payColor};background:${payBg};border:1.5px solid ${payBorder};margin-top:6px}
   .inv-status i{font-size:14px}
 
   /* Info grid */
-  .inv-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0}
+  .inv-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;padding:14px;background:#f8fafc;border-radius:${br}px;border:1px solid #e2e8f0}
   .inv-info-box{font-size:12px}
   .inv-info-box label{font-size:10px;color:#94a3b8;display:block;margin-bottom:2px;font-weight:500}
   .inv-info-box span{font-weight:600;color:#1e293b}
 
   /* Items table */
   .inv-table{width:100%;border-collapse:collapse;margin:0;font-size:11px}
-  .inv-table thead th{background:linear-gradient(135deg,#4f8ef7,#5b9cf7);color:#fff;padding:10px 8px;font-weight:600;text-align:right;font-size:11px}
-  .inv-table thead th:first-child{border-radius:0 8px 0 0}
-  .inv-table thead th:last-child{border-radius:8px 0 0 0}
-  .inv-table tbody td{padding:9px 8px;border-bottom:1px solid #f1f5f9}
-  .inv-table tbody tr:nth-child(even){background:#f8fafc}
-  .inv-table tbody tr:nth-child(odd){background:#fff}
+  .inv-table thead th{background:${tableHdBg};color:${tableHdColor};padding:10px 8px;font-weight:600;text-align:right;font-size:11px;border-bottom:${tableHdBd}}
+  .inv-table thead th:first-child{border-radius:0 ${br}px 0 0}
+  .inv-table thead th:last-child{border-radius:${br}px 0 0 0}
+  .inv-table tbody td{padding:9px 8px;${rowStyle==='borders'?'border-bottom:1px solid #e2e8f0;':'border-bottom:1px solid #f1f5f9;'}${rowStyle==='clean'?'border-bottom:none;':''}}
+  .inv-table tbody tr:nth-child(even){${rowStyle==='alternating'?'background:#f8fafc':rowStyle==='clean'?'background:transparent':'background:transparent'}}
+  .inv-table tbody tr:nth-child(odd){background:${rowStyle==='clean'?'transparent':'#fff'}}
   .inv-table tbody tr:last-child td{border-bottom:2px solid #e2e8f0}
 
   /* Summary */
   .inv-summary{display:flex;justify-content:space-between;margin-top:22px;gap:20px}
   .inv-qr-section{text-align:center;width:120px;flex-shrink:0}
-  .inv-qr-box{width:100px;height:100px;margin:0 auto 6px;border:2px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;padding:5px}
+  .inv-qr-box{width:${qrSz}px;height:${qrSz}px;margin:0 auto 6px;border:2px solid #e2e8f0;border-radius:${br}px;display:flex;align-items:center;justify-content:center;background:#fff;padding:5px}
   .inv-qr-box svg{width:100%;height:100%}
   .inv-qr-label{font-size:9px;color:#94a3b8;font-weight:500}
-  .inv-totals{width:300px;background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e2e8f0}
+  .inv-totals{width:300px;background:#f8fafc;border-radius:${br}px;padding:16px;border:1px solid #e2e8f0}
   .inv-totals-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:1px dashed #e2e8f0}
   .inv-totals-row:last-child{border-bottom:none}
-  .inv-totals-row.total-final{border-top:2.5px solid #4f8ef7;margin-top:4px;padding-top:10px;font-size:15px;font-weight:800;color:#4f8ef7}
+  .inv-totals-row.total-final{border-top:2.5px solid ${accent};margin-top:4px;padding-top:10px;font-size:15px;font-weight:800;color:${accent}}
   .inv-totals .paid-val{color:#16a34a;font-weight:700}
   .inv-totals .rem-val{color:${rem>0.001?'#dc2626':'#16a34a'};font-weight:700}
 
   /* Terms */
-  .inv-terms{margin-top:18px;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;font-size:10px;color:#64748b;line-height:1.8}
+  .inv-terms{margin-top:18px;padding:14px;background:#f8fafc;border-radius:${br}px;border:1px solid #e2e8f0;font-size:10px;color:#64748b;line-height:1.8}
   .inv-terms-title{font-weight:700;color:#1e293b;margin-bottom:6px;font-size:11px;display:flex;align-items:center;gap:4px}
-  .inv-terms-title i{font-size:13px;color:#4f8ef7}
+  .inv-terms-title i{font-size:13px;color:${accent}}
   .inv-terms ol{padding-right:16px}
   .inv-terms li{margin-bottom:2px}
   .inv-notes{margin-top:8px;padding:8px 12px;background:#fff;border-radius:6px;border:1px solid #e2e8f0;font-weight:600;color:#1e293b}
 
   /* Stamps */
   .inv-stamps{display:flex;gap:24px;margin-top:18px}
-  .inv-stamp{width:140px;height:60px;border:1.5px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;flex-direction:column;gap:3px;background:#fafbfc}
+  .inv-stamp{width:140px;height:60px;border:1.5px dashed #cbd5e1;border-radius:${br}px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;flex-direction:column;gap:3px;background:#fafbfc}
   .inv-stamp i{font-size:15px;opacity:.4}
 
   /* Footer */
   .inv-footer{margin-top:20px;padding-top:12px;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#94a3b8}
-  .inv-footer-brand{font-weight:700;color:#4f8ef7;font-size:11px}
+  .inv-footer-brand{font-weight:700;color:${accent};font-size:11px}
 
   @media print{
     body{padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -839,23 +870,17 @@ function printInvoice(type,id){
     .inv-table tr{page-break-inside:avoid;page-break-after:auto}
     .inv-table thead{display:table-header-group}
   }
+  ${tpl.customCss||''}
   </style></head><body>
   <div class="inv">
     <div class="inv-accent"></div>
     <div class="inv-side"></div>
-    <div class="inv-watermark">${title} ${num}</div>
-
-    <!-- HEADER -->
+    ${tpl.showWatermark?`<div class="inv-watermark">${wmText} ${num}</div>`:''}
     <div class="inv-header">
       <div class="inv-company">
-        ${company.logo?'<div style="margin-bottom:6px">'+companyLogoHtml(company,55)+'</div>':''}
+        ${(tpl.showLogo&&company.logo)?'<div style="margin-bottom:6px">'+companyLogoHtml(company,logoH)+'</div>':''}
         <div class="inv-company-name">${company.name}</div>
-        <div class="inv-company-sub">
-          ${company.address?'<span>'+company.address+'</span>':''}
-          ${company.phone?'<span>'+company.phone+'</span>':''}
-          ${company.email?'<span>'+company.email+'</span>':''}
-          ${company.taxNo?'<span>الرقم الضريبي: '+company.taxNo+'</span>':''}
-        </div>
+        ${tpl.showCompanyInfo?`<div class="inv-company-sub">${company.address?'<span>'+company.address+'</span>':''}${company.phone?'<span>'+company.phone+'</span>':''}${company.email?'<span>'+company.email+'</span>':''}${(tpl.showTaxNo&&company.taxNo)?'<span>الرقم الضريبي: '+company.taxNo+'</span>':''}</div>`:''}
       </div>
       <div class="inv-title-box">
         <div class="inv-type">${title}</div>
@@ -865,70 +890,33 @@ function printInvoice(type,id){
           <div>التاريخ: <strong>${date}</strong></div>
           <div>${type==='sale'?'الزبون':'المورد'}: <strong>${name}</strong></div>
         </div>
-        <div class="inv-status"><i class="ti ti-${rem<=0.001?'circle-check':paid>0?'alert-triangle':'circle-x'}"></i>${payStatus}</div>
+        ${tpl.showBadge?`<div class="inv-status"><i class="ti ti-${rem<=0.001?'circle-check':paid>0?'alert-triangle':'circle-x'}"></i>${payStatus}</div>`:''}
       </div>
     </div>
-
-    <!-- INFO -->
-    <div class="inv-info">
-      <div class="inv-info-box"><label>${type==='sale'?'اسم الزبون':'اسم المورد'}</label><span>${name}</span></div>
-      <div class="inv-info-box"><label>رقم الفاتورة</label><span>${num}</span></div>
-      <div class="inv-info-box"><label>تاريخ الفاتورة</label><span>${date}</span></div>
-      <div class="inv-info-box"><label>تاريخ الطباعة</label><span>${dateStr} ${timeStr}</span></div>
-    </div>
-
-    <!-- ITEMS TABLE -->
-    <table class="inv-table">
-      <thead><tr>
-        <th style="width:30px;text-align:center">#</th>
-        <th>${t('print_item')}</th>
-        <th style="text-align:center;width:50px">${t('print_qty')}</th>
-        <th style="width:80px">سعر الوحدة</th>
-        ${type==='sale'?'<th style="width:70px">الخصم</th>':''}
-        <th style="width:90px">${t('print_net_total')}</th>
-      </tr></thead>
-      <tbody>${linesHtml}</tbody>
-    </table>
-
-    <!-- SUMMARY: QR right + Totals left -->
+    ${tpl.showInfoGrid?`<div class="inv-info"><div class="inv-info-box"><label>${type==='sale'?'اسم الزبون':'اسم المورد'}</label><span>${name}</span></div><div class="inv-info-box"><label>رقم الفاتورة</label><span>${num}</span></div><div class="inv-info-box"><label>تاريخ الفاتورة</label><span>${date}</span></div><div class="inv-info-box"><label>تاريخ الطباعة</label><span>${dateStr} ${timeStr}</span></div></div>`:''}
+    <table class="inv-table"><thead><tr>
+      <th style="width:30px;text-align:center">#</th>
+      ${tpl.showItemCode?'<th style="width:50px;text-align:center">الكود</th>':''}
+      ${tpl.showItemBarcode?'<th style="width:60px;text-align:center">الباركود</th>':''}
+      <th>${t('print_item')}</th>
+      <th style="text-align:center;width:50px">${t('print_qty')}</th>
+      ${tpl.showUnitPrice?'<th style="width:80px">سعر الوحدة</th>':''}
+      ${(type==='sale'&&tpl.showDiscountCol)?'<th style="width:70px">الخصم</th>':''}
+      <th style="width:90px">${t('print_net_total')}</th>
+    </tr></thead><tbody>${linesHtml}</tbody></table>
     <div class="inv-summary">
-      <div class="inv-qr-section">
-        <div class="inv-qr-box">${qrSvg}</div>
-        <div class="inv-qr-label">امسح للتحقق</div>
-        ${(getBarcodeSettings().show==='item+invoice'||getBarcodeSettings().show==='invoice')?`<div style="margin-top:12px;text-align:center" id="inv-bc-section">${renderInvoiceBarcode(num.replace(/[^a-zA-Z0-9]/g,''),{size:'small'})}</div><div style="font-size:9px;color:#94a3b8;margin-top:4px;font-family:monospace;direction:ltr;letter-spacing:1px">${num}</div>`:''}
-      </div>
+      ${tpl.showQrCode?`<div class="inv-qr-section"><div class="inv-qr-box">${qrSvg}</div><div class="inv-qr-label">امسح للتحقق</div>${(getBarcodeSettings().show==='item+invoice'||getBarcodeSettings().show==='invoice')?`<div style="margin-top:12px;text-align:center" id="inv-bc-section">${renderInvoiceBarcode(num.replace(/[^a-zA-Z0-9]/g,''),{size:'small'})}</div><div style="font-size:9px;color:#94a3b8;margin-top:4px;font-family:monospace;direction:ltr;letter-spacing:1px">${num}</div>`:''}</div>`:''}
       <div class="inv-totals">
         <div class="inv-totals-row"><span>الإجمالي قبل الخصم</span><span>${fmt(total+discount)} ${t('currency_sym')}</span></div>
         ${discount>0?`<div class="inv-totals-row"><span>خصم ${discountReason?'('+discountReason+')':''}</span><span style="color:#d97706">-${fmt(discount)} ${t('currency_sym')}</span></div>`:''}
         <div class="inv-totals-row total-final"><span>الإجمالي النهائي</span><span>${fmt(total)} ${t('currency_sym')}</span></div>
-        ${type==='sale'?`<div class="inv-totals-row"><span>المدفوع</span><span class="paid-val">${fmt(paid)} ${t('currency_sym')}</span></div><div class="inv-totals-row"><span>المتبقي</span><span class="rem-val">${rem>0.001?fmt(rem)+' '+t('currency_sym'):'مسدّد بالكامل ✓'}</span></div>`:''}
+        ${(type==='sale'&&tpl.showPaymentDetails)?`<div class="inv-totals-row"><span>المدفوع</span><span class="paid-val">${fmt(paid)} ${t('currency_sym')}</span></div><div class="inv-totals-row"><span>المتبقي</span><span class="rem-val">${rem>0.001?fmt(rem)+' '+t('currency_sym'):'مسدّد بالكامل ✓'}</span></div>`:''}
       </div>
     </div>
-
-    <!-- TERMS -->
-    <div class="inv-terms">
-      <div class="inv-terms-title"><i class="ti ti-file-text"></i> الشروط والأحكام</div>
-      <ol>
-        <li>هذه الفاتورة صادرة إلكترونياً ولا تحتاج إلى توقيع أو ختم.</li>
-        <li>في حالة عدم الدفع خلال المدة المحددة تُضاف فائدة تأخير بنسبة 2% شهرياً.</li>
-        <li>المرتجعات تخضع لسياسة الشركة المعلنة.</li>
-        <li>يُرجى الحفاظ على هذه الفاتورة للمراجعة.</li>
-      </ol>
-      ${notes?`<div class="inv-notes"><i class="ti ti-note" style="font-size:11px;color:#4f8ef7"></i> ملاحظات: ${notes}</div>`:''}
-    </div>
-
-    <!-- STAMPS -->
-    <div class="inv-stamps">
-      <div class="inv-stamp"><i class="ti ti-stamp"></i>ختم المؤسسة</div>
-      <div class="inv-stamp"><i class="ti ti-signature"></i>توقيع المسؤول</div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="inv-footer">
-      <span class="inv-footer-brand">${company.name}</span>
-      <span>تاريخ الطباعة: ${dateStr} ${timeStr} • ${num}</span>
-      <span>${company.name} © ${now.getFullYear()}</span>
-    </div>
+    ${tpl.showTerms?(tpl.termsText||[]).length?`<div class="inv-terms"><div class="inv-terms-title"><i class="ti ti-file-text"></i> الشروط والأحكام</div><ol>${tpl.termsText.map(s=>'<li>'+escapeHtml(s)+'</li>').join('')}</ol></div>`:'':''}
+    ${(tpl.showNotes&&notes)?`<div class="inv-notes" style="margin-top:8px;padding:8px 12px;background:#fff;border-radius:6px;border:1px solid #e2e8f0;font-weight:600;color:#1e293b"><i class="ti ti-note" style="font-size:11px;color:${accent}"></i> ملاحظات: ${notes}</div>`:''}
+    ${tpl.showStamps?`<div class="inv-stamps"><div class="inv-stamp"><i class="ti ti-stamp"></i>ختم المؤسسة</div><div class="inv-stamp"><i class="ti ti-signature"></i>توقيع المسؤول</div></div>`:''}
+    ${tpl.showFooter?`<div class="inv-footer"><span class="inv-footer-brand">${tpl.customFooterText||company.name}</span><span>تاريخ الطباعة: ${dateStr} ${timeStr} • ${num}</span><span>${company.name} © ${now.getFullYear()}</span></div>`:''}
   </div>
   <script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
   </body></html>`;
@@ -937,25 +925,30 @@ function printInvoice(type,id){
 
 /* ═══ RETURNS ═══ */
 function saveRet(){
-  const invNum=G('re-inv').value,amt=parseFloat(G('re-amt').value)||0;
-  if(!invNum||amt<=0){toast(t('pay_enter_amount'),'error');return}
-  const inv=DB.invs.find(x=>x.num===invNum);
-  const num='RET-'+String(DB.cRet).padStart(5,'0'),date=G('re-date').value;
-  // If QC passed: re-add returned items proportionally to inventory
-  if(_reQC==='passed'&&inv&&inv.total>0){
-    const ratio=Math.min(amt/inv.total,1);
-    inv.lines.forEach(l=>{
-      const item=DB.items.find(x=>x.id===l.itemId);
-      if(item){const retQty=Math.round(l.qty*ratio);if(retQty>0)item.qty+=retQty}
-    })
+  const btn=G('m-return')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try {
+    const invNum=G('re-inv').value,amt=parseFloat(G('re-amt').value)||0;
+    if(!invNum||amt<=0){toast(t('pay_enter_amount'),'error');return}
+    const inv=DB.invs.find(x=>x.num===invNum);
+    const num='RET-'+String(DB.cRet).padStart(5,'0'),date=G('re-date').value;
+    // If QC passed: re-add returned items proportionally to inventory
+    if(_reQC==='passed'&&inv&&inv.total>0){
+      const ratio=Math.min(amt/inv.total,1);
+      inv.lines.forEach(l=>{
+        const item=DB.items.find(x=>x.id===l.itemId);
+        if(item){const retQty=Math.round(l.qty*ratio);if(retQty>0)item.qty+=retQty}
+      })
+    }
+    DB.rets.push({id:DB.cRet++,num,invNum,custName:inv?.custName||'—',amt,reason:G('re-reason').value,qcStatus:_reQC,date});
+    addLog('مرتجع مبيعات',`${num} — فاتورة ${invNum} — ${fmt(amt)} ${t('currency_sym')} — QC: ${_reQC}`,'#f05454');
+    saveState();
+    closeModal('m-return');renderRets();renderItems();updateStats();
+    broadcastChange('returns', { num, invNum });
+    const qcMsg=_reQC==='passed'?' وأُعيد للمخزون':_reQC==='failed'?' ولن يُعاد للمخزون':' والجودة قيد المراجعة';
+    toast(t('sales_return_logged')+' '+num)
+  } finally {
+    setBtnLoading(btn,false);
   }
-  DB.rets.push({id:DB.cRet++,num,invNum,custName:inv?.custName||'—',amt,reason:G('re-reason').value,qcStatus:_reQC,date});
-  addLog('مرتجع مبيعات',`${num} — فاتورة ${invNum} — ${fmt(amt)} ${t('currency_sym')} — QC: ${_reQC}`,'#f05454');
-  saveState();
-  closeModal('m-return');renderRets();renderItems();updateStats();
-  broadcastChange('returns', { num, invNum });
-  const qcMsg=_reQC==='passed'?' وأُعيد للمخزون':_reQC==='failed'?' ولن يُعاد للمخزون':' والجودة قيد المراجعة';
-  toast(t('sales_return_logged')+' '+num)
 }
 function renderRets(search=''){
   const tb=G('ret-tb');

@@ -25,7 +25,8 @@ function initEmployeeForm() {
   const dl = G('hrm-dept-list');
   if (dl) dl.innerHTML = depts.map(d => `<option value="${d}">`).join('');
   if (!localStorage.getItem(EMP_DRAFT_KEY)) {
-    document.getElementById('hrm-no-tag').style.display = '';
+    const hnt = document.getElementById('hrm-no-tag');
+    if (hnt) hnt.style.display = '';
   }
 }
 
@@ -42,8 +43,9 @@ function showHRMTab(tabId) {
   document.querySelectorAll('.hrm-tab').forEach(t => t.style.display = 'none');
   const tab = G(tabId);
   if (tab) tab.style.display = '';
-  document.querySelectorAll('[onclick^="showHRMTab"]').forEach(b => b.classList.remove('btn-primary'));
-  event.target.closest('button')?.classList.add('btn-primary');
+  document.querySelectorAll('[data-action="showHRMTab"]').forEach(b => {
+    b.classList.toggle('btn-primary', b.dataset.tab === tabId);
+  });
   if (tabId === 'hrm-reports') {
     renderHRMCharts();
     loadHRMEmployeeDropdown('hrm-perf-list-emp');
@@ -890,7 +892,7 @@ async function renderHRMReports() {
     if (el2) {
       el2.innerHTML = `<div class="accounting-note acn-blue">
         <i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i>
-        <span>إجمالي السلف والقروض النشطة: <strong>${fmt(totalActive)}</strong> t('currency_sym') — عدد: <strong>${advances.length}</strong></span>
+        <span>إجمالي السلف والقروض النشطة: <strong>${fmt(totalActive)}</strong> ${t('currency_sym')} — عدد: <strong>${advances.length}</strong></span>
       </div>`;
     }
   } catch (err) {

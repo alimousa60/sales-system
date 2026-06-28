@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sales-system-v6';
+const CACHE_NAME = 'sales-system-v7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -17,6 +17,7 @@ const STATIC_ASSETS = [
   '/js/hrm.js',
   '/js/excel-export.js',
   '/js/main.js',
+  '/js/invoice-settings.js',
   '/js/realtime.js',
   '/js/notify.js',
   '/js/barcode-settings.js',

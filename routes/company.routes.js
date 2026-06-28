@@ -322,4 +322,44 @@ router.delete('/:companyId/members/:userId', authenticateToken, async (req, res)
   }
 });
 
+/**
+ * GET /api/v1/companies/:companyId/invoice-template
+ * Get invoice template settings
+ */
+router.get('/:companyId/invoice-template', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?._id;
+    const { companyId } = req.params;
+    const company = await DataIsolationService.verifyCompanyAccess(userId, companyId);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    return res.json({ success: true, data: company.invoiceTemplate || {} });
+  } catch (error) {
+    logger.error('Get invoice template error: ' + error.message);
+    res.status(500).json({ error: 'Failed to fetch invoice template' });
+  }
+});
+
+/**
+ * PUT /api/v1/companies/:companyId/invoice-template
+ * Update invoice template settings
+ */
+router.put('/:companyId/invoice-template', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?._id;
+    const { companyId } = req.params;
+    const company = await DataIsolationService.verifyCompanyAccess(userId, companyId);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    const member = company.members.find(m => m.userId?.toString() === userId.toString());
+    if (company.owner?.toString() !== userId.toString() && member?.role !== 'admin') {
+      return res.status(403).json({ error: 'Only owner or admin can update settings' });
+    }
+    company.invoiceTemplate = { ...company.invoiceTemplate, ...req.body };
+    await company.save();
+    return res.json({ success: true, message: 'Invoice template updated', data: company.invoiceTemplate });
+  } catch (error) {
+    logger.error('Update invoice template error: ' + error.message);
+    res.status(500).json({ error: 'Failed to update invoice template' });
+  }
+});
+
 module.exports = router;

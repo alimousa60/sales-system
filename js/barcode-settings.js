@@ -237,7 +237,7 @@ function printMultipleLabels(itemIds) {
       <div class="label-barcode">
         <svg class="lbl-bc" data-value="${item.barcode || item.code}"></svg>
       </div>
-      <div class="label-price">${fmt(item.sell)} <small>t('currency_sym')</small></div>
+    <div class="label-price">${fmt(item.sell)} <small>${t('currency_sym')}</small></div>
       <div class="label-code">${item.barcode || item.code}</div>
     </div>
   `).join('');

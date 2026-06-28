@@ -19,6 +19,7 @@ try {
 
 function hrmGuard(resource, action) {
   return (req, res, next) => {
+    if (req.user?.role === 'system_admin') return next();
     if (checkPermissionRBAC) return checkPermissionRBAC(resource, action)(req, res, next);
     next();
   };

@@ -43,13 +43,13 @@ function itemSearch(val,prefix){
     dd.classList.add('on');
     return;
   }
-  const t=term;
+  const searchTerm=term;
   dd.innerHTML=results.map((x,i)=>{
     let nameHtml=escapeHtml(x.name);
-    if(t){
+    if(searchTerm){
       const safeName=escapeHtml(x.name);
       const lowerName=safeName.toLowerCase();
-      const lowerTerm=t.toLowerCase();
+      const lowerTerm=searchTerm.toLowerCase();
       const idx=lowerName.indexOf(lowerTerm);
       if(idx>=0) nameHtml=safeName.substring(0,idx)+'<mark>'+safeName.substring(idx,idx+lowerTerm.length)+'</mark>'+safeName.substring(idx+lowerTerm.length);
     }
@@ -144,6 +144,8 @@ function openNewItem(){
   openModal('m-item');
 }
 function saveItem(){
+  const btn=G('m-item-save-btn');setBtnLoading(btn,true);
+  try{
   const name=G('fi-name').value.trim();
   if(!name){toast(t('inv_name_ph'),'error');return}
   const imgData=G('fi-img-preview')?.querySelector('img')?.src||null;
@@ -184,7 +186,9 @@ function saveItem(){
   closeModal('m-item');renderItems();
   updateStats();
   broadcastChange('items', { name });
-}
+}finally{
+  setBtnLoading(btn,false);
+}}
 function editItem(id){
   const item=DB.items.find(x=>x.id===id);if(!item)return;
   _editingItemId=id;
@@ -228,6 +232,7 @@ function renderItems(q=''){
   else if(stockFilter==='ok'){full=full.filter(x=>x.qty>x.reorder)}
   const {data,pages,page,start}=getPageData('inv-tb', full);
   const tb=G('inv-tb');
+  if(!tb) return;
   if(!full.length){tb.innerHTML=emptyRow(10,term?t('lbl_search_results'):t('inv_empty'));renderPag('inv-tb',0,renderItems);return}
   tb.innerHTML=data.map(x=>{
     const low=x.qty<=x.reorder;
@@ -360,6 +365,8 @@ function openUsersPage(){
   showPage('users');
 }
 async function saveUser(){
+  const btn=G('m-user')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try{
   if(!requireAdmin())return;
   const username=G('uu-username').value.trim();
   const password=G('uu-pass').value;
@@ -394,7 +401,9 @@ async function saveUser(){
     console.warn('saveUser failed',e);
     toast(t('user_conn_fail'),'error');
   }
-}
+}finally{
+  setBtnLoading(btn,false);
+}}
 async function delUser(id){
   if(!requireAdmin())return;
   if(!id){toast(t('user_conn_fail'),'error');return}
@@ -427,6 +436,8 @@ async function delUser(id){
 
 /* ═══ CUSTOMERS ═══ */
 function saveCust(){
+  const btn=G('m-cust')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try{
   const name=G('cu-name').value.trim();if(!name){toast(t('cust_name_ph'),'error');return}
   const openBal=parseFloat(G('cu-bal').value)||0;
   const id=Date.now();
@@ -435,7 +446,9 @@ function saveCust(){
   closeModal('m-cust');renderCusts();
   broadcastChange('customers', { id, name });
   toast(`"${name}" — ${t('col_opening_balance')}: ${fmt(openBal)}  ${t('currency_sym')}`,{icon:'ti-user',title:t('cust_new')})
-}
+}finally{
+  setBtnLoading(btn,false);
+}}
 function renderCusts(search=''){
   const tb=G('cust-tb');
   const term=normalizeText(search);
@@ -460,13 +473,17 @@ function openSOA(cid){document.querySelector('.nav-item[data-page="soa"]').click
 
 /* ═══ SUPPLIERS ═══ */
 function saveSup(){
+  const btn=G('m-sup')?.querySelector('.btn-primary');setBtnLoading(btn,true);
+  try{
   const name=G('su-name').value.trim();if(!name){toast(t('sup_name_ph'),'error');return}
   DB.sups.push({id:Date.now(),name,phone:G('su-phone').value,addr:G('su-addr').value});
   addLog('إضافة مورد',`"${name}"`,'#22d3ee');
   closeModal('m-sup');renderSups();
   broadcastChange('suppliers', { name });
   toast('"'+name+'"',{icon:'ti-truck',title:t('sup_new')})
-}
+}finally{
+  setBtnLoading(btn,false);
+}}
 function renderSups(search=''){
   const tb=G('sup-tb');
   const term=normalizeText(search);
@@ -531,7 +548,9 @@ function clearBatchSelection() {
   updateBatchBar();
 }
 
-async function batchDeleteItems() {
+async function batchDeleteItems(e) {
+  const btn=e.target;setBtnLoading(btn,true);
+  try{
   if (_batchSelected.size === 0) return;
   const ok=await confirmDanger(`حذف ${_batchSelected.size} صنف؟`, 'تأكيد الحذف المجمع');if(!ok)return;
   _batchSelected.forEach(id => {
@@ -544,7 +563,9 @@ async function batchDeleteItems() {
   renderItems();
   updateStats();
   toast('تم حذف الأصناف المحددة', 'success');
-}
+}finally{
+  setBtnLoading(btn,false);
+}}
 
 function batchUpdateCategory() {
   if (_batchSelected.size === 0) return;

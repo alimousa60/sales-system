@@ -31,6 +31,20 @@ function withBtnLoading(fn) {
   };
 }
 
+/* Helper: find primary save button within a modal */
+function _findModalBtn(modalEl){
+  if(!modalEl)return null;
+  return modalEl.querySelector('.btn-primary:not(.btn-ghost):not(.btn-close)')||modalEl.querySelector('[data-action="save"]');
+}
+/* Wraps an async function with button loading, auto-detecting the modal save button */
+async function withModalSave(modalId, fn){
+  const modal=typeof modalId==='string'?G(modalId):modalId;
+  const btn=_findModalBtn(modal);
+  if(btn)setBtnLoading(btn,true);
+  try{return await fn()}
+  finally{if(btn)setBtnLoading(btn,false)}
+}
+
 /* 2. CUSTOM CONFIRMATION DIALOG */
 function confirmAction(opts) {
   return new Promise(resolve => {
@@ -537,4 +551,85 @@ function playSound(type){
       validateField(this, {required: true, requiredMsg: 'البيان مطلوب'});
     });
   }
+})();
+
+/* ═══ EVENT DELEGATION — استبدال onclick بـ data-action ═══ */
+(function(){
+  const _actionMap={
+    toggleSidebar:()=>{const s=G('sidebar-backdrop');if(s)s.click();toggleSidebar()},
+    toggleLanguage, handleLogin, logout, toggleTheme, toggleFab,
+    toggleNotifPanel, installApp, toggleCart:()=>{console.warn('toggleCart not implemented')}, syncCloud,
+    exportLocalBackup, saveCloudBackup, importLocalBackup,
+    saveItem, saveCust, saveSup, saveInv, savePur, savePayment,
+    saveCollect2, saveSettlement, saveSupPay, saveSupSettlement,
+    saveRet, saveUser, saveCompany, saveExpense, saveEmployeeEdit,
+    saveAttendance, addAdvance, savePerformanceEval,     saveBarcodeSettings,
+    openInvoiceTemplateModal, saveInvoiceTemplate, resetInvoiceTemplate, previewInvoiceTemplate,
+    addEmployee, printEmployeeList, printPayroll, removeCompanyLogo,
+    addCustomAlert, addSiLine, addPiLine, savePageCustomization,
+    exportItems, exportSales, exportReturns, exportPurchases,
+    exportCustomers, exportSuppliers, exportUsers, exportSupplierPayments,
+    exportFinance, exportPL, exportAudit, exportExpenses,
+    exportHRMEmployees, exportHRMAttendance, exportHRMPayroll,
+    exportHRMAdvances, exportHRMCashLedger, exportPerformanceExcel,
+    exportSOA, exportLocalBackup,
+    printItemsPDF, printSalesPDF, printReturnsPDF, printPurchasesPDF,
+    printCustomersPDF, printSuppliersPDF, printUsersPDF,
+    printSupplierPaymentsPDF, printFinancePDF, printPLPDF, printAuditPDF,
+    printSOA, printInvoice, printAllItemLabels,
+    printHRMAttendancePDF:()=>exportAttendancePDF(),
+    printHRMAdvancesPDF:()=>exportAdvancesPDF(),
+    printHRMCashLedgerPDF:()=>exportCashLedgerPDF(),
+    printPerformancePDF:()=>exportPerformancePDF(),
+    printPayrollPDF:()=>exportPayrollPDF(),
+    startBarcodeScanner,
+    batchDeleteItems:e=>batchDeleteItems(e),
+    batchUpdateCategory, batchUpdatePrice,
+    openNewItem, openNewSale:()=>{console.warn('openNewSale not implemented')},
+    loadReverseSettlements,
+    clearItemImage, handleCSVImport:()=>document.getElementById('import-csv-input')?.click(),
+    showPage:el=>showPage(el.dataset.pg),
+    navigateTo:el=>navigateTo(el.dataset.pg),
+    openModal:el=>openModal(el.dataset.modal),
+    closeModal:el=>closeModal(el.dataset.modal),
+    goToPage:el=>goToPage(el.dataset.key,parseInt(el.dataset.page)||1,window[el.dataset.render]),
+    openReverseSettle:()=>{openModal('m-reverse-settle');loadReverseSettlements()},
+    openSettleLog:()=>{openModal('m-settle-log');renderSettleLog()},
+    clickImport:()=>document.getElementById('import-file')?.click(),
+    showHRMTab:el=>showHRMTab(el.dataset.tab),
+    finTab:el=>finTab(el.dataset.tab,el),
+    openCompanyModal:()=>openCompanyModal(null),
+    generatePayroll, adjustCashLedger,
+    setSettleMode:el=>setSettleMode(el.dataset.mode),
+    setSupSettleMode:el=>setSupSettleMode(el.dataset.mode),
+    toggleHRMSection:el=>toggleHRMSection(el),
+    confirmDeliver,
+    saveEmployeeEdit, savePerformanceEval,
+    clickLogoInput:()=>document.getElementById('co-logo-input')?.click(),
+    closeModalAndReset:el=>{const map={invoice:()=>{closeModal('m-invoice');_editingInvId=null;G('si-inv-title').innerHTML='<i class="ti ti-receipt"></i> فاتورة بيع جديدة'},pur:()=>{closeModal('m-pur');_editingPurId=null;G('pur-title').innerHTML='<i class="ti ti-truck"></i> فاتورة شراء جديدة'},hrmPreview:()=>{closeModal('hrm-preview-modal');addEmployee()}};const fn=map[el.dataset.reset];if(fn)fn()},
+    openInvoiceViaFab:()=>{toggleFab();openModal('m-invoice')},
+    openNewItemViaFab:()=>{toggleFab();openNewItem()},
+    openCollectViaFab:()=>{toggleFab();openCollectStandalone()},
+    importItemsCSV:()=>handleCSVImport(),
+    printPayroll:el=>{const v=G('hrm-pay-period')?.value||'';if(v)printPayroll(v)},
+    toggleFabAndOpenInv:()=>{toggleFab();openModal('m-inv')},
+    clickFinanceImage:()=>{const fi=G('fi-img-input');if(fi)fi.click()},
+    closeInvoiceX:()=>{closeModal('m-invoice');_editingInvId=null},
+    closePurX:()=>{closeModal('m-pur');_editingPurId=null},
+    closeInvoiceCancel:()=>{closeModal('m-invoice');_editingInvId=null;G('si-inv-title').innerHTML='<i class=ti ti-receipt icon-accent></i> فاتورة بيع جديدة'},
+    closePurCancel:()=>{closeModal('m-pur');_editingPurId=null;G('pur-title').innerHTML='<i class=ti ti-truck icon-amber></i> فاتورة شراء جديدة'},
+    savePur,
+    selPay:el=>selPay(el.dataset.prefix,el,el.dataset.mode),
+  };
+  document.addEventListener('click',e=>{
+    const el=e.target.closest('[data-action]');
+    if(!el)return;
+    const action=_actionMap[el.dataset.action];
+    if(!action){
+      if(typeof window[el.dataset.action]==='function')window[el.dataset.action]();
+      else console.warn('Unknown action:',el.dataset.action);
+      return;
+    }
+    if(typeof action==='function')action(el);
+  });
 })();
